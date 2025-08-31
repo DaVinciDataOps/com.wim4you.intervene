@@ -1,0 +1,43 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Girl's silhouette with ponytail -->
+    <path
+        android:pathData="M54,20c-8,0 -14,6 -14,14v20c0,4 2,8 6,10h4v10h12v-10h4c4,-2 6,-6 6,-10V34c0,-8 -6,-14 -14,-14zM48,24h12c4,0 6,2 6,6h-24c0,-4 2,-6 6,-6z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="40"
+                android:startY="20"
+                android:endX="68"
+                android:endY="54"
+                android:type="linear">
+                <item
+                    android:color="#FF4A90E2"
+                    android:offset="0.0" />
+                <item
+                    android:color="#FF2A5298"
+                    android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Panic button with alert symbol -->
+    <path
+        android:fillColor="#FF0000"
+        android:fillType="nonZero"
+        android:pathData="M80,60a18,18 0 1,0 0,36 18,18 0 1,0 0,-36zM80,66v12m-6,-6h12"
+        android:strokeWidth="2"
+        android:strokeColor="#FFFFFF" />
+
+    <!-- Arm pressing the button -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="nonZero"
+        android:pathData="M54,50l20,10l4,-4l-20,-10z"
+        android:strokeWidth="1"
+        android:strokeColor="#00000000" />
+</vector>

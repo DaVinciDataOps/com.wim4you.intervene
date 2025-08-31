@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1076370713731",
+    "project_id": "com-wim4you-intervene",
+    "storage_bucket": "com-wim4you-intervene.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1076370713731:android:6f18e75e90ac141a7dffb6",
+        "android_client_info": {
+          "package_name": "com.wim4you.intervene"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDPl6nkFJQSC5BT5q-BJljTAXVhytZcWv8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

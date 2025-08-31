@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="@android:color/black"
+    >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+    <!-- Name -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/nameInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Name"
+        app:boxBackgroundMode="outline">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/nameInputEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Alias -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/aliasInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Alias"
+        android:layout_marginTop="16dp"
+        app:boxBackgroundMode="outline">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/aliasInputEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Gender -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/genderInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Gender"
+        android:layout_marginTop="16dp"
+        app:boxBackgroundMode="outline">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/genderInputEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Age -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/ageInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Age"
+        android:layout_marginTop="16dp"
+        app:boxBackgroundMode="outline">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/ageInputEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Safe Word -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/safeWordInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Safe Word"
+        android:layout_marginTop="16dp"
+        app:boxBackgroundMode="outline">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/safeWordInputEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Phone Number -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/phoneNumberInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Phone Number"
+        android:layout_marginTop="16dp"
+        app:boxBackgroundMode="outline">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/phoneNumberInputEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="phone" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Save Button -->
+    <Button
+        android:id="@+id/saveButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/btn_save"
+        android:layout_marginTop="16dp" />
+    </LinearLayout>
+</FrameLayout>
