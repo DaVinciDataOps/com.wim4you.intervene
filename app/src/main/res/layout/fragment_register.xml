@@ -43,21 +43,21 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Gender -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/genderInputLayout"
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/genderInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/register_gender"
+        android:layout_marginTop="16dp"
+        app:boxBackgroundMode="outline"
+        app:endIconMode="dropdown_menu">
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+            android:id="@+id/genderAutoCompleteTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/register_gender"
-            android:layout_marginTop="16dp"
-            app:boxBackgroundMode="outline"
-            app:endIconMode="dropdown_menu">
-            <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                android:id="@+id/genderAutoCompleteTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="none"
-                app:simpleItems="@array/gender_options" />
-        </com.google.android.material.textfield.TextInputLayout>
+            android:inputType="none"
+            app:simpleItems="@array/gender_options" />
+    </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Age -->
     <com.google.android.material.textfield.TextInputLayout

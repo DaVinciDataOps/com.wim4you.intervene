@@ -40,7 +40,7 @@ class RegisterFragment: Fragment() {
             person?.let {
                 binding.nameInputEditText.setText(it.name)
                 binding.aliasInputEditText.setText(it.alias)
-                binding.genderInputEditText.setText(it.gender)
+                binding.genderAutoCompleteTextView.setText(it.gender)
                 binding.ageInputEditText.setText(it.age.toString())
                 binding.phoneNumberInputEditText.setText(it.phoneNumber)
                 binding.safeWordInputEditText.setText(it.safeWord)
@@ -54,7 +54,7 @@ class RegisterFragment: Fragment() {
             val id = it.id// Collect input data
             val name = binding.nameInputEditText.text.toString().trim()
             val alias = binding.aliasInputEditText.text.toString().trim()
-            val gender = binding.genderInputEditText.text.toString().trim()
+            val gender = binding.genderAutoCompleteTextView.text.toString().trim()
             val age = binding.ageInputEditText.text.toString().trim()
             val phoneNumber = binding.phoneNumberInputEditText.text.toString().trim()
             val safeWord = binding.safeWordInputEditText.text.toString().trim()
@@ -88,7 +88,7 @@ class RegisterFragment: Fragment() {
     private fun clearForm() {
         binding.nameInputEditText.text?.clear()
         binding.aliasInputEditText.text?.clear()
-        binding.genderInputEditText.text?.clear()
+        binding.genderAutoCompleteTextView.text?.clear()
         binding.ageInputEditText.text?.clear()
         binding.phoneNumberInputEditText.text?.clear()
         binding.safeWordInputEditText.text?.clear()

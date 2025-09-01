@@ -9,26 +9,26 @@
     >
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/groupnameInputLayout"
+        android:id="@+id/groupNameInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/vigilante_group_name"
         app:boxBackgroundMode="outline">
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/groupnameInputEditText"
+            android:id="@+id/groupNameInputEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="text" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/nameInputLayout"
+        android:id="@+id/groupSizeInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/vigilante_group_size"
         app:boxBackgroundMode="outline">
         <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/nameInputEditText"
+            android:id="@+id/groupSizeInputEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="number" />

@@ -27,7 +27,7 @@ private var _binding: FragmentVigilantesBinding? = null
     _binding = FragmentVigilantesBinding.inflate(inflater, container, false)
     val root: View = binding.root
 
-    val textView: TextView = binding.textGallery
+    val textView: TextView = binding.groupnameInputEditText
     vigilantesViewModel.text.observe(viewLifecycleOwner) {
       textView.text = it
     }
