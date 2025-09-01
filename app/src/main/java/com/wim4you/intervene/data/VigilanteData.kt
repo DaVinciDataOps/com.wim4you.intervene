@@ -15,4 +15,5 @@ data class VigilanteData (
     var groupOwnerId: String,
     val isCertifiedVigilante: Boolean,
     val isActive: Boolean,
+    val ownerId: String,
 )
