@@ -7,7 +7,7 @@ import com.wim4you.intervene.ui.register.RegisterViewModel
 
 class VigilantesViewModelFactory(private val repository: VigilanteDataRepository) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(RegisterViewModel::class.java)) {
+        if (modelClass.isAssignableFrom(VigilantesViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return VigilantesViewModel(repository) as T
         }

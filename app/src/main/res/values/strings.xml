@@ -23,8 +23,9 @@
     <string name="register_phone_number">Phone Number</string>
     <string name="register_e_mail">e-Mail</string>
     <string name="vigilante_image">Vigilante Image</string>
-    <string name="vigilante_explanatory_text">Register yourself, or your group, as vigilantes/neighborhood watch,
-and become active in preventing crimes.</string>
+    <string name="vigilante_explanatory_text">Register yourself, or your group, as vigilantes/neighborhood watch,and become active in preventing crimes.</string>
+    <string name="home_start_patrolling">Start Patrolling</string>
+    <string name="home_start_guided_trip">Start guided trip</string>
 
     <string-array name="gender_options">
         <item>Male</item>

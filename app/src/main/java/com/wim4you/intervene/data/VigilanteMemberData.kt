@@ -7,7 +7,7 @@ import java.util.UUID
 @Entity(tableName = "vigilante_member_data")
 data class VigilanteMemberData (
     @PrimaryKey
-    var id: Number,
+    var id: Long,
     var personId: String
 )
 

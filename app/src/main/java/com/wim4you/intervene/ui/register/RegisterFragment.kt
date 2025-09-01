@@ -11,6 +11,7 @@ import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.data.PersonData
 import com.wim4you.intervene.databinding.FragmentRegisterBinding
 import com.wim4you.intervene.repository.PersonDataRepository
+import java.util.UUID
 
 
 class RegisterFragment: Fragment() {
@@ -47,11 +48,10 @@ class RegisterFragment: Fragment() {
                 binding.emailInputEditText.setText(it.eMail)
             }
         }
-        viewModel.fetchPersonData()
 
+        viewModel.fetchPersonData()
         // Set up save button click listener
         binding.saveButton.setOnClickListener {
-            val id = it.id// Collect input data
             val name = binding.nameInputEditText.text.toString().trim()
             val alias = binding.aliasInputEditText.text.toString().trim()
             val gender = binding.genderAutoCompleteTextView.text.toString().trim()
@@ -67,7 +67,9 @@ class RegisterFragment: Fragment() {
                 return@setOnClickListener
             }
 
-            var personData = PersonData(name = name,
+            var personData = PersonData(
+                id = viewModel.recentPerson.value?.id ?: UUID.randomUUID().toString(),
+                name = name,
                 alias = alias,
                 gender = gender,
                 age = age.toIntOrNull() ?: 0,

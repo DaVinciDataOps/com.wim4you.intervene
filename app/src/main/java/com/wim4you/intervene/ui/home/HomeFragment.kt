@@ -1,6 +1,5 @@
 package com.wim4you.intervene.ui.home
 import android.Manifest
-import com.wim4you.intervene.R
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -8,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.view.isGone
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
@@ -43,10 +43,29 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         super.onViewCreated(view, savedInstanceState)
 
         val mapFragment =
-            childFragmentManager.findFragmentById(R.id.googleMap) as SupportMapFragment
+            childFragmentManager.findFragmentById(binding.googleMap.id) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        binding.button.setOnClickListener {
+        binding.buttonStartGuidedTrip.setOnClickListener {
+            binding.panicButton.visibility = View.VISIBLE
+            binding.buttonStartGuidedTrip.visibility = View.GONE
+            binding.buttonStartPatroling.visibility = View.GONE
+        }
+
+        binding.buttonStartPatroling.setOnClickListener {
+            if(binding.buttonStartGuidedTrip.isGone) {
+                binding.panicButton.visibility = View.GONE
+                binding.buttonStartGuidedTrip.visibility = View.VISIBLE
+                binding.buttonStartPatroling.setText("Start Patrolling")
+            }
+            else {
+                binding.panicButton.visibility = View.GONE
+                binding.buttonStartGuidedTrip.visibility = View.GONE
+                binding.buttonStartPatroling.setText("Stop Patrolling")
+            }
+        }
+
+        binding.panicButton.setOnClickListener {
             if (ContextCompat.checkSelfPermission(
                     requireContext(),
                     Manifest.permission.ACCESS_FINE_LOCATION
