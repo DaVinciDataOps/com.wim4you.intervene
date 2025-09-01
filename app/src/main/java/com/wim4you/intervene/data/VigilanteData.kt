@@ -12,6 +12,7 @@ data class VigilanteData (
     var name: String,
     var isGroup: Boolean,
     var groupSize: Int,
+    var groupOwnerId: String,
     val isCertifiedVigilante: Boolean,
     val isActive: Boolean,
 )

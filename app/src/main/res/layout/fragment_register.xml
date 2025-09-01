@@ -71,7 +71,8 @@
             android:id="@+id/ageInputEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number" />
+            android:inputType="number"
+            android:maxLength="3" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Safe Word -->
