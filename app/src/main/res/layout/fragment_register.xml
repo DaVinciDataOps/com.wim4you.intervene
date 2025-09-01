@@ -102,6 +102,21 @@
             android:inputType="phone" />
     </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Phone Number -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/emailInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="e-Mail"
+        android:layout_marginTop="16dp"
+        app:boxBackgroundMode="outline">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/emailInputEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
+
     <!-- Save Button -->
     <Button
         android:id="@+id/saveButton"

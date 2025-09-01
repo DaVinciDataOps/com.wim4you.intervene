@@ -15,7 +15,7 @@
         android:id="@+id/nav_vigilantes"
         android:name="com.wim4you.intervene.ui.vigilantes.VigilantesFragment"
         android:label="@string/menu_vigilantes"
-        tools:layout="@layout/fragment_gallery" />
+        tools:layout="@layout/fragment_vigilantes" />
 
     <fragment
         android:id="@+id/nav_slideshow"
@@ -25,7 +25,7 @@
 
     <fragment
         android:id="@+id/nav_register"
-        android:name="com.wim4you.intervene.nav_register"
+        android:name="com.wim4you.intervene.ui.register.RegisterFragment"
         android:label="@string/menu_register"
         tools:layout="@layout/fragment_register" />
 </navigation>
