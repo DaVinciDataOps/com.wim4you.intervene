@@ -32,7 +32,7 @@
         android:id="@+id/aliasInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Alias"
+        android:hint="@string/register_alias"
         android:layout_marginTop="16dp"
         app:boxBackgroundMode="outline">
         <com.google.android.material.textfield.TextInputEditText
@@ -43,26 +43,28 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Gender -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/genderInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Gender"
-        android:layout_marginTop="16dp"
-        app:boxBackgroundMode="outline">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/genderInputEditText"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/genderInputLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="text" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:hint="@string/register_gender"
+            android:layout_marginTop="16dp"
+            app:boxBackgroundMode="outline"
+            app:endIconMode="dropdown_menu">
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                android:id="@+id/genderAutoCompleteTextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                app:simpleItems="@array/gender_options" />
+        </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Age -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/ageInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Age"
+        android:hint="@string/register_age"
         android:layout_marginTop="16dp"
         app:boxBackgroundMode="outline">
         <com.google.android.material.textfield.TextInputEditText
@@ -77,7 +79,7 @@
         android:id="@+id/safeWordInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Safe Word"
+        android:hint="@string/register_safe_word"
         android:layout_marginTop="16dp"
         app:boxBackgroundMode="outline">
         <com.google.android.material.textfield.TextInputEditText
@@ -92,7 +94,7 @@
         android:id="@+id/phoneNumberInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Phone Number"
+        android:hint="@string/register_phone_number"
         android:layout_marginTop="16dp"
         app:boxBackgroundMode="outline">
         <com.google.android.material.textfield.TextInputEditText
@@ -107,7 +109,7 @@
         android:id="@+id/emailInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="e-Mail"
+        android:hint="@string/register_e_mail"
         android:layout_marginTop="16dp"
         app:boxBackgroundMode="outline">
         <com.google.android.material.textfield.TextInputEditText

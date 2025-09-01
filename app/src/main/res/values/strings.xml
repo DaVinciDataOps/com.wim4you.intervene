@@ -14,4 +14,19 @@
 
     <string name="btn_panic">!HELP!</string>
     <string name="btn_save">Save</string>
+    <string name="vigilante_group_name">Vigilante group name</string>
+    <string name="vigilante_group_size">Group size</string>
+    <string name="register_gender">Gender</string>
+    <string name="register_alias">Alias</string>
+    <string name="register_age">Age</string>
+    <string name="register_safe_word">Safe Word</string>
+    <string name="register_phone_number">Phone Number</string>
+    <string name="register_e_mail">e-Mail</string>
+
+    <string-array name="gender_options">
+        <item>Male</item>
+        <item>Female</item>
+        <item>X</item>
+        <item>Won\'t say</item>
+    </string-array>
 </resources>
