@@ -20,6 +20,7 @@ navigationUiKtx = "2.9.3"
 playServicesLocation = "21.3.0"
 roomRuntime = "2.7.2"
 workRuntimeKtx = "2.10.3"
+firebaseDatabaseKtx = "22.0.0"
 
 
 [libraries]
@@ -29,6 +30,7 @@ androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomRunt
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
 firebase-auth = { module = "com.google.firebase:firebase-auth" , version.ref = "firebaseAuth"}
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-database = { module = "com.google.firebase:firebase-database" }
 firebase-firestore = { module = "com.google.firebase:firebase-firestore", version.ref = "firebaseStore" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

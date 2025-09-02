@@ -15,6 +15,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.wim4you.intervene.R
 import com.wim4you.intervene.databinding.FragmentHomeBinding
 import com.wim4you.intervene.location.LocationUtils
 
@@ -23,6 +24,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
     private val viewModel: HomeViewModel by viewModels()
+
     private lateinit var mMap: GoogleMap
 
     override fun onCreateView(
@@ -35,7 +37,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         val root: View = binding.root
-
         return root
     }
 
@@ -56,12 +57,12 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             if(binding.buttonStartGuidedTrip.isGone) {
                 binding.panicButton.visibility = View.GONE
                 binding.buttonStartGuidedTrip.visibility = View.VISIBLE
-                binding.buttonStartPatroling.setText("Start Patrolling")
+                binding.buttonStartPatroling.setText(R.string.home_start_patrolling)
             }
             else {
                 binding.panicButton.visibility = View.GONE
                 binding.buttonStartGuidedTrip.visibility = View.GONE
-                binding.buttonStartPatroling.setText("Stop Patrolling")
+                binding.buttonStartPatroling.setText(R.string.home_stop_patrolling)
             }
         }
 
