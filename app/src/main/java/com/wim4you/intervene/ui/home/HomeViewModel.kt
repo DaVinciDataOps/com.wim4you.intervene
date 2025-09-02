@@ -11,14 +11,13 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.Firebase
 import com.google.firebase.database.database
-import com.wim4you.intervene.data.VigilanteData
+import com.wim4you.intervene.AppState
 import com.wim4you.intervene.fbdata.DistressData
 import com.wim4you.intervene.fbdata.LocationData
 import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 class HomeViewModel(
     private val personDataRepository: PersonDataRepository,
@@ -28,7 +27,9 @@ class HomeViewModel(
     private val database = Firebase.database.getReference()
     // LiveData for distress notification status (for Toast)
     private val _distressStatus = MutableLiveData<String>()
+    private val _patrollingStatus = MutableLiveData<String>()
     val distressStatus: LiveData<String> = _distressStatus
+    val patrollingStatus: LiveData<String> = _patrollingStatus
 
     // LiveData for current location (for map marker)
     private val _currentLocation = MutableLiveData<LatLng?>()
@@ -39,7 +40,7 @@ class HomeViewModel(
             val vigilanteData = vigilanteDataRepository.fetch()
             if (vigilanteData == null) {
                 Log.e("Room", "Failed to fetch Vigilante")
-                _distressStatus.postValue("Failed to get vigilante data")
+                _patrollingStatus.postValue("Failed to get vigilante data")
                 return@launch
             }
 
@@ -53,9 +54,10 @@ class HomeViewModel(
                 currentLatLng?.let {
                     location.location =
                         mapOf("latitude" to it.latitude, "longitude" to it.longitude)
+                    _patrollingStatus.postValue("Start patrolling...") // Notify fragment to show Toast
                     sendPatrollingNotification(location)
                 } ?: run {
-                    _distressStatus.postValue("Failed to get location")
+                    _patrollingStatus.postValue("Failed to start patrolling")
                 }
             }
         }
@@ -64,7 +66,7 @@ class HomeViewModel(
     fun onPanicButtonClicked(activity: Activity) {
         viewModelScope.launch {
             val personData = personDataRepository.fetch()
-            if (personData == null) {
+            if (personData == null || !AppState.isGuidedTrip) {
                 Log.e("Room", "Failed to fetch PersonData")
                 _distressStatus.postValue("Failed to get person data")
                 return@launch

@@ -20,5 +20,15 @@
             android:id="@+id/nav_register"
             android:icon="@drawable/ic_menu_register"
             android:title="@string/menu_register" />
+
+        <item
+            android:id="@+id/nav_startstop_guided_trip"
+            android:icon="@drawable/ic_startstop_guided_trip"
+            android:title="@string/nav_startstop_guided_trip" />
+
+        <item
+            android:id="@+id/nav_startstop_patrolling"
+            android:icon="@drawable/ic_startstop_patrolling"
+            android:title="@string/nav_startstop_patrolling" />
     </group>
 </menu>

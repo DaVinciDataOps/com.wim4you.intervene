@@ -14,6 +14,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.wim4you.intervene.AppState
 import com.wim4you.intervene.R
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.FragmentHomeBinding
@@ -25,7 +26,9 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
-    private var isPatrolling : Boolean  = false
+//    private var isPatrolling : Boolean  = false
+//    private var isGuidedTrip : Boolean  = false
+
     //private val viewModel: HomeViewModel by viewModels()
     private lateinit var viewModel: HomeViewModel
 
@@ -56,27 +59,40 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             childFragmentManager.findFragmentById(binding.googleMap.id) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        binding.buttonStartGuidedTrip.setOnClickListener {
+        if(AppState.isGuidedTrip){
             binding.panicButton.visibility = View.VISIBLE
             binding.buttonStartGuidedTrip.visibility = View.GONE
             binding.buttonStartPatroling.visibility = View.GONE
         }
 
+        binding.buttonStartGuidedTrip.setOnClickListener {
+            AppState.isGuidedTrip = true;
+        }
+
         binding.buttonStartPatroling.setOnClickListener {
-            if(binding.buttonStartGuidedTrip.isGone) {
+            if(!AppState.isGuidedTrip){
                 binding.panicButton.visibility = View.GONE
+                binding.buttonStartGuidedTrip.visibility = View.GONE
+            }
+
+            if(binding.buttonStartGuidedTrip.isGone) {
                 binding.buttonStartGuidedTrip.visibility = View.VISIBLE
                 binding.buttonStartPatroling.setText(R.string.home_start_patrolling)
-                isPatrolling = false;
+                AppState.isPatrolling = false;
             }
             else {
                 binding.panicButton.visibility = View.GONE
                 binding.buttonStartGuidedTrip.visibility = View.GONE
                 binding.buttonStartPatroling.setText(R.string.home_stop_patrolling)
-                isPatrolling = true;
+                AppState.isPatrolling = true;
             }
 
-            viewModel.onStartPatrollingButtonClicked(requireActivity(),isPatrolling)
+            viewModel.onStartPatrollingButtonClicked(requireActivity(),AppState.isPatrolling)
+            viewModel.patrollingStatus.observe(viewLifecycleOwner) { status ->
+                status?.let {
+                    Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
+                }
+            }
         }
 
         binding.panicButton.setOnClickListener {
