@@ -9,21 +9,23 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isGone
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.wim4you.intervene.R
+import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.FragmentHomeBinding
 import com.wim4you.intervene.location.LocationUtils
+import com.wim4you.intervene.repository.PersonDataRepository
 
 class HomeFragment : Fragment(), OnMapReadyCallback {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
-    private val viewModel: HomeViewModel by viewModels()
+    //private val viewModel: HomeViewModel by viewModels()
+    private lateinit var viewModel: HomeViewModel
 
     private lateinit var mMap: GoogleMap
 
@@ -32,9 +34,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val homeViewModel =
-            ViewModelProvider(this).get(HomeViewModel::class.java)
-
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         val root: View = binding.root
         return root
@@ -42,6 +41,11 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        // Initialize the ViewModel
+        val repository =
+            PersonDataRepository(DatabaseProvider.getDatabase(requireContext()).personDataDao())
+        viewModel = ViewModelProvider(this, HomeViewModelFactory(repository))
+            .get(HomeViewModel::class.java)
 
         val mapFragment =
             childFragmentManager.findFragmentById(binding.googleMap.id) as SupportMapFragment
@@ -64,6 +68,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 binding.buttonStartGuidedTrip.visibility = View.GONE
                 binding.buttonStartPatroling.setText(R.string.home_stop_patrolling)
             }
+
+            viewModel.onStartPatrollingButtonClicked(requireActivity())
         }
 
         binding.panicButton.setOnClickListener {
