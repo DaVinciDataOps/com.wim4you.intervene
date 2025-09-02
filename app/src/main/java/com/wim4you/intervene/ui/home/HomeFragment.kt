@@ -19,6 +19,7 @@ import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.FragmentHomeBinding
 import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.repository.PersonDataRepository
+import com.wim4you.intervene.repository.VigilanteDataRepository
 
 class HomeFragment : Fragment(), OnMapReadyCallback {
 
@@ -42,9 +43,12 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         // Initialize the ViewModel
-        val repository =
+        val personStore =
             PersonDataRepository(DatabaseProvider.getDatabase(requireContext()).personDataDao())
-        viewModel = ViewModelProvider(this, HomeViewModelFactory(repository))
+
+        val vigilanteStore =
+            VigilanteDataRepository(DatabaseProvider.getDatabase(requireContext()).vigilanteDataDao())
+        viewModel = ViewModelProvider(this, HomeViewModelFactory(personStore,vigilanteStore))
             .get(HomeViewModel::class.java)
 
         val mapFragment =
