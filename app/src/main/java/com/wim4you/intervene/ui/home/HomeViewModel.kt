@@ -34,7 +34,7 @@ class HomeViewModel(
     private val _currentLocation = MutableLiveData<LatLng?>()
     val currentLocation: LiveData<LatLng?> = _currentLocation
 
-    fun onStartPatrollingButtonClicked(activity:Activity){
+    fun onStartPatrollingButtonClicked(activity:Activity, isPatrolling: Boolean){
         viewModelScope.launch {
             val vigilanteData = vigilanteDataRepository.fetch()
             if (vigilanteData == null) {
@@ -46,7 +46,7 @@ class HomeViewModel(
             val location = LocationData(
                 id = vigilanteData.id,
                 vigilanteId = vigilanteData.id,
-                IsActive = true
+                IsActive = isPatrolling,
             )
 
             LocationUtils.getLocation(activity) { currentLatLng ->
@@ -87,7 +87,7 @@ class HomeViewModel(
     }
 
     private fun sendPatrollingNotification(location: LocationData) {
-        database.child("vigilante").child(location.id).setValue(location).addOnSuccessListener {
+        database.child("vigilanteLoc").child(location.id).setValue(location).addOnSuccessListener {
             Log.e("Firebase", "Success saving distress:")
         }
             .addOnFailureListener { e ->

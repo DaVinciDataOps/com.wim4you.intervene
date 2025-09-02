@@ -25,6 +25,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
+    private var isPatrolling : Boolean  = false
     //private val viewModel: HomeViewModel by viewModels()
     private lateinit var viewModel: HomeViewModel
 
@@ -66,14 +67,16 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 binding.panicButton.visibility = View.GONE
                 binding.buttonStartGuidedTrip.visibility = View.VISIBLE
                 binding.buttonStartPatroling.setText(R.string.home_start_patrolling)
+                isPatrolling = false;
             }
             else {
                 binding.panicButton.visibility = View.GONE
                 binding.buttonStartGuidedTrip.visibility = View.GONE
                 binding.buttonStartPatroling.setText(R.string.home_stop_patrolling)
+                isPatrolling = true;
             }
 
-            viewModel.onStartPatrollingButtonClicked(requireActivity())
+            viewModel.onStartPatrollingButtonClicked(requireActivity(),isPatrolling)
         }
 
         binding.panicButton.setOnClickListener {
