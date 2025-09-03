@@ -1,8 +1,7 @@
 package com.wim4you.intervene.ui.home
 
 import android.app.Activity
-import android.media.AudioManager
-import android.media.ToneGenerator
+import android.content.Intent
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -12,9 +11,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.Firebase
 import com.google.firebase.database.database
 import com.wim4you.intervene.AppState
-import com.wim4you.intervene.fbdata.DistressData
-import com.wim4you.intervene.fbdata.LocationData
-import com.wim4you.intervene.location.LocationUtils
+import com.wim4you.intervene.location.TripService
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import kotlinx.coroutines.launch
@@ -35,31 +32,13 @@ class HomeViewModel(
     private val _currentLocation = MutableLiveData<LatLng?>()
     val currentLocation: LiveData<LatLng?> = _currentLocation
 
-    fun onStartPatrollingButtonClicked(activity:Activity, isPatrolling: Boolean){
-        viewModelScope.launch {
-            val vigilanteData = vigilanteDataRepository.fetch()
-            if (vigilanteData == null) {
-                Log.e("Room", "Failed to fetch Vigilante")
-                _patrollingStatus.postValue("Failed to get vigilante data")
-                return@launch
-            }
-
-            val location = LocationData(
-                id = vigilanteData.id,
-                vigilanteId = vigilanteData.id,
-                IsActive = isPatrolling,
-            )
-
-            LocationUtils.getLocation(activity) { currentLatLng ->
-                currentLatLng?.let {
-                    location.location =
-                        mapOf("latitude" to it.latitude, "longitude" to it.longitude)
-                    _patrollingStatus.postValue("Start patrolling...") // Notify fragment to show Toast
-                    sendPatrollingNotification(location)
-                } ?: run {
-                    _patrollingStatus.postValue("Failed to start patrolling")
-                }
-            }
+    fun updateTripState(activity: Activity, isDistressState: Boolean) {
+        AppState.IsDistressState = isDistressState
+        val intent = Intent(activity, TripService::class.java)
+        if (isDistressState) {
+            activity.startService(intent)
+        } else {
+            activity.stopService(intent)
         }
     }
 
@@ -71,44 +50,38 @@ class HomeViewModel(
                 _distressStatus.postValue("Failed to get person data")
                 return@launch
             }
+            AppState.IsDistressState = true
+            updateTripState(activity, AppState.IsDistressState)
+            _distressStatus.postValue("Sending distress notification...")
+//            val distressData = DistressData(
+//                id = personData.id,
+//                personId = personData.id,
+//            )
 
-            val distressData = DistressData(
-                id = personData.id,
-                personId = personData.id,
-            )
-
-            LocationUtils.getLocation(activity) { currentLatLng ->
-                currentLatLng?.let {
-                    distressData.location = mapOf("latitude" to it.latitude, "longitude" to it.longitude)
-                    sendDistressNotification(distressData)
-                } ?: run {
-                    _distressStatus.postValue("Failed to get location")
-                }
-            }
+//            LocationUtils.getLocation(activity) { currentLatLng ->
+//                currentLatLng?.let {
+//                    distressData.location = mapOf("latitude" to it.latitude, "longitude" to it.longitude)
+//                    sendDistressNotification(distressData)
+//                } ?: run {
+//                    _distressStatus.postValue("Failed to get location")
+//                }
+//            }
         }
     }
 
-    private fun sendPatrollingNotification(location: LocationData) {
-        database.child("vigilanteLoc").child(location.id).setValue(location).addOnSuccessListener {
-            Log.e("Firebase", "Success saving distress:")
-        }
-            .addOnFailureListener { e ->
-                Log.e("Firebase", "Error saving distress: ${e.message}")
-            }
-    }
-    private fun sendDistressNotification(distressData: DistressData) {
-        // Format distress message
-        //val id = database.child("distress").push().key ?: ""
-        _distressStatus.postValue("Sending distress notification...") // Notify fragment to show Toast
-        database.child("distress").child(distressData.id).setValue(distressData).addOnSuccessListener {
-            Log.e("Firebase", "Success saving distress:")
-        }
-        .addOnFailureListener { e ->
-            Log.e("Firebase", "Error saving distress: ${e.message}")
-        }
-
-        val toneGen = ToneGenerator(AudioManager.STREAM_ALARM, 100)
-        toneGen.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 4000) // Play for 4 seconds
-        toneGen.release()
-    }
+//    private fun sendDistressNotification(distressData: DistressData) {
+//        // Format distress message
+//        //val id = database.child("distress").push().key ?: ""
+//        _distressStatus.postValue("Sending distress notification...") // Notify fragment to show Toast
+//        database.child("distress").child(distressData.id).setValue(distressData).addOnSuccessListener {
+//            Log.e("Firebase", "Success saving distress:")
+//        }
+//        .addOnFailureListener { e ->
+//            Log.e("Firebase", "Error saving distress: ${e.message}")
+//        }
+//
+//        val toneGen = ToneGenerator(AudioManager.STREAM_ALARM, 100)
+//        toneGen.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 4000) // Play for 4 seconds
+//        toneGen.release()
+//    }
 }

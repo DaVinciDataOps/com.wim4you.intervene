@@ -1,10 +1,12 @@
 package com.wim4you.intervene
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.collection.emptyLongSet
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
@@ -13,17 +15,30 @@ import androidx.navigation.ui.setupWithNavController
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.Firebase
+import com.google.firebase.database.database
+import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.ActivityMainBinding
+import com.wim4you.intervene.fbdata.LocationData
 import com.wim4you.intervene.location.LocationService
+import com.wim4you.intervene.location.LocationUtils
+import com.wim4you.intervene.location.TripService
+import com.wim4you.intervene.repository.PersonDataRepository
+import com.wim4you.intervene.repository.VigilanteDataRepository
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity()  {
     private lateinit var mMap: GoogleMap
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
+    private lateinit var personStore: PersonDataRepository
+    private lateinit var vigilanteStore: VigilanteDataRepository
+    private val database by lazy { Firebase.database.getReference() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        personStore = PersonDataRepository(DatabaseProvider.getDatabase(this).personDataDao())
+        vigilanteStore = VigilanteDataRepository(DatabaseProvider.getDatabase(this).vigilanteDataDao())
      binding = ActivityMainBinding.inflate(layoutInflater)
      setContentView(binding.root)
 
@@ -40,7 +55,7 @@ class MainActivity : AppCompatActivity()  {
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         appBarConfiguration = AppBarConfiguration(setOf(
-            R.id.nav_home, R.id.nav_vigilantes, R.id.nav_slideshow), drawerLayout)
+            R.id.nav_home, R.id.nav_vigilantes, R.id.nav_settings), drawerLayout)
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
@@ -48,6 +63,9 @@ class MainActivity : AppCompatActivity()  {
             when (menuItem.itemId) {
                 R.id.nav_startstop_guided_trip -> {
                     AppState.isGuidedTrip = !AppState.isGuidedTrip
+                    if(!AppState.isGuidedTrip)
+                        AppState.IsDistressState = false
+
                     navView.menu.findItem(R.id.nav_startstop_patrolling)?.isVisible = !AppState.isGuidedTrip
                     menuItem.title = if (AppState.isGuidedTrip) "Stop guided trip" else "Start guided trip"
                     navController.navigate(R.id.nav_home)
@@ -58,6 +76,9 @@ class MainActivity : AppCompatActivity()  {
                     navView.menu.findItem(R.id.nav_startstop_guided_trip)?.isVisible = !AppState.isPatrolling
 
                     menuItem.title = if (AppState.isPatrolling) "Stop patrolling" else "Start patrolling"
+                    lifecycleScope.launch{
+                        onStartStopPatrolling()
+                    }
                     navController.navigate(R.id.nav_home)
                     true
                 }
@@ -92,4 +113,39 @@ class MainActivity : AppCompatActivity()  {
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
     }
 
+    private suspend fun onStartStopPatrolling() {
+        var startstop = if (AppState.isPatrolling) "Start" else "Stop"
+
+        val vigilanteData = vigilanteStore.fetch()
+        if (vigilanteData == null) {
+            Log.e("Room", "Failed to fetch Vigilante")
+            return
+        }
+
+        val location = LocationData(
+            id = vigilanteData.id,
+            vigilanteId = vigilanteData.id,
+            IsActive = AppState.isPatrolling,
+        )
+
+        LocationUtils.getLocation(this) { currentLatLng ->
+            currentLatLng?.let {
+                location.location =
+                    mapOf("latitude" to it.latitude, "longitude" to it.longitude)
+                Toast.makeText(this, "${startstop} patrolling ${vigilanteData.name}...", Toast.LENGTH_SHORT).show()
+                sendPatrollingNotification(location)
+            } ?: run {
+                Toast.makeText(this, "${startstop} patrolling ${vigilanteData.name} failed...", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun sendPatrollingNotification(location: LocationData) {
+        database.child("vigilanteLoc").child(location.id).setValue(location).addOnSuccessListener {
+            Log.e("Firebase", "Success saving distress:")
+        }
+            .addOnFailureListener { e ->
+                Log.e("Firebase", "Error saving distress: ${e.message}")
+            }
+    }
 }

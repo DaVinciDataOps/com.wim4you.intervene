@@ -48,7 +48,6 @@ class LocationService : Service() {
             override fun run() {
                 LocationUtils.setLocation(this@LocationService) { latLng ->
                     Log.d("LocationService", "Location: $latLng")
-                    // Handle the LatLng result (e.g., save to database)
                 }
                 handler.postDelayed(this, updateInterval)
             }

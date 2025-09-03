@@ -1,5 +1,6 @@
 package com.wim4you.intervene.ui.home
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -19,6 +20,7 @@ import com.wim4you.intervene.R
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.FragmentHomeBinding
 import com.wim4you.intervene.location.LocationUtils
+import com.wim4you.intervene.location.TripService
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
 
@@ -61,38 +63,9 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
         if(AppState.isGuidedTrip){
             binding.panicButton.visibility = View.VISIBLE
-            binding.buttonStartGuidedTrip.visibility = View.GONE
-            binding.buttonStartPatroling.visibility = View.GONE
         }
-
-        binding.buttonStartGuidedTrip.setOnClickListener {
-            AppState.isGuidedTrip = true;
-        }
-
-        binding.buttonStartPatroling.setOnClickListener {
-            if(!AppState.isGuidedTrip){
-                binding.panicButton.visibility = View.GONE
-                binding.buttonStartGuidedTrip.visibility = View.GONE
-            }
-
-            if(binding.buttonStartGuidedTrip.isGone) {
-                binding.buttonStartGuidedTrip.visibility = View.VISIBLE
-                binding.buttonStartPatroling.setText(R.string.home_start_patrolling)
-                AppState.isPatrolling = false;
-            }
-            else {
-                binding.panicButton.visibility = View.GONE
-                binding.buttonStartGuidedTrip.visibility = View.GONE
-                binding.buttonStartPatroling.setText(R.string.home_stop_patrolling)
-                AppState.isPatrolling = true;
-            }
-
-            viewModel.onStartPatrollingButtonClicked(requireActivity(),AppState.isPatrolling)
-            viewModel.patrollingStatus.observe(viewLifecycleOwner) { status ->
-                status?.let {
-                    Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
-                }
-            }
+        else {
+            binding.panicButton.visibility = View.GONE
         }
 
         binding.panicButton.setOnClickListener {
