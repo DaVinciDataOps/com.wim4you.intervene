@@ -22,6 +22,9 @@
         <service
             android:name=".location.TripService"
             android:foregroundServiceType="location" />
+        <service
+            android:name=".location.PatrolService"
+            android:foregroundServiceType="location" />
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyCaOSHoojXZKhmR50FpWkDRgEG0hzKKaZ0"

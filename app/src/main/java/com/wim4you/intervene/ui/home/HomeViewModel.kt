@@ -33,7 +33,7 @@ class HomeViewModel(
     val currentLocation: LiveData<LatLng?> = _currentLocation
 
     fun updateTripState(activity: Activity, isDistressState: Boolean) {
-        AppState.IsDistressState = isDistressState
+        AppState.isDistressState = isDistressState
         val intent = Intent(activity, TripService::class.java)
         if (isDistressState) {
             activity.startService(intent)
@@ -50,8 +50,8 @@ class HomeViewModel(
                 _distressStatus.postValue("Failed to get person data")
                 return@launch
             }
-            AppState.IsDistressState = true
-            updateTripState(activity, AppState.IsDistressState)
+            AppState.isDistressState = true
+            updateTripState(activity, AppState.isDistressState)
             _distressStatus.postValue("Sending distress notification...")
 //            val distressData = DistressData(
 //                id = personData.id,

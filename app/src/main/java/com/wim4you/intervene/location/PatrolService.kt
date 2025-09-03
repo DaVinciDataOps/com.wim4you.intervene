@@ -12,9 +12,10 @@ import com.google.android.gms.location.LocationServices
 import com.google.firebase.database.FirebaseDatabase
 import com.wim4you.intervene.AppState
 import com.wim4you.intervene.dao.DatabaseProvider
-import com.wim4you.intervene.data.PersonData
+import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.fbdata.DistressLocationData
-import com.wim4you.intervene.repository.PersonDataRepository
+import com.wim4you.intervene.fbdata.PatrolData
+import com.wim4you.intervene.repository.VigilanteDataRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -26,36 +27,35 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resumeWithException
 
-class TripService : Service() {
+class PatrolService : Service() {
     private val database = FirebaseDatabase.getInstance().reference
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var locationJob: Job? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private lateinit var personStore: PersonDataRepository
+    private lateinit var vigilanteStore: VigilanteDataRepository
 
     override fun onCreate() {
         super.onCreate()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        personStore = PersonDataRepository(DatabaseProvider.getDatabase(this).personDataDao())
+        vigilanteStore = VigilanteDataRepository(DatabaseProvider.getDatabase(this).vigilanteDataDao())
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (AppState.isGuidedTrip) {
-
+        if (AppState.isPatrolling) {
             coroutineScope.launch {
-                var personData = personStore.fetch();
-                if(personData == null) {
+                var vigilanteData = vigilanteStore.fetch();
+                if(vigilanteData == null) {
                   stopSelf()
                 }
                 else {
-                  startLocationUpdates(personData)
+                  startLocationUpdates(vigilanteData)
                 }
             }
         }
         return START_STICKY
     }
 
-    private fun startLocationUpdates(personData: PersonData) {
+    private fun startLocationUpdates(vigilanteData: VigilanteData) {
         if (ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -68,12 +68,23 @@ class TripService : Service() {
 
         locationJob?.cancel()
         locationJob = coroutineScope.launch {
-            while (isActive && AppState.isDistressState) {
+            while (isActive && AppState.isPatrolling) {
                 try {
                     val location = getLastLocation()
                     location?.let {
-                        val distressData = data(personData.id,it)
-                        sendToFirebase(distressData)
+                        val patrolData = PatrolData(
+                            id = vigilanteData.id,
+                            vigilanteId = vigilanteData.id,
+                            name = vigilanteData.name,
+                            location = mapOf(
+                                "latitude" to it.latitude,
+                                "longitude" to it.longitude
+                            ),
+                            Time = System.currentTimeMillis(),
+                            IsActive = true,
+                            fcmToken = null // Replace with actual FCM token if needed
+                        )
+                        sendToFirebase(patrolData)
                     }
                     delay(15_000)
                 }
@@ -82,20 +93,6 @@ class TripService : Service() {
                 }
             }
         }
-    }
-
-    private fun data(id:String, geoLocation: Location): DistressLocationData {
-        val distressLocationData = DistressLocationData(
-            id = id,
-            personId = id,
-            location = mapOf(
-                "latitude" to geoLocation.latitude,
-                "longitude" to geoLocation.longitude
-            ),
-            time = System.currentTimeMillis(),
-            fcmToken = null // Replace with actual FCM token if needed
-        )
-        return distressLocationData
     }
 
     private suspend fun getLastLocation(): Location? = suspendCancellableCoroutine { continuation ->
@@ -112,13 +109,13 @@ class TripService : Service() {
         }
     }
 
-    private fun sendToFirebase(distressLocationData: DistressLocationData) {
-        database.child("distress").child(distressLocationData.id).setValue(distressLocationData)
+    private fun sendToFirebase(patrolData: PatrolData) {
+        database.child("vigilanteLoc").child(patrolData.id).setValue(patrolData)
             .addOnSuccessListener {
-                Log.e("Firebase", "Success saving distress:")
+                Log.e("Firebase", "Success saving patrol:")
             }
             .addOnFailureListener { exception ->
-                Log.e("Firebase", "Error saving distress:")
+                Log.e("Firebase", "Error saving patrol:")
             }
     }
 

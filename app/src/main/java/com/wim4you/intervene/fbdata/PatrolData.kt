@@ -1,11 +1,9 @@
 package com.wim4you.intervene.fbdata
 
-import com.google.firebase.firestore.GeoPoint
-import java.util.Date
-
-data class LocationData (
+data class PatrolData (
     var id: String,
     var vigilanteId: String,
+    var name: String,
     var location: Map<String,Double> = mapOf("latitude" to 0.0, "longitude" to 0.0),
     var Time: Long = System.currentTimeMillis(),
     var IsActive: Boolean = false,
