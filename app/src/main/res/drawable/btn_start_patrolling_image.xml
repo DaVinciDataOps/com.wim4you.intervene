@@ -9,5 +9,5 @@
     </item>
     <item
         android:gravity="fill"
-        android:drawable="@drawable/vigilantes" />
+        android:drawable="@drawable/ic_vigilantes_patrolling" />
 </layer-list>

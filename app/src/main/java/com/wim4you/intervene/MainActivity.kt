@@ -3,6 +3,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import androidx.appcompat.app.AppCompatActivity
+import androidx.collection.emptyLongSet
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -42,6 +43,33 @@ class MainActivity : AppCompatActivity()  {
             R.id.nav_home, R.id.nav_vigilantes, R.id.nav_slideshow), drawerLayout)
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
+        navView.setNavigationItemSelectedListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.nav_startstop_guided_trip -> {
+                    AppState.isGuidedTrip = !AppState.isGuidedTrip
+                    navView.menu.findItem(R.id.nav_startstop_patrolling)?.isVisible = !AppState.isGuidedTrip
+                    menuItem.title = if (AppState.isGuidedTrip) "Stop guided trip" else "Start guided trip"
+                    navController.navigate(R.id.nav_home)
+                    true
+                }
+                R.id.nav_startstop_patrolling -> {
+                    AppState.isPatrolling = !AppState.isPatrolling
+                    navView.menu.findItem(R.id.nav_startstop_guided_trip)?.isVisible = !AppState.isPatrolling
+
+                    menuItem.title = if (AppState.isPatrolling) "Stop patrolling" else "Start patrolling"
+                    navController.navigate(R.id.nav_home)
+                    true
+                }
+            else -> {
+                navController.navigate(menuItem.itemId)
+                true
+                }
+            }
+            .also {
+                drawerLayout.closeDrawers()
+            }
+        }
 
         PermissionsUtils.requestPermissions(this)
 

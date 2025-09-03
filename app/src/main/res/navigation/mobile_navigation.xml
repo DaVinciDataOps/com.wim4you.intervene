@@ -29,15 +29,4 @@
         android:label="@string/menu_register"
         tools:layout="@layout/fragment_register" />
 
-    <fragment
-        android:id="@+id/startstop_trip"
-        android:name="com.wim4you.intervene.ui.home.HomeFragment"
-        android:label="@string/nav_startstop_guided_trip"
-        tools:layout="@layout/fragment_home" />
-
-    <fragment
-        android:id="@+id/startstop_patrolling"
-        android:name="com.wim4you.intervene.ui.home.HomeFragment"
-        android:label="@string/nav_startstop_patrolling"
-        tools:layout="@layout/fragment_home" />
 </navigation>

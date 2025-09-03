@@ -28,7 +28,7 @@
     <string name="home_stop_patrolling">Stop Patrolling</string>
     <string name="home_start_guided_trip">Start guided trip</string>
     <string name="nav_startstop_guided_trip">Start guided trip</string>
-    <string name="nav_startstop_patrolling">Start guided trip</string>
+    <string name="nav_startstop_patrolling">Start patrolling</string>
 
     <string-array name="gender_options">
         <item>Male</item>

@@ -69,7 +69,7 @@
         android:scaleType="centerCrop"
         android:layout_marginTop="16dp"
         android:layout_gravity="center_horizontal"
-        android:src="@drawable/vigilantes"
+        android:src="@mipmap/ic_vigilantes_patrolling"
         android:contentDescription="@string/vigilante_image" />
 
     </LinearLayout>
