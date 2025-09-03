@@ -115,7 +115,7 @@ class TripService : Service() {
     private fun sendToFirebase(distressLocationData: DistressLocationData) {
         database.child("distress").child(distressLocationData.id).setValue(distressLocationData)
             .addOnSuccessListener {
-                Log.e("Firebase", "Success saving distress:")
+                Log.i("Firebase", "Success saving distress:")
             }
             .addOnFailureListener { exception ->
                 Log.e("Firebase", "Error saving distress:")

@@ -1,6 +1,5 @@
 package com.wim4you.intervene.ui.home
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -8,19 +7,21 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import androidx.core.view.isGone
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.MarkerOptions
 import com.wim4you.intervene.AppState
-import com.wim4you.intervene.R
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.FragmentHomeBinding
+import com.wim4you.intervene.fbdata.PatrolData
 import com.wim4you.intervene.location.LocationUtils
-import com.wim4you.intervene.location.TripService
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
 
@@ -28,13 +29,19 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
-//    private var isPatrolling : Boolean  = false
-//    private var isGuidedTrip : Boolean  = false
+
+    private val viewModel: HomeViewModel by viewModels {
+        HomeViewModelFactory(
+            PersonDataRepository(DatabaseProvider.getDatabase(requireContext()).personDataDao()),
+            VigilanteDataRepository(DatabaseProvider.getDatabase(requireContext()).vigilanteDataDao())
+        )
+    }
 
     //private val viewModel: HomeViewModel by viewModels()
-    private lateinit var viewModel: HomeViewModel
+    // private lateinit var viewModel: HomeViewModel
 
     private lateinit var mMap: GoogleMap
+    private val markers = mutableMapOf<String, Marker>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -48,18 +55,25 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        // Initialize the ViewModel
+
+        val mapFragment =
+            childFragmentManager.findFragmentById(binding.googleMap.id) as SupportMapFragment
+        mapFragment.getMapAsync(this)
+
+        viewModel.patrolLocations.observe(viewLifecycleOwner) { patrolDataList ->
+            updateMapMarkers(patrolDataList)
+        }
+        viewModel.registerLocationReceiver(requireContext())
+        viewModel.startLocationService(requireContext())
+
         val personStore =
             PersonDataRepository(DatabaseProvider.getDatabase(requireContext()).personDataDao())
 
         val vigilanteStore =
             VigilanteDataRepository(DatabaseProvider.getDatabase(requireContext()).vigilanteDataDao())
-        viewModel = ViewModelProvider(this, HomeViewModelFactory(personStore,vigilanteStore))
-            .get(HomeViewModel::class.java)
 
-        val mapFragment =
-            childFragmentManager.findFragmentById(binding.googleMap.id) as SupportMapFragment
-        mapFragment.getMapAsync(this)
+//        viewModel = ViewModelProvider(this, HomeViewModelFactory(personStore,vigilanteStore))
+//            .get(HomeViewModel::class.java)
 
         if(AppState.isGuidedTrip){
             binding.panicButton.visibility = View.VISIBLE
@@ -107,5 +121,36 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 }
             }
         }
+    }
+
+    private fun updateMapMarkers(patrolDataList: List<PatrolData>){
+        val currentIds = patrolDataList.map { it.id }.toSet()
+        markers.keys.filter { it !in currentIds }.forEach { id ->
+            markers[id]?.remove()
+            markers.remove(id)
+        }
+
+        // Add or update markers for active patrols
+        patrolDataList.forEach { patrolData ->
+            patrolData.location?.let { loc ->
+                val latLng = LatLng(loc["latitude"] ?: 0.0, loc["longitude"] ?: 0.0)
+                val marker = markers[patrolData.id]
+                if (marker == null) {
+                    // Add new marker
+                    val newMarker = mMap.addMarker(
+                        MarkerOptions()
+                            .position(latLng)
+                            .title(patrolData.name ?: "Vigilante")
+                    )
+                    if (newMarker != null) {
+                        markers[patrolData.id] = newMarker
+                    }
+                } else {
+                    // Update existing marker position
+                    marker.position = latLng
+                }
+            }
+        }
+
     }
 }

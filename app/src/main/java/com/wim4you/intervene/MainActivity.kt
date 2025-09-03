@@ -2,12 +2,9 @@ package com.wim4you.intervene
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.Menu
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
@@ -20,13 +17,10 @@ import com.google.firebase.Firebase
 import com.google.firebase.database.database
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.ActivityMainBinding
-import com.wim4you.intervene.fbdata.PatrolData
 import com.wim4you.intervene.location.LocationService
-import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.location.PatrolService
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
-import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity()  {
     private lateinit var mMap: GoogleMap

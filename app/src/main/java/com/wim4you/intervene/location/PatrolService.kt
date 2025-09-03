@@ -112,7 +112,7 @@ class PatrolService : Service() {
     private fun sendToFirebase(patrolData: PatrolData) {
         database.child("vigilanteLoc").child(patrolData.id).setValue(patrolData)
             .addOnSuccessListener {
-                Log.e("Firebase", "Success saving patrol:")
+                Log.i("Firebase", "Success saving patrol:")
             }
             .addOnFailureListener { exception ->
                 Log.e("Firebase", "Error saving patrol:")
