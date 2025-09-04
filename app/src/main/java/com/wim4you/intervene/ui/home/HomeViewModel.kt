@@ -40,6 +40,10 @@ class HomeViewModel(
     val distressStatus: LiveData<String> = _distressStatus
     val patrollingStatus: LiveData<String> = _patrollingStatus
 
+    private var panicButtonPressCount = 0
+    private val panicButtonPressWindowMs = 5000L // 5 seconds time window for presses
+    private var lastPressTime = 0L
+
     // LiveData for current location (for map marker)
     private val _currentLocation = MutableLiveData<LatLng?>()
     val currentLocation: LiveData<LatLng?> = _currentLocation
@@ -85,6 +89,29 @@ class HomeViewModel(
 
     fun onPanicButtonClicked(activity: Activity) {
         viewModelScope.launch {
+            val currentTime = System.currentTimeMillis()
+
+            // Check if the press is within the time window
+            if (currentTime - lastPressTime > panicButtonPressWindowMs) {
+                // Reset counter if the time window has expired
+                panicButtonPressCount = 0
+            }
+
+            // Increment press count
+            panicButtonPressCount++
+            lastPressTime = currentTime
+
+            // Require 2 or 3 presses (adjust to 2 or 3 as needed)
+            val requiredPresses = 3 // Change to 3 if you want 3 presses
+            if (panicButtonPressCount < requiredPresses) {
+                _distressStatus.postValue("Press $requiredPresses times to activate distress")
+                return@launch
+            }
+
+            // Reset counter after activation
+            panicButtonPressCount = 0
+
+
             val personData = personDataRepository.fetch()
             if (personData == null || !AppState.isGuidedTrip) {
                 Log.e("Room", "Failed to fetch PersonData")

@@ -93,9 +93,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             updateDistressMapMarkers(distressDataList)
         }
 
-//        viewModel.registerLocationReceiver(requireContext())
-//        viewModel.startLocationService(requireContext())
-
         val personStore =
             PersonDataRepository(DatabaseProvider.getDatabase(requireContext()).personDataDao())
 
