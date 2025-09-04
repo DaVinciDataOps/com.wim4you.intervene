@@ -53,9 +53,6 @@ class MainActivity : AppCompatActivity()  {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
-//        val locationServiceIntent = Intent(this, LocationService::class.java)
-//        startForegroundService(locationServiceIntent)
-
         fun updatePatrolState(activity: Activity, isPatrolling: Boolean) {
             val intent = Intent(activity, PatrolService::class.java)
             if (isPatrolling) {
@@ -86,6 +83,13 @@ class MainActivity : AppCompatActivity()  {
                     navController.navigate(R.id.nav_home)
                     true
                 }
+
+                R.id.nav_stop_distress -> {
+                    AppState.isDistressState = false
+                    navController.navigate(R.id.nav_home)
+                    true
+                }
+
             else -> {
                 navController.navigate(menuItem.itemId)
                 true

@@ -1,11 +1,15 @@
 package com.wim4you.intervene.location
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -13,6 +17,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.firebase.database.FirebaseDatabase
 import com.wim4you.intervene.AppState
+import com.wim4you.intervene.R
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.fbdata.PatrolData
@@ -29,6 +34,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resumeWithException
 
 class PatrolService : Service() {
+    private val channelId = "PatrolServiceChannel"
     private val database = FirebaseDatabase.getInstance().reference
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var locationJob: Job? = null
@@ -42,6 +48,16 @@ class PatrolService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        createNotificationChannel()
+
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setContentTitle("InterVene")
+            .setContentText("Running in the background")
+            .setSmallIcon(R.drawable.ic_startstop_patrolling) // Replace with your icon
+            .build()
+
+        startForeground(1, notification);
+
         if (AppState.isPatrolling) {
             coroutineScope.launch {
                 AppState.vigilante = vigilanteStore.fetch();
@@ -128,6 +144,16 @@ class PatrolService : Service() {
             .addOnFailureListener { exception ->
                 Log.e("Firebase", "Error saving patrol:")
             }
+    }
+
+    private fun createNotificationChannel() {
+        val channel = NotificationChannel(
+            channelId,
+            "Foreground Service Channel",
+            NotificationManager.IMPORTANCE_DEFAULT
+        )
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(channel)
     }
 
     override fun onDestroy() {

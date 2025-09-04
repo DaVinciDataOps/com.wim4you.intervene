@@ -43,7 +43,6 @@ class TripService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (AppState.isGuidedTrip) {
-
             coroutineScope.launch {
                 var personData = personStore.fetch();
                 if(personData == null) {

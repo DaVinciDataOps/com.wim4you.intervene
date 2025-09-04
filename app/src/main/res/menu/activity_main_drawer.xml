@@ -30,5 +30,10 @@
             android:id="@+id/nav_startstop_patrolling"
             android:icon="@drawable/ic_startstop_patrolling"
             android:title="@string/nav_startstop_patrolling" />
+
+        <item
+            android:id="@+id/nav_stop_distress"
+            android:icon="@drawable/ic_menu_cancel_distress"
+            android:title="@string/nav_cancel_distress_call" />
     </group>
 </menu>
