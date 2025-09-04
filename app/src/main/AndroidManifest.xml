@@ -18,6 +18,7 @@
         android:theme="@style/Theme.Intervene" >
         <service
             android:name=".location.LocationService"
+            android:exported="false"
             android:foregroundServiceType="location" />
         <service
             android:name=".location.TripService"

@@ -1,9 +1,14 @@
 package com.wim4you.intervene.ui.home
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.media.AudioManager
+import android.media.MediaPlayer
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -51,7 +56,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     private lateinit var myPatrolMarker:Bitmap
     private lateinit var distressMarker:Bitmap
 
-    private val markers = mutableMapOf<String, Marker>()
+    private val patrolMarkers = mutableMapOf<String, Marker>()
+    private val distressMarkers = mutableMapOf<String, Marker>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -75,7 +81,10 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             .scale(64, 64, false)
 
         distressMarker = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher_round)
-            .scale(64, 64, false)
+            .scale(90, 90, false)
+
+        viewModel.registerLocationReceiver(requireContext())
+        viewModel.startLocationService(requireContext())
 
         viewModel.patrolLocations.observe(viewLifecycleOwner) { patrolDataList ->
             updatePatrolMapMarkers(patrolDataList)
@@ -84,8 +93,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             updateDistressMapMarkers(distressDataList)
         }
 
-        viewModel.registerLocationReceiver(requireContext())
-        viewModel.startLocationService(requireContext())
+//        viewModel.registerLocationReceiver(requireContext())
+//        viewModel.startLocationService(requireContext())
 
         val personStore =
             PersonDataRepository(DatabaseProvider.getDatabase(requireContext()).personDataDao())
@@ -122,6 +131,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        viewModel.stopLocationService(requireContext())
         _binding = null
     }
 
@@ -146,16 +156,16 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     private fun updateDistressMapMarkers(distressDataList: List<DistressLocationData>){
         val currentIds = distressDataList.map { it.id }.toSet()
-        markers.keys.filter { it !in currentIds }.forEach { id ->
-            markers[id]?.remove()
-            markers.remove(id)
+        distressMarkers.keys.filter { it !in currentIds }.forEach { id ->
+            distressMarkers[id]?.remove()
+            distressMarkers.remove(id)
         }
 
         // Add or update markers for active patrols
         distressDataList.forEach { distressData ->
             distressData.location?.let { loc ->
                 val latLng = LatLng(loc["latitude"] ?: 0.0, loc["longitude"] ?: 0.0)
-                val marker = markers[distressData.id]
+                val marker = distressMarkers[distressData.id]
                 if (marker == null) {
                     // Add new marker
                     val newMarker = mMap.addMarker(
@@ -165,7 +175,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                             .icon(BitmapDescriptorFactory.fromBitmap(distressMarker))
                     )
                     if (newMarker != null) {
-                        markers[distressData.id] = newMarker
+                        distressMarkers[distressData.id] = newMarker
+                        playDistressSound()
                     }
                 } else {
                     // Update existing marker position
@@ -176,16 +187,16 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     }
     private fun updatePatrolMapMarkers(patrolDataList: List<PatrolData>){
         val currentIds = patrolDataList.map { it.id }.toSet()
-        markers.keys.filter { it !in currentIds }.forEach { id ->
-            markers[id]?.remove()
-            markers.remove(id)
+        patrolMarkers.keys.filter { it !in currentIds }.forEach { id ->
+            patrolMarkers[id]?.remove()
+            patrolMarkers.remove(id)
         }
 
         // Add or update markers for active patrols
         patrolDataList.forEach { patrolData ->
             patrolData.location?.let { loc ->
                 val latLng = LatLng(loc["latitude"] ?: 0.0, loc["longitude"] ?: 0.0)
-                val marker = markers[patrolData.id]
+                val marker = patrolMarkers[patrolData.id]
                 if (marker == null) {
                     // Add new marker
                     val newMarker = mMap.addMarker(
@@ -195,7 +206,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                             .icon(getIcon(patrolData.vigilanteId))
                     )
                     if (newMarker != null) {
-                        markers[patrolData.id] = newMarker
+                        patrolMarkers[patrolData.id] = newMarker
                     }
                 } else {
                     // Update existing marker position
@@ -213,6 +224,32 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             BitmapDescriptorFactory.fromBitmap(myPatrolMarker)
         } else {
             BitmapDescriptorFactory.fromBitmap(patrolMarker)
+        }
+    }
+
+    private fun playDistressSound() {
+        val mediaPlayer = MediaPlayer.create(context, android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI)
+        mediaPlayer?.let { player ->
+            try {
+                // Set volume to maximum
+                val audioManager = context?.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                audioManager.setStreamVolume(
+                    AudioManager.STREAM_MUSIC,
+                    audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
+                    0
+                )
+                // Start playing the sound
+                player.isLooping = false
+                player.start()
+                // Stop after 10 seconds
+                Handler(Looper.getMainLooper()).postDelayed({
+                    player.stop()
+                    player.release()
+                }, 10000) // 10 seconds
+            } catch (e: Exception) {
+                e.printStackTrace()
+                player.release()
+            }
         }
     }
 }

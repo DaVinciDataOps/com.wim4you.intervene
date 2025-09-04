@@ -17,7 +17,6 @@ import com.google.firebase.Firebase
 import com.google.firebase.database.database
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.ActivityMainBinding
-import com.wim4you.intervene.location.LocationService
 import com.wim4you.intervene.location.PatrolService
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
@@ -53,6 +52,9 @@ class MainActivity : AppCompatActivity()  {
             R.id.nav_home, R.id.nav_vigilantes, R.id.nav_settings), drawerLayout)
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
+//        val locationServiceIntent = Intent(this, LocationService::class.java)
+//        startForegroundService(locationServiceIntent)
 
         fun updatePatrolState(activity: Activity, isPatrolling: Boolean) {
             val intent = Intent(activity, PatrolService::class.java)
@@ -99,9 +101,6 @@ class MainActivity : AppCompatActivity()  {
         FirebaseUtils.onConnect(this) { db ->
             FirebaseUtils.getVigilantes(this, db, 2.0);
         }
-
-        val serviceIntent = Intent(this, LocationService::class.java)
-        startForegroundService(serviceIntent)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

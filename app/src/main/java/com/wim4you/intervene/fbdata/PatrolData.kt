@@ -10,7 +10,7 @@ data class PatrolData (
     var name: String? = null,
     var location: Map<String,Double>? = null,
     var Time: Long? = null,
-    var IsActive: Boolean? = false,
+    var isActive: Boolean? = false,
     var fcmToken: String? = null
 ): Parcelable{
     constructor() : this("", "", null, null, null, null, null)

@@ -47,10 +47,12 @@ class HomeViewModel(
     // Register this in the Fragment to receive updates
     private val locationReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == LocationService.ACTION_LOCATION_UPDATE) {
+            if (intent?.action == LocationService.ACTION_PATROL_UPDATE) {
                 val patrolDataList = intent.getParcelableArrayListExtra<PatrolData>(LocationService.EXTRA_PATROL_DATA)
-                val distressDataList = intent.getParcelableArrayListExtra<DistressLocationData>(LocationService.EXTRA_DISTRESS_DATA)
                 _patrolLocations.value = patrolDataList ?: emptyList()
+            }
+            if (intent?.action == LocationService.ACTION_DISTRESS_UPDATE) {
+                val distressDataList = intent.getParcelableArrayListExtra<DistressLocationData>(LocationService.EXTRA_DISTRESS_DATA)
                 _distressLocations.value = distressDataList ?: emptyList()
             }
         }
@@ -59,7 +61,11 @@ class HomeViewModel(
     fun registerLocationReceiver(context: Context) {
         LocalBroadcastManager.getInstance(context)
             .registerReceiver(locationReceiver,
-                IntentFilter(LocationService.ACTION_LOCATION_UPDATE)
+                IntentFilter(LocationService.ACTION_PATROL_UPDATE)
+            )
+        LocalBroadcastManager.getInstance(context)
+            .registerReceiver(locationReceiver,
+                IntentFilter(LocationService.ACTION_DISTRESS_UPDATE)
             )
     }
 
@@ -91,7 +97,7 @@ class HomeViewModel(
         }
     }
 
-    // Start LocationService (call from Fragment when needed)
+      // Start LocationService (call from Fragment when needed)
     fun startLocationService(context: Context) {
         val intent = Intent(context, LocationService::class.java)
         context.startService(intent)

@@ -13,7 +13,6 @@ import com.google.firebase.database.FirebaseDatabase
 import com.wim4you.intervene.AppState
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.data.VigilanteData
-import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.fbdata.PatrolData
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import kotlinx.coroutines.CoroutineScope
@@ -82,7 +81,7 @@ class PatrolService : Service() {
                                 "longitude" to it.longitude
                             ),
                             Time = System.currentTimeMillis(),
-                            IsActive = true,
+                            isActive = true,
                             fcmToken = null // Replace with actual FCM token if needed
                         )
                         sendToFirebase(patrolData)
