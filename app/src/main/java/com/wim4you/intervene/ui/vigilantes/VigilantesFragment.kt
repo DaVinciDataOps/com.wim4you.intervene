@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import com.wim4you.intervene.AppState
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.databinding.FragmentVigilantesBinding
@@ -67,7 +68,7 @@ class VigilantesFragment : Fragment() {
                 )
             // Call ViewModel to save data
             viewModel.saveData(vigilanteData)
-
+            AppState.vigilante = vigilanteData
             // Show success message
             Toast.makeText(requireContext(), "Data saved successfully", Toast.LENGTH_SHORT).show()
 

@@ -1,6 +1,8 @@
 package com.wim4you.intervene.ui.home
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,16 +15,20 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.wim4you.intervene.AppState
+import com.wim4you.intervene.R
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.FragmentHomeBinding
 import com.wim4you.intervene.fbdata.PatrolData
 import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
+import androidx.core.graphics.scale
 
 class HomeFragment : Fragment(), OnMapReadyCallback {
 
@@ -40,6 +46,9 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     // private lateinit var viewModel: HomeViewModel
 
     private lateinit var mMap: GoogleMap
+    private lateinit var patrolMarker:Bitmap
+    private lateinit var myPatrolMarker:Bitmap
+
     private val markers = mutableMapOf<String, Marker>()
 
     override fun onCreateView(
@@ -54,10 +63,14 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         val mapFragment =
             childFragmentManager.findFragmentById(binding.googleMap.id) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
+        patrolMarker = BitmapFactory.decodeResource(resources, R.drawable.png_patrol_marker)
+            .scale(48, 48, false)
+        myPatrolMarker = BitmapFactory.decodeResource(resources, R.drawable.png_my_patrol_marker)
+            .scale(48, 48, false)
 
         viewModel.patrolLocations.observe(viewLifecycleOwner) { patrolDataList ->
             updateMapMarkers(patrolDataList)
@@ -140,6 +153,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                         MarkerOptions()
                             .position(latLng)
                             .title(patrolData.name ?: "Vigilante")
+                            .icon(getIcon(patrolData.vigilanteId))
                     )
                     if (newMarker != null) {
                         markers[patrolData.id] = newMarker
@@ -151,5 +165,15 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             }
         }
 
+    }
+
+    private fun getIcon(vigilanteId: String?): BitmapDescriptor {
+        // Handle null cases safely
+        var id = AppState.vigilante?.id
+        return if (vigilanteId != null && AppState.vigilante?.id != null && vigilanteId == id) {
+            BitmapDescriptorFactory.fromBitmap(myPatrolMarker)
+        } else {
+            BitmapDescriptorFactory.fromBitmap(patrolMarker)
+        }
     }
 }

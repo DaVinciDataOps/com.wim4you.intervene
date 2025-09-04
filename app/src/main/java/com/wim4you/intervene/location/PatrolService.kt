@@ -43,8 +43,9 @@ class PatrolService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (AppState.isPatrolling) {
             coroutineScope.launch {
-                var vigilanteData = vigilanteStore.fetch();
-                if(vigilanteData == null) {
+                AppState.vigilante = vigilanteStore.fetch();
+                var vigilanteData = AppState.vigilante
+                if(vigilanteData  == null) {
                   stopSelf()
                 }
                 else {

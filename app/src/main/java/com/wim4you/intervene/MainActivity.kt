@@ -114,41 +114,4 @@ class MainActivity : AppCompatActivity()  {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
     }
-
-//    private suspend fun onStartStopPatrolling() {
-//        var startstop = if (AppState.isPatrolling) "Start" else "Stop"
-//
-//        val vigilanteData = vigilanteStore.fetch()
-//        if (vigilanteData == null) {
-//            Log.e("Room", "Failed to fetch Vigilante")
-//            return
-//        }
-//
-//        val location = PatrolData(
-//            id = vigilanteData.id,
-//            vigilanteId = vigilanteData.id,
-//            IsActive = AppState.isPatrolling,
-//            name = vigilanteData.name
-//        )
-//
-//        LocationUtils.getLocation(this) { currentLatLng ->
-//            currentLatLng?.let {
-//                location.location =
-//                    mapOf("latitude" to it.latitude, "longitude" to it.longitude)
-//                Toast.makeText(this, "${startstop} patrolling ${vigilanteData.name}...", Toast.LENGTH_SHORT).show()
-//                sendPatrollingNotification(location)
-//            } ?: run {
-//                Toast.makeText(this, "${startstop} patrolling ${vigilanteData.name} failed...", Toast.LENGTH_SHORT).show()
-//            }
-//        }
-//    }
-
-//    private fun sendPatrollingNotification(location: PatrolData) {
-//        database.child("vigilanteLoc").child(location.id).setValue(location).addOnSuccessListener {
-//            Log.e("Firebase", "Success saving distress:")
-//        }
-//            .addOnFailureListener { e ->
-//                Log.e("Firebase", "Error saving distress: ${e.message}")
-//            }
-//    }
 }
