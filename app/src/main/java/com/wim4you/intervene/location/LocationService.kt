@@ -1,13 +1,18 @@
 package com.wim4you.intervene.location
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.os.Build
 import android.os.IBinder
+import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.wim4you.intervene.R
 import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.fbdata.PatrolData
 import kotlinx.coroutines.CoroutineScope
@@ -27,12 +32,41 @@ class LocationService : Service() {
         const val ACTION_DISTRESS_UPDATE = "com.wim4you.intervene.DISTRESS_UPDATE"
         const val EXTRA_PATROL_DATA = "extra_patrol_data"
         const val EXTRA_DISTRESS_DATA = "extra_distress_data"
+        private const val NOTIFICATION_ID = 1
+        private const val CHANNEL_ID = "LocationServiceChannel"
     }
 
     override fun onCreate() {
         super.onCreate()
+        startForegroundService()
         startListeningForLocations()
         startListeningForDistress()
+    }
+
+    private fun startForegroundService() {
+        // Create a notification channel for Android 8.0 and above
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Location Service",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Channel for Location Service notifications"
+            }
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        // Build the notification
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("Location Service")
+            .setContentText("Tracking patrol and distress data")
+            .setSmallIcon(R.drawable.ic_menu_slideshow) // Replace with your app's icon
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+
+        // Start the service as foreground
+        startForeground(NOTIFICATION_ID, notification)
     }
 
     private fun startListeningForLocations() {

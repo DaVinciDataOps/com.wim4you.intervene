@@ -49,6 +49,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     private lateinit var mMap: GoogleMap
     private lateinit var patrolMarker:Bitmap
     private lateinit var myPatrolMarker:Bitmap
+    private lateinit var distressMarker:Bitmap
 
     private val markers = mutableMapOf<String, Marker>()
 
@@ -71,6 +72,9 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         patrolMarker = BitmapFactory.decodeResource(resources, R.drawable.png_patrol_marker)
             .scale(64, 64, false)
         myPatrolMarker = BitmapFactory.decodeResource(resources, R.drawable.png_my_patrol_marker)
+            .scale(64, 64, false)
+
+        distressMarker = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher_round)
             .scale(64, 64, false)
 
         viewModel.patrolLocations.observe(viewLifecycleOwner) { patrolDataList ->
@@ -142,6 +146,33 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     private fun updateDistressMapMarkers(distressDataList: List<DistressLocationData>){
         val currentIds = distressDataList.map { it.id }.toSet()
+        markers.keys.filter { it !in currentIds }.forEach { id ->
+            markers[id]?.remove()
+            markers.remove(id)
+        }
+
+        // Add or update markers for active patrols
+        distressDataList.forEach { distressData ->
+            distressData.location?.let { loc ->
+                val latLng = LatLng(loc["latitude"] ?: 0.0, loc["longitude"] ?: 0.0)
+                val marker = markers[distressData.id]
+                if (marker == null) {
+                    // Add new marker
+                    val newMarker = mMap.addMarker(
+                        MarkerOptions()
+                            .position(latLng)
+                            .title("!HELP!")
+                            .icon(BitmapDescriptorFactory.fromBitmap(distressMarker))
+                    )
+                    if (newMarker != null) {
+                        markers[distressData.id] = newMarker
+                    }
+                } else {
+                    // Update existing marker position
+                    marker.position = latLng
+                }
+            }
+        }
     }
     private fun updatePatrolMapMarkers(patrolDataList: List<PatrolData>){
         val currentIds = patrolDataList.map { it.id }.toSet()
