@@ -77,13 +77,13 @@ class HomeViewModel(
         LocalBroadcastManager.getInstance(context).unregisterReceiver(locationReceiver)
     }
 
-    fun updateTripState(activity: Activity, isDistressState: Boolean) {
+    fun updateTripState(tripActivity: Activity, isDistressState: Boolean) {
         AppState.isDistressState = isDistressState
-        val intent = Intent(activity, TripService::class.java)
+        val intent = Intent(tripActivity, TripService::class.java)
         if (isDistressState) {
-            activity.startService(intent)
+            tripActivity.startService(intent)
         } else {
-            activity.stopService(intent)
+            tripActivity.stopService(intent)
         }
     }
 
@@ -110,7 +110,6 @@ class HomeViewModel(
 
             // Reset counter after activation
             panicButtonPressCount = 0
-
 
             val personData = personDataRepository.fetch()
             if (personData == null || !AppState.isGuidedTrip) {

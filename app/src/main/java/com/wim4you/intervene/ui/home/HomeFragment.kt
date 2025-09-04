@@ -153,6 +153,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     private fun updateDistressMapMarkers(distressDataList: List<DistressLocationData>){
         val currentIds = distressDataList.map { it.id }.toSet()
+        var hasNewMarkers = false;
         distressMarkers.keys.filter { it !in currentIds }.forEach { id ->
             distressMarkers[id]?.remove()
             distressMarkers.remove(id)
@@ -173,14 +174,17 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                     )
                     if (newMarker != null) {
                         distressMarkers[distressData.id] = newMarker
-                        playDistressSound()
                     }
+                    hasNewMarkers = true
                 } else {
                     // Update existing marker position
                     marker.position = latLng
                 }
             }
         }
+
+        if(AppState.isPatrolling && hasNewMarkers)
+            playDistressSound()
     }
     private fun updatePatrolMapMarkers(patrolDataList: List<PatrolData>){
         val currentIds = patrolDataList.map { it.id }.toSet()
@@ -225,7 +229,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun playDistressSound() {
-        val mediaPlayer = MediaPlayer.create(context, android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI)
+        val mediaPlayer = MediaPlayer.create(context, android.provider.Settings.System.DEFAULT_NOTIFICATION_URI)
         mediaPlayer?.let { player ->
             try {
                 // Set volume to maximum

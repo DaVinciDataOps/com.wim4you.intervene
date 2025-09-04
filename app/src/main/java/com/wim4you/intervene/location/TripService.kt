@@ -7,8 +7,10 @@ import android.location.Location
 import android.os.IBinder
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.firebase.database.FirebaseDatabase
 import com.wim4you.intervene.AppState
 import com.wim4you.intervene.dao.DatabaseProvider
@@ -98,15 +100,25 @@ class TripService : Service() {
         return distressLocationData
     }
 
-    private suspend fun getLastLocation(): Location? = suspendCancellableCoroutine { continuation ->
+    private suspend fun getLastLocation(maxAgeMillis: Long = 60_000): Location? = suspendCancellableCoroutine { continuation ->
         try {
-            fusedLocationClient.lastLocation
-                .addOnSuccessListener { location ->
-                    continuation.resume(location, null)
+
+            val cancellationTokenSource = CancellationTokenSource()
+            val request = CurrentLocationRequest.Builder()
+                .setMaxUpdateAgeMillis(maxAgeMillis)
+                .build()
+
+            fusedLocationClient.getCurrentLocation(request, cancellationTokenSource.token)
+                .addOnSuccessListener { newLocation ->
+                    continuation.resume(newLocation) { cause, _, _ -> cancellationTokenSource }
                 }
                 .addOnFailureListener { exception ->
                     continuation.resumeWithException(exception)
                 }
+
+            continuation.invokeOnCancellation {
+                cancellationTokenSource.cancel()
+            }
         } catch (e: SecurityException) {
             continuation.resumeWithException(e)
         }

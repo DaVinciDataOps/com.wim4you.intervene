@@ -45,25 +45,49 @@ class LocationService : Service() {
     private fun fetchInitialData() {
         val thirtyMinutesAgo = System.currentTimeMillis() - THIRTY_MINUTES_IN_MS
         coroutineScope.launch {
-            try {
-                val patrolSnapshot = refVigilanteLoc
-                    .orderByChild("time").startAt(thirtyMinutesAgo.toDouble())
-                    .orderByChild("active").equalTo(true)
-                    .get().await()
+            fetchInitialPatrols(thirtyMinutesAgo)
+            fetchInitialDistress(thirtyMinutesAgo)
+        }
+    }
 
-                val patrolDataList = mutableListOf<PatrolData>()
-                for (child in patrolSnapshot.children) {
-                    val patrolData = child.getValue(PatrolData::class.java)
-                    patrolData?.let {
-                        if (it.isActive == true) {
-                            patrolDataList.add(it)
-                        }
+    private suspend fun fetchInitialPatrols(thirtyMinutesAgo: Long) {
+        try {
+            val patrolSnapshot = refVigilanteLoc
+                .orderByChild("time").startAt(thirtyMinutesAgo.toDouble())
+                .orderByChild("active").equalTo(true)
+                .get().await()
+
+            val patrolDataList = mutableListOf<PatrolData>()
+            for (child in patrolSnapshot.children) {
+                val patrolData = child.getValue(PatrolData::class.java)
+                patrolData?.let {
+                    if (it.isActive == true) {
+                        patrolDataList.add(it)
                     }
                 }
-                sendLocationUpdate(patrolDataList)
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
+            sendLocationUpdate(patrolDataList)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private suspend fun fetchInitialDistress(thirtyMinutesAgo: Long) {
+        try {
+            val distressSnapshot = refDistress
+                .orderByChild("time").startAt(thirtyMinutesAgo.toDouble())
+                .get().await()
+
+            val distressDataList = mutableListOf<DistressLocationData>()
+            for (child in distressSnapshot.children) {
+                val distressData = child.getValue(DistressLocationData::class.java)
+                distressData?.let {
+                    distressDataList.add(it)
+                }
+            }
+            sendDistressUpdate(distressDataList)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
