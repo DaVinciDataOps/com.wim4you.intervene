@@ -29,6 +29,7 @@ import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import androidx.core.graphics.scale
+import com.wim4you.intervene.fbdata.DistressLocationData
 
 class HomeFragment : Fragment(), OnMapReadyCallback {
 
@@ -68,13 +69,17 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         mapFragment.getMapAsync(this)
 
         patrolMarker = BitmapFactory.decodeResource(resources, R.drawable.png_patrol_marker)
-            .scale(48, 48, false)
+            .scale(64, 64, false)
         myPatrolMarker = BitmapFactory.decodeResource(resources, R.drawable.png_my_patrol_marker)
-            .scale(48, 48, false)
+            .scale(64, 64, false)
 
         viewModel.patrolLocations.observe(viewLifecycleOwner) { patrolDataList ->
-            updateMapMarkers(patrolDataList)
+            updatePatrolMapMarkers(patrolDataList)
         }
+        viewModel.distressLocations.observe(viewLifecycleOwner) { distressDataList ->
+            updateDistressMapMarkers(distressDataList)
+        }
+
         viewModel.registerLocationReceiver(requireContext())
         viewModel.startLocationService(requireContext())
 
@@ -135,7 +140,10 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
-    private fun updateMapMarkers(patrolDataList: List<PatrolData>){
+    private fun updateDistressMapMarkers(distressDataList: List<DistressLocationData>){
+        val currentIds = distressDataList.map { it.id }.toSet()
+    }
+    private fun updatePatrolMapMarkers(patrolDataList: List<PatrolData>){
         val currentIds = patrolDataList.map { it.id }.toSet()
         markers.keys.filter { it !in currentIds }.forEach { id ->
             markers[id]?.remove()

@@ -15,6 +15,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.Firebase
 import com.google.firebase.database.database
 import com.wim4you.intervene.AppState
+import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.fbdata.PatrolData
 import com.wim4you.intervene.location.LocationService
 import com.wim4you.intervene.location.TripService
@@ -33,7 +34,9 @@ class HomeViewModel(
     private val _patrollingStatus = MutableLiveData<String>()
 
     private val _patrolLocations = MutableLiveData<List<PatrolData>>(emptyList())
+    private val _distressLocations = MutableLiveData<List<DistressLocationData>>(emptyList())
     val patrolLocations: LiveData<List<PatrolData>> = _patrolLocations
+    val distressLocations: LiveData<List<DistressLocationData>> = _distressLocations
     val distressStatus: LiveData<String> = _distressStatus
     val patrollingStatus: LiveData<String> = _patrollingStatus
 
@@ -46,7 +49,9 @@ class HomeViewModel(
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == LocationService.ACTION_LOCATION_UPDATE) {
                 val patrolDataList = intent.getParcelableArrayListExtra<PatrolData>(LocationService.EXTRA_PATROL_DATA)
+                val distressDataList = intent.getParcelableArrayListExtra<DistressLocationData>(LocationService.EXTRA_DISTRESS_DATA)
                 _patrolLocations.value = patrolDataList ?: emptyList()
+                _distressLocations.value = distressDataList ?: emptyList()
             }
         }
     }
