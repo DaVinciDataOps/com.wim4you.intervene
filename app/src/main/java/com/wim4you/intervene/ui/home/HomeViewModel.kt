@@ -18,7 +18,7 @@ import com.wim4you.intervene.AppState
 import com.wim4you.intervene.distress.DistressSoundService
 import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.fbdata.PatrolData
-import com.wim4you.intervene.location.LocationService
+import com.wim4you.intervene.location.LocationTrackerService
 import com.wim4you.intervene.distress.DistressService
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
@@ -52,12 +52,12 @@ class HomeViewModel(
     // Register this in the Fragment to receive updates
     private val locationReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == LocationService.ACTION_PATROL_UPDATE) {
-                val patrolDataList = intent.getParcelableArrayListExtra<PatrolData>(LocationService.EXTRA_PATROL_DATA)
+            if (intent?.action == LocationTrackerService.ACTION_PATROL_UPDATE) {
+                val patrolDataList = intent.getParcelableArrayListExtra<PatrolData>(LocationTrackerService.EXTRA_PATROL_DATA)
                 _patrolLocations.value = patrolDataList ?: emptyList()
             }
-            if (intent?.action == LocationService.ACTION_DISTRESS_UPDATE) {
-                val distressDataList = intent.getParcelableArrayListExtra<DistressLocationData>(LocationService.EXTRA_DISTRESS_DATA)
+            if (intent?.action == LocationTrackerService.ACTION_DISTRESS_UPDATE) {
+                val distressDataList = intent.getParcelableArrayListExtra<DistressLocationData>(LocationTrackerService.EXTRA_DISTRESS_DATA)
                 _distressLocations.value = distressDataList ?: emptyList()
             }
         }
@@ -66,11 +66,11 @@ class HomeViewModel(
     fun registerLocationReceiver(context: Context) {
         LocalBroadcastManager.getInstance(context)
             .registerReceiver(locationReceiver,
-                IntentFilter(LocationService.ACTION_PATROL_UPDATE)
+                IntentFilter(LocationTrackerService.ACTION_PATROL_UPDATE)
             )
         LocalBroadcastManager.getInstance(context)
             .registerReceiver(locationReceiver,
-                IntentFilter(LocationService.ACTION_DISTRESS_UPDATE)
+                IntentFilter(LocationTrackerService.ACTION_DISTRESS_UPDATE)
             )
     }
 
@@ -127,13 +127,13 @@ class HomeViewModel(
 
       // Start LocationService (call from Fragment when needed)
     fun startLocationService(context: Context) {
-        val intent = Intent(context, LocationService::class.java)
+        val intent = Intent(context, LocationTrackerService::class.java)
         context.startService(intent)
     }
 
     // Stop LocationService (call when Fragment is destroyed or as needed)
     fun stopLocationService(context: Context) {
-        val intent = Intent(context, LocationService::class.java)
+        val intent = Intent(context, LocationTrackerService::class.java)
         context.stopService(intent)
     }
 

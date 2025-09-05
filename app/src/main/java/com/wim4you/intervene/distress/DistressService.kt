@@ -4,7 +4,6 @@ import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
@@ -39,7 +38,7 @@ class DistressService : Service() {
     private val notificationId = 1004
     private val database = FirebaseDatabase.getInstance().reference
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var locationJob: Job? = null
+    private var distressJob: Job? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private lateinit var personStore: PersonDataRepository
 
@@ -60,7 +59,7 @@ class DistressService : Service() {
 
         startForeground(notificationId, notification)
 
-        if (AppState.isGuidedTrip) {
+        if (AppState.isDistressState) {
             coroutineScope.launch {
                 var personData = personStore.fetch();
                 if(personData == null) {
@@ -85,8 +84,8 @@ class DistressService : Service() {
             return
         }
 
-        locationJob?.cancel()
-        locationJob = coroutineScope.launch {
+        distressJob?.cancel()
+        distressJob = coroutineScope.launch {
             while (isActive && AppState.isDistressState) {
                 try {
                     val location = getLastLocation()
@@ -164,7 +163,8 @@ class DistressService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        locationJob?.cancel()
+
+        distressJob?.cancel()
         coroutineScope.cancel()
     }
 

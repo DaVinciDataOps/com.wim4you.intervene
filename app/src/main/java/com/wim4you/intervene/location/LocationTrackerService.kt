@@ -1,23 +1,29 @@
 package com.wim4you.intervene.location
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
+import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.wim4you.intervene.R
 import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.fbdata.PatrolData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-class LocationService : Service() {
+class LocationTrackerService : Service() {
 
+    private val channelId = "LocationTrackerServiceChannel"
     private val refVigilanteLoc = FirebaseDatabase.getInstance().reference.child("vigilanteLoc")
     private val refDistress = FirebaseDatabase.getInstance().reference.child("distress")
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -37,7 +43,17 @@ class LocationService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        // startForegroundService()
+
+        createNotificationChannel()
+
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setContentTitle("InterVene")
+            .setContentText("Running in the background")
+            .setSmallIcon(R.drawable.ic_startstop_patrolling) // Replace with your icon
+            .build()
+
+        startForeground(notificationId, notification)
+
         fetchInitialData()
         startListeningForLocations()
         startListeningForDistress()
@@ -93,6 +109,7 @@ class LocationService : Service() {
     }
 
     private fun startListeningForLocations() {
+        val thirtyMinutesAgo = System.currentTimeMillis() - THIRTY_MINUTES_IN_MS
         locationListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val patrolDataList = mutableListOf<PatrolData>()
@@ -112,15 +129,20 @@ class LocationService : Service() {
                 // Log error or handle as needed (e.g., notify UI of failure)
             }
         }
-        refVigilanteLoc.addValueEventListener(locationListener!!)
+        refVigilanteLoc
+            .orderByChild("time")
+            .startAt(thirtyMinutesAgo.toDouble())
+            .addValueEventListener(locationListener!!)
     }
 
     private fun startListeningForDistress() {
+        val thirtyMinutesAgo = System.currentTimeMillis() - THIRTY_MINUTES_IN_MS
         distressListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val distressDataList = mutableListOf<DistressLocationData>()
                 for (child in snapshot.children) {
-                    val distressData = child.getValue(DistressLocationData::class.java)
+                    val distressData = child
+                        .getValue(DistressLocationData::class.java)
                     distressData?.let {
                         distressDataList.add(it)
                     }
@@ -132,7 +154,10 @@ class LocationService : Service() {
                 // Handle error
             }
         }
-        refDistress.addValueEventListener(distressListener!!)
+        refDistress
+            .orderByChild("time")
+            .startAt(thirtyMinutesAgo.toDouble())
+            .addValueEventListener(distressListener!!)
     }
 
     private fun sendLocationUpdate(patrolDataList: List<PatrolData>) {
@@ -147,6 +172,20 @@ class LocationService : Service() {
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
+    private fun createNotificationChannel() {
+        val channel = NotificationChannel(
+            channelId,
+            "LocationTracker Service Channel",
+            NotificationManager.IMPORTANCE_DEFAULT
+        )
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(channel)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        coroutineScope.cancel()
+    }
 
     override fun onBind(intent: Intent?): IBinder? {
         return null

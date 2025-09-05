@@ -9,7 +9,8 @@ data class DistressLocationData (
     var personId: String,
     var location: Map<String,Double> = mapOf("latitude" to 0.0, "longitude" to 0.0),
     var time: Long = System.currentTimeMillis(),
-    var fcmToken: String? = null
+    var fcmToken: String? = null,
+    var isActive: Boolean? = false
 ): Parcelable{
-    constructor() : this("", "", mapOf("latitude" to 0.0, "longitude" to 0.0), System.currentTimeMillis(), null)
+    constructor() : this("", "", mapOf("latitude" to 0.0, "longitude" to 0.0), System.currentTimeMillis(), null, isActive = null)
 }

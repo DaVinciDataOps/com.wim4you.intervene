@@ -6,7 +6,6 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
-import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -38,7 +37,7 @@ class PatrolService : Service() {
     private val notificationId = 1003
     private val database = FirebaseDatabase.getInstance().reference
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var locationJob: Job? = null
+    private var patrolJob: Job? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private lateinit var vigilanteStore: VigilanteDataRepository
 
@@ -85,8 +84,8 @@ class PatrolService : Service() {
             return
         }
 
-        locationJob?.cancel()
-        locationJob = coroutineScope.launch {
+        patrolJob?.cancel()
+        patrolJob = coroutineScope.launch {
             while (isActive && AppState.isPatrolling) {
                 try {
                     val location = getLastLocation()
@@ -159,7 +158,7 @@ class PatrolService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        locationJob?.cancel()
+        patrolJob?.cancel()
         coroutineScope.cancel()
     }
 

@@ -18,10 +18,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Intervene" >
         <service
-            android:name=".location.LocationService"
+            android:name=".location.LocationTrackerService"
             android:exported="false"
             android:foregroundServiceType="location" />
-        <receiver android:name=".location.LocationReceiver" />
+        <receiver android:name=".location.LocationTrackerReceiver" />
         <service
             android:name=".distress.DistressService"
             android:exported="false"
