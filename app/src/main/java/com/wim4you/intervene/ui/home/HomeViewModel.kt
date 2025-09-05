@@ -30,15 +30,18 @@ class HomeViewModel(
 ) : ViewModel() {
     private val database = Firebase.database.getReference()
     // LiveData for distress notification status (for Toast)
-    private val _distressStatus = MutableLiveData<String>()
+    private val _distressMessage = MutableLiveData<String>()
+    private val _isDistressActive = MutableLiveData(false)
+
     private val _patrollingStatus = MutableLiveData<String>()
 
     private val _patrolLocations = MutableLiveData<List<PatrolData>>(emptyList())
     private val _distressLocations = MutableLiveData<List<DistressLocationData>>(emptyList())
     val patrolLocations: LiveData<List<PatrolData>> = _patrolLocations
     val distressLocations: LiveData<List<DistressLocationData>> = _distressLocations
-    val distressStatus: LiveData<String> = _distressStatus
+    val distressStatus: LiveData<String> = _distressMessage
     val patrollingStatus: LiveData<String> = _patrollingStatus
+    val isDistressActive: LiveData<Boolean> = _isDistressActive
 
     private var panicButtonPressCount = 0
     private val panicButtonPressWindowMs = 5000L // 5 seconds time window for presses
@@ -104,7 +107,7 @@ class HomeViewModel(
             // Require 2 or 3 presses (adjust to 2 or 3 as needed)
             val requiredPresses = 3 // Change to 3 if you want 3 presses
             if (panicButtonPressCount < requiredPresses) {
-                _distressStatus.postValue("Press $requiredPresses times to activate distress")
+                _distressMessage.postValue("Press $requiredPresses times to activate distress")
                 return@launch
             }
 
@@ -114,13 +117,19 @@ class HomeViewModel(
             val personData = personDataRepository.fetch()
             if (personData == null || !AppState.isGuidedTrip) {
                 Log.e("Room", "Failed to fetch PersonData")
-                _distressStatus.postValue("Failed to get person data")
+                _distressMessage.postValue("Failed to get person data")
                 return@launch
             }
             AppState.isDistressState = true
             updateTripState(activity, AppState.isDistressState)
-            _distressStatus.postValue("Sending distress notification...")
+            _distressMessage.postValue("Sending distress notification...")
+            _isDistressActive.postValue(true)
         }
+    }
+
+    fun stopDistress() {
+        AppState.isDistressState = false
+        _isDistressActive.postValue(false)
     }
 
       // Start LocationService (call from Fragment when needed)

@@ -184,7 +184,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         }
 
         if(AppState.isPatrolling && hasNewMarkers)
-            playDistressSound()
+            playPatrolDistressSound()
     }
     private fun updatePatrolMapMarkers(patrolDataList: List<PatrolData>){
         val currentIds = patrolDataList.map { it.id }.toSet()
@@ -228,7 +228,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
-    private fun playDistressSound() {
+    private fun playPatrolDistressSound() {
         val mediaPlayer = MediaPlayer.create(context, android.provider.Settings.System.DEFAULT_NOTIFICATION_URI)
         mediaPlayer?.let { player ->
             try {

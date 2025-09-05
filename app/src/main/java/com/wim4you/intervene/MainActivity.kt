@@ -1,6 +1,7 @@
 package com.wim4you.intervene
 import android.app.Activity
 import android.content.Intent
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.Menu
 import androidx.appcompat.app.AppCompatActivity
@@ -23,6 +24,7 @@ import com.wim4you.intervene.repository.VigilanteDataRepository
 
 class MainActivity : AppCompatActivity()  {
     private lateinit var mMap: GoogleMap
+    private var mediaPlayer: MediaPlayer? = null
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private lateinit var personStore: PersonDataRepository
@@ -86,10 +88,10 @@ class MainActivity : AppCompatActivity()  {
 
                 R.id.nav_stop_distress -> {
                     AppState.isDistressState = false
+                    stopSound()
                     navController.navigate(R.id.nav_home)
                     true
                 }
-
             else -> {
                 navController.navigate(menuItem.itemId)
                 true
@@ -116,5 +118,13 @@ class MainActivity : AppCompatActivity()  {
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
+    }
+
+    private fun stopSound() {
+        mediaPlayer?.apply {
+            if (isPlaying) stop()
+            release()
+        }
+        mediaPlayer = null
     }
 }

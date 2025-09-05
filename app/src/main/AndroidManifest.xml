@@ -20,12 +20,15 @@
             android:name=".location.LocationService"
             android:exported="false"
             android:foregroundServiceType="location" />
+        <receiver android:name=".location.LocationReceiver" />
         <service
             android:name=".location.TripService"
             android:foregroundServiceType="location" />
+        <receiver android:name=".location.TripReceiver" />
         <service
             android:name=".location.PatrolService"
             android:foregroundServiceType="location" />
+        <receiver android:name=".location.PatrolReceiver" />
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyCaOSHoojXZKhmR50FpWkDRgEG0hzKKaZ0"
