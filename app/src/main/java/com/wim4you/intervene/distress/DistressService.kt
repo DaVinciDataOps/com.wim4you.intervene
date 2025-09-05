@@ -34,6 +34,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resumeWithException
 
 class DistressService : Service() {
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val channelId = "TripServiceChannel"
     private val notificationId = 1004
     private val database = FirebaseDatabase.getInstance().reference
@@ -66,14 +67,14 @@ class DistressService : Service() {
                   stopSelf()
                 }
                 else {
-                  startLocationUpdates(personData)
+                  startDistressUpdates(personData,AppState.isDistressState)
                 }
             }
         }
         return START_STICKY
     }
 
-    private fun startLocationUpdates(personData: PersonData) {
+    private fun startDistressUpdates(personData: PersonData, active: Boolean) {
         if (ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -90,7 +91,7 @@ class DistressService : Service() {
                 try {
                     val location = getLastLocation()
                     location?.let {
-                        val distressData = data(personData.id,it)
+                        val distressData = data(personData.id,it, isActive = active)
                         sendToFirebase(distressData)
                     }
                     delay(15_000)
@@ -102,7 +103,7 @@ class DistressService : Service() {
         }
     }
 
-    private fun data(id:String, geoLocation: Location): DistressLocationData {
+    private fun data(id:String, geoLocation: Location, isActive: Boolean): DistressLocationData {
         val distressLocationData = DistressLocationData(
             id = id,
             personId = id,
@@ -111,7 +112,8 @@ class DistressService : Service() {
                 "longitude" to geoLocation.longitude
             ),
             time = System.currentTimeMillis(),
-            fcmToken = null // Replace with actual FCM token if needed
+            fcmToken = null,
+            isActive = isActive
         )
         return distressLocationData
     }
@@ -151,6 +153,16 @@ class DistressService : Service() {
             }
     }
 
+    private fun sendToFirebase(id:String, active: Boolean) {
+        database.child("distress").child(id).setValue("active" to active)
+            .addOnSuccessListener {
+                Log.i("Firebase", "Success saving distress:")
+            }
+            .addOnFailureListener { exception ->
+                Log.e("Firebase", "Error saving distress:")
+            }
+    }
+
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             channelId,
@@ -164,8 +176,19 @@ class DistressService : Service() {
     override fun onDestroy() {
         super.onDestroy()
 
+        if (!AppState.isDistressState) {
+            serviceScope.launch {
+                val personData = personStore.fetch();
+                if(personData == null) {
+                    stopSelf()
+                }
+                else {
+                    sendToFirebase(personData.id, false)
+                }
+            }
+        }
+
         distressJob?.cancel()
-        coroutineScope.cancel()
     }
 
     override fun onBind(intent: Intent?): IBinder? {

@@ -93,6 +93,7 @@ class LocationTrackerService : Service() {
         try {
             val distressSnapshot = refDistress
                 .orderByChild("time").startAt(thirtyMinutesAgo.toDouble())
+                .orderByChild("active").equalTo(true)
                 .get().await()
 
             val distressDataList = mutableListOf<DistressLocationData>()

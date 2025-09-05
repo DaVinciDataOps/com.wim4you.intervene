@@ -19,6 +19,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.database.database
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.ActivityMainBinding
+import com.wim4you.intervene.distress.DistressService
 import com.wim4you.intervene.distress.DistressSoundService
 import com.wim4you.intervene.location.PatrolService
 import com.wim4you.intervene.repository.PersonDataRepository
@@ -67,6 +68,15 @@ class MainActivity : AppCompatActivity()  {
             }
         }
 
+        fun updateDistressState(activity: Activity, isDistress: Boolean) {
+            val intent = Intent(activity, DistressService::class.java)
+            if (isDistress) {
+                activity.startService(intent)
+            } else {
+                activity.stopService(intent)
+            }
+        }
+
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.nav_startstop_guided_trip -> {
@@ -92,6 +102,7 @@ class MainActivity : AppCompatActivity()  {
                 R.id.nav_stop_distress -> {
                     AppState.isDistressState = false
                     stopSound()
+                    updateDistressState(this,AppState.isDistressState)
                     navController.navigate(R.id.nav_home)
                     true
                 }
