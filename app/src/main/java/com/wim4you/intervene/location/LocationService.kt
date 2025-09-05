@@ -23,6 +23,7 @@ class LocationService : Service() {
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var locationListener: ValueEventListener? = null
     private var distressListener: ValueEventListener? = null
+    private val notificationId = 1002
 
     companion object {
         const val ACTION_PATROL_UPDATE = "com.wim4you.intervene.LOCATION_UPDATE"

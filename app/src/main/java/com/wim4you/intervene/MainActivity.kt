@@ -1,5 +1,6 @@
 package com.wim4you.intervene
 import android.app.Activity
+import android.content.BroadcastReceiver
 import android.content.Intent
 import android.media.MediaPlayer
 import android.os.Bundle
@@ -18,13 +19,15 @@ import com.google.firebase.Firebase
 import com.google.firebase.database.database
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.ActivityMainBinding
+import com.wim4you.intervene.distress.DistressSoundService
 import com.wim4you.intervene.location.PatrolService
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
 
 class MainActivity : AppCompatActivity()  {
     private lateinit var mMap: GoogleMap
-    private var mediaPlayer: MediaPlayer? = null
+    // private var mediaPlayer: MediaPlayer? = null
+    private lateinit var playStateReceiver: BroadcastReceiver
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private lateinit var personStore: PersonDataRepository
@@ -121,10 +124,7 @@ class MainActivity : AppCompatActivity()  {
     }
 
     private fun stopSound() {
-        mediaPlayer?.apply {
-            if (isPlaying) stop()
-            release()
-        }
-        mediaPlayer = null
+        AppState.isDistressState = false
+        DistressSoundService.stop(this) // Stop the sound service
     }
 }

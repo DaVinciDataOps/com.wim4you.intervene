@@ -15,6 +15,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.Firebase
 import com.google.firebase.database.database
 import com.wim4you.intervene.AppState
+import com.wim4you.intervene.distress.DistressSoundService
 import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.fbdata.PatrolData
 import com.wim4you.intervene.location.LocationService
@@ -31,8 +32,6 @@ class HomeViewModel(
     private val database = Firebase.database.getReference()
     // LiveData for distress notification status (for Toast)
     private val _distressMessage = MutableLiveData<String>()
-    private val _isDistressActive = MutableLiveData(false)
-
     private val _patrollingStatus = MutableLiveData<String>()
 
     private val _patrolLocations = MutableLiveData<List<PatrolData>>(emptyList())
@@ -41,7 +40,6 @@ class HomeViewModel(
     val distressLocations: LiveData<List<DistressLocationData>> = _distressLocations
     val distressStatus: LiveData<String> = _distressMessage
     val patrollingStatus: LiveData<String> = _patrollingStatus
-    val isDistressActive: LiveData<Boolean> = _isDistressActive
 
     private var panicButtonPressCount = 0
     private val panicButtonPressWindowMs = 5000L // 5 seconds time window for presses
@@ -123,13 +121,8 @@ class HomeViewModel(
             AppState.isDistressState = true
             updateTripState(activity, AppState.isDistressState)
             _distressMessage.postValue("Sending distress notification...")
-            _isDistressActive.postValue(true)
+            DistressSoundService.start(activity)
         }
-    }
-
-    fun stopDistress() {
-        AppState.isDistressState = false
-        _isDistressActive.postValue(false)
     }
 
       // Start LocationService (call from Fragment when needed)

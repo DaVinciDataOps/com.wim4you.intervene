@@ -35,6 +35,7 @@ import kotlin.coroutines.resumeWithException
 
 class PatrolService : Service() {
     private val channelId = "PatrolServiceChannel"
+    private val notificationId = 1003
     private val database = FirebaseDatabase.getInstance().reference
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var locationJob: Job? = null
@@ -56,7 +57,7 @@ class PatrolService : Service() {
             .setSmallIcon(R.drawable.ic_startstop_patrolling) // Replace with your icon
             .build()
 
-        startForeground(1, notification);
+        startForeground(notificationId, notification)
 
         if (AppState.isPatrolling) {
             coroutineScope.launch {
@@ -149,7 +150,7 @@ class PatrolService : Service() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             channelId,
-            "Foreground Service Channel",
+            "Patrol Service Channel",
             NotificationManager.IMPORTANCE_DEFAULT
         )
         val manager = getSystemService(NotificationManager::class.java)
