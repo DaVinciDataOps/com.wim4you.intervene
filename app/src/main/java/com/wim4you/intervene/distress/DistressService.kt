@@ -153,7 +153,8 @@ class DistressService : Service() {
     }
 
     private fun sendToFirebase(id:String, active: Boolean) {
-        database.child("distress").child(id).setValue("active" to active)
+        database.child("distress").child(id)
+            .updateChildren(mapOf("active" to active))
             .addOnSuccessListener {
                 Log.i("Firebase", "Success saving distress:")
             }
