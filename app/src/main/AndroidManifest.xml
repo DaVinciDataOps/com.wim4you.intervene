@@ -23,10 +23,10 @@
             android:foregroundServiceType="location" />
         <receiver android:name=".location.LocationReceiver" />
         <service
-            android:name=".location.TripService"
+            android:name=".distress.DistressService"
             android:exported="false"
             android:foregroundServiceType="location" />
-        <receiver android:name=".location.TripReceiver" />
+        <receiver android:name=".distress.DistressReceiver" />
         <service
             android:name=".location.PatrolService"
             android:exported="false"

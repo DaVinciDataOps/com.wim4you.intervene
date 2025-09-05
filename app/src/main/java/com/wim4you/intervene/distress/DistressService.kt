@@ -1,8 +1,10 @@
-package com.wim4you.intervene.location
+package com.wim4you.intervene.distress
+
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
@@ -32,7 +34,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resumeWithException
 
-class TripService : Service() {
+class DistressService : Service() {
     private val channelId = "TripServiceChannel"
     private val notificationId = 1004
     private val database = FirebaseDatabase.getInstance().reference
@@ -115,29 +117,30 @@ class TripService : Service() {
         return distressLocationData
     }
 
-    private suspend fun getLastLocation(maxAgeMillis: Long = 60_000): Location? = suspendCancellableCoroutine { continuation ->
-        try {
+    private suspend fun getLastLocation(maxAgeMillis: Long = 60_000): Location? =
+        suspendCancellableCoroutine { continuation ->
+            try {
 
-            val cancellationTokenSource = CancellationTokenSource()
-            val request = CurrentLocationRequest.Builder()
-                .setMaxUpdateAgeMillis(maxAgeMillis)
-                .build()
+                val cancellationTokenSource = CancellationTokenSource()
+                val request = CurrentLocationRequest.Builder()
+                    .setMaxUpdateAgeMillis(maxAgeMillis)
+                    .build()
 
-            fusedLocationClient.getCurrentLocation(request, cancellationTokenSource.token)
-                .addOnSuccessListener { newLocation ->
-                    continuation.resume(newLocation) { cause, _, _ -> cancellationTokenSource }
+                fusedLocationClient.getCurrentLocation(request, cancellationTokenSource.token)
+                    .addOnSuccessListener { newLocation ->
+                        continuation.resume(newLocation) { cause, _, _ -> cancellationTokenSource }
+                    }
+                    .addOnFailureListener { exception ->
+                        continuation.resumeWithException(exception)
+                    }
+
+                continuation.invokeOnCancellation {
+                    cancellationTokenSource.cancel()
                 }
-                .addOnFailureListener { exception ->
-                    continuation.resumeWithException(exception)
-                }
-
-            continuation.invokeOnCancellation {
-                cancellationTokenSource.cancel()
+            } catch (e: SecurityException) {
+                continuation.resumeWithException(e)
             }
-        } catch (e: SecurityException) {
-            continuation.resumeWithException(e)
         }
-    }
 
     private fun sendToFirebase(distressLocationData: DistressLocationData) {
         database.child("distress").child(distressLocationData.id).setValue(distressLocationData)
@@ -152,7 +155,7 @@ class TripService : Service() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             channelId,
-            "Trip Service Channel",
+            "Distress Service Channel",
             NotificationManager.IMPORTANCE_DEFAULT
         )
         val manager = getSystemService(NotificationManager::class.java)

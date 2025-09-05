@@ -19,7 +19,7 @@ import com.wim4you.intervene.distress.DistressSoundService
 import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.fbdata.PatrolData
 import com.wim4you.intervene.location.LocationService
-import com.wim4you.intervene.location.TripService
+import com.wim4you.intervene.distress.DistressService
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import kotlinx.coroutines.launch
@@ -80,7 +80,7 @@ class HomeViewModel(
 
     fun updateTripState(tripActivity: Activity, isDistressState: Boolean) {
         AppState.isDistressState = isDistressState
-        val intent = Intent(tripActivity, TripService::class.java)
+        val intent = Intent(tripActivity, DistressService::class.java)
         if (isDistressState) {
             tripActivity.startService(intent)
         } else {
