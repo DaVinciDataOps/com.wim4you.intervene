@@ -26,20 +26,17 @@ import kotlinx.coroutines.launch
 
 class HomeViewModel(
     private val personDataRepository: PersonDataRepository,
-    private val vigilanteDataRepository: VigilanteDataRepository
 
 ) : ViewModel() {
-    private val database = Firebase.database.getReference()
+
     // LiveData for distress notification status (for Toast)
     private val _distressMessage = MutableLiveData<String>()
-    private val _patrollingStatus = MutableLiveData<String>()
 
     private val _patrolLocations = MutableLiveData<List<PatrolData>>(emptyList())
     private val _distressLocations = MutableLiveData<List<DistressLocationData>>(emptyList())
     val patrolLocations: LiveData<List<PatrolData>> = _patrolLocations
     val distressLocations: LiveData<List<DistressLocationData>> = _distressLocations
     val distressStatus: LiveData<String> = _distressMessage
-    val patrollingStatus: LiveData<String> = _patrollingStatus
 
     private var panicButtonPressCount = 0
     private val panicButtonPressWindowMs = 5000L // 5 seconds time window for presses
@@ -47,7 +44,6 @@ class HomeViewModel(
 
     // LiveData for current location (for map marker)
     private val _currentLocation = MutableLiveData<LatLng?>()
-    val currentLocation: LiveData<LatLng?> = _currentLocation
 
     // Register this in the Fragment to receive updates
     private val locationReceiver = object : BroadcastReceiver() {
@@ -72,10 +68,6 @@ class HomeViewModel(
             .registerReceiver(locationReceiver,
                 IntentFilter(LocationTrackerService.ACTION_DISTRESS_UPDATE)
             )
-    }
-
-    fun unregisterLocationReceiver(context: Context) {
-        LocalBroadcastManager.getInstance(context).unregisterReceiver(locationReceiver)
     }
 
     fun updateTripState(tripActivity: Activity, isDistressState: Boolean) {

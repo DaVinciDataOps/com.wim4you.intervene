@@ -33,6 +33,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resumeWithException
 
 class PatrolService : Service() {
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val channelId = "PatrolServiceChannel"
     private val notificationId = 1003
     private val database = FirebaseDatabase.getInstance().reference
@@ -146,6 +147,17 @@ class PatrolService : Service() {
             }
     }
 
+    private fun sendToFirebase(id:String, active: Boolean) {
+        database.child("vigilanteLoc").child(id)
+            .updateChildren(mapOf("active" to active))
+            .addOnSuccessListener {
+                Log.i("Firebase", "Success saving patrol:")
+            }
+            .addOnFailureListener { exception ->
+                Log.e("Firebase", "Error saving patrol:")
+            }
+    }
+
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             channelId,
@@ -158,6 +170,15 @@ class PatrolService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        serviceScope.launch {
+            val vigilanteData = vigilanteStore.fetch();
+            if(vigilanteData == null) {
+                stopSelf()
+            }
+            else {
+                sendToFirebase(vigilanteData.id, false)
+            }
+        }
         patrolJob?.cancel()
         coroutineScope.cancel()
     }

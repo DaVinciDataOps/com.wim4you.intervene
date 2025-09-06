@@ -44,7 +44,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     private val viewModel: HomeViewModel by viewModels {
         HomeViewModelFactory(
             PersonDataRepository(DatabaseProvider.getDatabase(requireContext()).personDataDao()),
-            VigilanteDataRepository(DatabaseProvider.getDatabase(requireContext()).vigilanteDataDao())
         )
     }
 
