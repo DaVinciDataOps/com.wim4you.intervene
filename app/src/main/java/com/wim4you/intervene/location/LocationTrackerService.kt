@@ -27,7 +27,7 @@ class LocationTrackerService : Service() {
     private val refVigilanteLoc = FirebaseDatabase.getInstance().reference.child("vigilanteLoc")
     private val refDistress = FirebaseDatabase.getInstance().reference.child("distress")
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private var locationListener: ValueEventListener? = null
+    private var patrolListener: ValueEventListener? = null
     private var distressListener: ValueEventListener? = null
     private val notificationId = 1002
 
@@ -55,7 +55,7 @@ class LocationTrackerService : Service() {
         startForeground(notificationId, notification)
 
         fetchInitialData()
-        startListeningForLocations()
+        startListeningForPatrols()
         startListeningForDistress()
     }
 
@@ -71,7 +71,6 @@ class LocationTrackerService : Service() {
         try {
             val patrolSnapshot = refVigilanteLoc
                 .orderByChild("time").startAt(thirtyMinutesAgo.toDouble())
-                .orderByChild("active").equalTo(true)
                 .get().await()
 
             val patrolDataList = mutableListOf<PatrolData>()
@@ -93,14 +92,14 @@ class LocationTrackerService : Service() {
         try {
             val distressSnapshot = refDistress
                 .orderByChild("time").startAt(thirtyMinutesAgo.toDouble())
-                .orderByChild("active").equalTo(true)
                 .get().await()
 
             val distressDataList = mutableListOf<DistressLocationData>()
             for (child in distressSnapshot.children) {
                 val distressData = child.getValue(DistressLocationData::class.java)
                 distressData?.let {
-                    distressDataList.add(it)
+                    if(distressData.isActive == true)
+                        distressDataList.add(it)
                 }
             }
             sendDistressUpdate(distressDataList)
@@ -109,9 +108,9 @@ class LocationTrackerService : Service() {
         }
     }
 
-    private fun startListeningForLocations() {
+    private fun startListeningForPatrols() {
         val thirtyMinutesAgo = System.currentTimeMillis() - THIRTY_MINUTES_IN_MS
-        locationListener = object : ValueEventListener {
+        patrolListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val patrolDataList = mutableListOf<PatrolData>()
                 for (child in snapshot.children) {
@@ -133,7 +132,7 @@ class LocationTrackerService : Service() {
         refVigilanteLoc
             .orderByChild("time")
             .startAt(thirtyMinutesAgo.toDouble())
-            .addValueEventListener(locationListener!!)
+            .addValueEventListener(patrolListener!!)
     }
 
     private fun startListeningForDistress() {
@@ -145,7 +144,8 @@ class LocationTrackerService : Service() {
                     val distressData = child
                         .getValue(DistressLocationData::class.java)
                     distressData?.let {
-                        distressDataList.add(it)
+                        if(distressData.isActive == true)
+                            distressDataList.add(it)
                     }
                 }
                 sendDistressUpdate(distressDataList)

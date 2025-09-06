@@ -96,7 +96,7 @@ class DistressService : Service() {
                     delay(15_000)
                 }
                 catch (e: Exception) {
-
+                    Log.e("DistressService", "Error getting location: ${e.message}")
                 }
             }
         }
