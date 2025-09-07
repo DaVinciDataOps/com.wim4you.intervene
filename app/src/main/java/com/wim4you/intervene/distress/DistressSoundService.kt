@@ -65,7 +65,13 @@ class DistressSoundService: Service(), AudioManager.OnAudioFocusChangeListener {
     }
 
     private fun startDistressSound() {
-        if (mediaPlayer?.isPlaying == true) return
+        //if (mediaPlayer?.isPlaying == true) return
+        if (mediaPlayer?.isPlaying == true) {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            mediaPlayer = null
+        }
+
         val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
             .setAudioAttributes(
                 AudioAttributes.Builder()
@@ -101,6 +107,13 @@ class DistressSoundService: Service(), AudioManager.OnAudioFocusChangeListener {
 
     private fun createAndPlayMediaPlayer() {
         try {
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            audioManager.setStreamVolume(
+                AudioManager.STREAM_ALARM,
+                audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM),
+                0
+            )
+
             mediaPlayer = MediaPlayer().apply {
                 setAudioAttributes(
                     AudioAttributes.Builder()
