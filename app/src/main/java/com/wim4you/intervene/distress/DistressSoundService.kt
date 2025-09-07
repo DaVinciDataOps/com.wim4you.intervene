@@ -112,6 +112,7 @@ class DistressSoundService: Service(), AudioManager.OnAudioFocusChangeListener {
                     "android.resource://com.wim4you.intervene/raw/high_pitch_alarm".toUri())
                 prepare()
                 isLooping = true
+                setVolume(1.0f, 1.0f)
                 start()
                 // Broadcast playing state
                 sendPlayStateBroadcast(true)
