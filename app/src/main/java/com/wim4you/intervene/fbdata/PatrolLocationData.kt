@@ -1,17 +1,38 @@
 package com.wim4you.intervene.fbdata
 
 import android.os.Parcelable
+import com.google.firebase.database.PropertyName
 import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.RawValue
 
 @Parcelize
 data class PatrolLocationData (
+    @PropertyName("id")
     var id: String,
-    var vigilanteId: String,
+    @PropertyName("g")
+    val geohash: String? = null,
+    @PropertyName("l")
+    val location: GeoFireLocation? = null,
+
+    @PropertyName("vigilanteId")
+    val vigilanteId: String? = null,
+    @PropertyName("name")
     var name: String? = null,
-    var location: Map<String,Double>? = null,
-    var Time: Long? = null,
+
+    // var location: Map<String,Double>? = null,
+    @PropertyName("time")
+    var time: Long? = null,
+    @PropertyName("active")
     var isActive: Boolean? = false,
+    @PropertyName("fcmToken")
     var fcmToken: String? = null
 ): Parcelable{
+
+    @Parcelize
+    data class GeoFireLocation(
+        @PropertyName("0") val latitude: Double = 0.0,
+        @PropertyName("1") val longitude: Double = 0.0
+    ) : Parcelable
+
     constructor() : this("", "", null, null, null, null, null)
 }
