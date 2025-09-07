@@ -13,7 +13,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.wim4you.intervene.R
 import com.wim4you.intervene.fbdata.DistressLocationData
-import com.wim4you.intervene.fbdata.PatrolData
+import com.wim4you.intervene.fbdata.PatrolLocationData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -73,16 +73,16 @@ class LocationTrackerService : Service() {
                 .orderByChild("time").startAt(thirtyMinutesAgo.toDouble())
                 .get().await()
 
-            val patrolDataList = mutableListOf<PatrolData>()
+            val patrolLocationDataList = mutableListOf<PatrolLocationData>()
             for (child in patrolSnapshot.children) {
-                val patrolData = child.getValue(PatrolData::class.java)
-                patrolData?.let {
+                val patrolLocationData = child.getValue(PatrolLocationData::class.java)
+                patrolLocationData?.let {
                     if (it.isActive == true) {
-                        patrolDataList.add(it)
+                        patrolLocationDataList.add(it)
                     }
                 }
             }
-            sendLocationUpdate(patrolDataList)
+            sendLocationUpdate(patrolLocationDataList)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -112,17 +112,17 @@ class LocationTrackerService : Service() {
         val thirtyMinutesAgo = System.currentTimeMillis() - THIRTY_MINUTES_IN_MS
         patrolListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val patrolDataList = mutableListOf<PatrolData>()
+                val patrolLocationDataList = mutableListOf<PatrolLocationData>()
                 for (child in snapshot.children) {
-                    val patrolData = child.getValue(PatrolData::class.java)
-                    patrolData?.let {
+                    val patrolLocationData = child.getValue(PatrolLocationData::class.java)
+                    patrolLocationData?.let {
                         if (it.isActive == true) { // Only include active patrols
-                            patrolDataList.add(it)
+                            patrolLocationDataList.add(it)
                         }
                     }
                 }
                 // Broadcast the list of active patrol data
-                sendLocationUpdate(patrolDataList)
+                sendLocationUpdate(patrolLocationDataList)
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -161,9 +161,9 @@ class LocationTrackerService : Service() {
             .addValueEventListener(distressListener!!)
     }
 
-    private fun sendLocationUpdate(patrolDataList: List<PatrolData>) {
+    private fun sendLocationUpdate(patrolLocationDataList: List<PatrolLocationData>) {
         val intent = Intent(ACTION_PATROL_UPDATE)
-        intent.putParcelableArrayListExtra(EXTRA_PATROL_DATA, ArrayList(patrolDataList))
+        intent.putParcelableArrayListExtra(EXTRA_PATROL_DATA, ArrayList(patrolLocationDataList))
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 

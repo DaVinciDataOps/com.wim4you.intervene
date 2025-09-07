@@ -4,7 +4,7 @@ import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-data class PatrolData (
+data class PatrolLocationData (
     var id: String,
     var vigilanteId: String,
     var name: String? = null,

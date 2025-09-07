@@ -29,7 +29,7 @@ import com.wim4you.intervene.AppState
 import com.wim4you.intervene.R
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.FragmentHomeBinding
-import com.wim4you.intervene.fbdata.PatrolData
+import com.wim4you.intervene.fbdata.PatrolLocationData
 import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
@@ -185,15 +185,15 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         if(AppState.isPatrolling && hasNewMarkers)
             playPatrolDistressSound()
     }
-    private fun updatePatrolMapMarkers(patrolDataList: List<PatrolData>){
-        val currentIds = patrolDataList.map { it.id }.toSet()
+    private fun updatePatrolMapMarkers(patrolLocationDataList: List<PatrolLocationData>){
+        val currentIds = patrolLocationDataList.map { it.id }.toSet()
         patrolMarkers.keys.filter { it !in currentIds }.forEach { id ->
             patrolMarkers[id]?.remove()
             patrolMarkers.remove(id)
         }
 
         // Add or update markers for active patrols
-        patrolDataList.forEach { patrolData ->
+        patrolLocationDataList.forEach { patrolData ->
             patrolData.location?.let { loc ->
                 val latLng = LatLng(loc["latitude"] ?: 0.0, loc["longitude"] ?: 0.0)
                 val marker = patrolMarkers[patrolData.id]

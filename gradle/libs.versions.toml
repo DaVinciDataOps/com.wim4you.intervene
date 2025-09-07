@@ -3,6 +3,7 @@ agp = "8.12.2"
 firebaseBom = "34.2.0"
 firebaseAuth = "24.0.1"
 firebaseStore = "26.0.0"
+geofireAndroid = "3.2.0"
 googleServices = "4.4.3"
 kotlin = "2.2.10"
 coreKtx = "1.17.0"
@@ -30,6 +31,7 @@ firebase-auth = { module = "com.google.firebase:firebase-auth" , version.ref = "
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 firebase-database = { module = "com.google.firebase:firebase-database" }
 firebase-firestore = { module = "com.google.firebase:firebase-firestore", version.ref = "firebaseStore" }
+geofire-android = { module = "com.firebase:geofire-android", version.ref = "geofireAndroid" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

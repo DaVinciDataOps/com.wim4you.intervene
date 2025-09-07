@@ -12,16 +12,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.gms.maps.model.LatLng
-import com.google.firebase.Firebase
-import com.google.firebase.database.database
 import com.wim4you.intervene.AppState
 import com.wim4you.intervene.distress.DistressSoundService
 import com.wim4you.intervene.fbdata.DistressLocationData
-import com.wim4you.intervene.fbdata.PatrolData
+import com.wim4you.intervene.fbdata.PatrolLocationData
 import com.wim4you.intervene.location.LocationTrackerService
 import com.wim4you.intervene.distress.DistressService
 import com.wim4you.intervene.repository.PersonDataRepository
-import com.wim4you.intervene.repository.VigilanteDataRepository
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
@@ -32,9 +29,9 @@ class HomeViewModel(
     // LiveData for distress notification status (for Toast)
     private val _distressMessage = MutableLiveData<String>()
 
-    private val _patrolLocations = MutableLiveData<List<PatrolData>>(emptyList())
+    private val _patrolLocations = MutableLiveData<List<PatrolLocationData>>(emptyList())
     private val _distressLocations = MutableLiveData<List<DistressLocationData>>(emptyList())
-    val patrolLocations: LiveData<List<PatrolData>> = _patrolLocations
+    val patrolLocations: LiveData<List<PatrolLocationData>> = _patrolLocations
     val distressLocations: LiveData<List<DistressLocationData>> = _distressLocations
     val distressStatus: LiveData<String> = _distressMessage
 
@@ -49,8 +46,8 @@ class HomeViewModel(
     private val locationReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == LocationTrackerService.ACTION_PATROL_UPDATE) {
-                val patrolDataList = intent.getParcelableArrayListExtra<PatrolData>(LocationTrackerService.EXTRA_PATROL_DATA)
-                _patrolLocations.value = patrolDataList ?: emptyList()
+                val patrolLocationDataList = intent.getParcelableArrayListExtra<PatrolLocationData>(LocationTrackerService.EXTRA_PATROL_DATA)
+                _patrolLocations.value = patrolLocationDataList ?: emptyList()
             }
             if (intent?.action == LocationTrackerService.ACTION_DISTRESS_UPDATE) {
                 val distressDataList = intent.getParcelableArrayListExtra<DistressLocationData>(LocationTrackerService.EXTRA_DISTRESS_DATA)

@@ -19,7 +19,7 @@ import com.wim4you.intervene.AppState
 import com.wim4you.intervene.R
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.data.VigilanteData
-import com.wim4you.intervene.fbdata.PatrolData
+import com.wim4you.intervene.fbdata.PatrolLocationData
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -91,7 +91,7 @@ class PatrolService : Service() {
                 try {
                     val location = getLastLocation()
                     location?.let {
-                        val patrolData = PatrolData(
+                        val patrolLocationData = PatrolLocationData(
                             id = vigilanteData.id,
                             vigilanteId = vigilanteData.id,
                             name = vigilanteData.name,
@@ -103,7 +103,7 @@ class PatrolService : Service() {
                             isActive = true,
                             fcmToken = null // Replace with actual FCM token if needed
                         )
-                        sendToFirebase(patrolData)
+                        sendToFirebase(patrolLocationData)
                     }
                     delay(15_000)
                 }
@@ -137,8 +137,8 @@ class PatrolService : Service() {
         }
     }
 
-    private fun sendToFirebase(patrolData: PatrolData) {
-        database.child("vigilanteLoc").child(patrolData.id).setValue(patrolData)
+    private fun sendToFirebase(patrolLocationData: PatrolLocationData) {
+        database.child("vigilanteLoc").child(patrolLocationData.id).setValue(patrolLocationData)
             .addOnSuccessListener {
                 Log.i("Firebase", "Success saving patrol:")
             }
