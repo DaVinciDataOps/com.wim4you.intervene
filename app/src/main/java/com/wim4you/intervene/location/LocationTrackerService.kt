@@ -7,6 +7,15 @@ import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.firebase.geofire.GeoFire
+import com.firebase.geofire.GeoLocation
+import com.firebase.geofire.GeoQuery
+import com.firebase.geofire.GeoQueryEventListener
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -22,7 +31,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class LocationTrackerService : Service() {
-
+    private var geoQuery: GeoQuery? = null
+    private var locationCallback: LocationCallback? = null
     private val channelId = "LocationTrackerServiceChannel"
     private val refVigilanteLoc = FirebaseDatabase.getInstance().reference.child("vigilanteLoc")
     private val refDistress = FirebaseDatabase.getInstance().reference.child("distress")
@@ -109,6 +119,50 @@ class LocationTrackerService : Service() {
     }
 
     private fun startListeningForPatrols() {
+        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        val geoFire = GeoFire(refVigilanteLoc)
+
+        val locationRequest = LocationRequest.Builder(
+                Priority.PRIORITY_HIGH_ACCURACY,
+                15000L) // Update every 15 seconds
+            .setMinUpdateIntervalMillis(10000L) // Fastest update interval
+            .build()
+
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                locationResult.lastLocation?.let { location ->
+                    val userLocation = GeoLocation(location.latitude, location.longitude)
+
+                    geoQuery?.removeAllListeners()
+
+                    geoQuery = geoFire.queryAtLocation(userLocation, 2.0).apply {
+                        addGeoQueryEventListener(object : GeoQueryEventListener {
+                            override fun onKeyEntered(key: String, geoLocation: GeoLocation) {
+
+                            }
+
+                            override fun onKeyExited(key: String) {
+
+                            }
+
+                            override fun onKeyMoved(key: String, location: GeoLocation) {
+                                // Update patrol location if needed
+                            }
+
+                            override fun onGeoQueryReady() {
+                                // Called when initial data is loaded
+                            }
+
+                            override fun onGeoQueryError(error: DatabaseError) {
+                                // Handle error
+                            }
+                        })
+                    }
+                }
+            }
+        }
+
+
         val thirtyMinutesAgo = System.currentTimeMillis() - THIRTY_MINUTES_IN_MS
         patrolListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
