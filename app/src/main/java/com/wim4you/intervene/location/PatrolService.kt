@@ -43,7 +43,7 @@ class PatrolService : Service() {
     private var patrolJob: Job? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private lateinit var vigilanteStore: VigilanteDataRepository
-    private val geoFire = GeoFire(database.child("vigilanteLoc"))
+    private val geoFire = GeoFire(database.child("patrols"))
 
     override fun onCreate() {
         super.onCreate()
@@ -157,7 +157,7 @@ class PatrolService : Service() {
             "fcmToken" to patrolLocationData.fcmToken
         )
 
-        database.child("vigilanteLoc").child(patrolLocationData.id.toString()).
+        database.child("patrols").child(patrolLocationData.id.toString()).
         updateChildren(patrolDataMap)
             .addOnSuccessListener {
                 Log.i("Firebase", "Success saving patrol:")
@@ -168,7 +168,7 @@ class PatrolService : Service() {
     }
 
     private fun sendToFirebase(id:String, active: Boolean) {
-        database.child("vigilanteLoc").child(id)
+        database.child("patrols").child(id)
             .updateChildren(mapOf("active" to active))
             .addOnSuccessListener {
                 Log.i("Firebase", "Success saving patrol:")

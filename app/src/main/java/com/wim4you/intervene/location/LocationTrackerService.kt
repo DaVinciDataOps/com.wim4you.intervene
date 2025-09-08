@@ -27,6 +27,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
+import com.wim4you.intervene.AppState
 import com.wim4you.intervene.R
 import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.fbdata.PatrolLocationData
@@ -41,7 +42,7 @@ class LocationTrackerService : Service() {
     private var geoQuery: GeoQuery? = null
     private lateinit var locationCallback: LocationCallback
     private val channelId = "LocationTrackerServiceChannel"
-    private val refVigilanteLoc = FirebaseDatabase.getInstance().reference.child("vigilanteLoc")
+    private val refPatrolLoc = FirebaseDatabase.getInstance().reference.child("patrols")
     private val refDistress = FirebaseDatabase.getInstance().reference.child("distress")
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var patrolListener: ValueEventListener? = null
@@ -89,7 +90,7 @@ class LocationTrackerService : Service() {
 
     private suspend fun fetchInitialPatrols(thirtyMinutesAgo: Long) {
         try {
-            val patrolSnapshot = refVigilanteLoc
+            val patrolSnapshot = refPatrolLoc
                 .orderByChild("time").startAt(thirtyMinutesAgo.toDouble())
                 .get().await()
 
@@ -130,7 +131,7 @@ class LocationTrackerService : Service() {
 
     private fun startListeningForPatrols() {
         val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        val geoFire = GeoFire(refVigilanteLoc)
+        val geoFire = GeoFire(refPatrolLoc)
         val vigilanteListeners = mutableMapOf<String, ValueEventListener>()
 
 
@@ -161,49 +162,40 @@ class LocationTrackerService : Service() {
                 locationResult.lastLocation?.let { location ->
                     val userLocation = GeoLocation(location.latitude, location.longitude)
                     if (geoQuery == null) {
-                        geoQuery = geoFire.queryAtLocation(userLocation, 20.0).apply {
+                        geoQuery = geoFire.queryAtLocation(userLocation, AppState.DistressRadius).apply {
                             addGeoQueryDataEventListener(object : GeoQueryDataEventListener {
 
                                 override fun onDataEntered(dataSnapshot: DataSnapshot, location: GeoLocation) {
+                                    val data = dataSnapshot.value as? Map<*, *>?: run{ return }
                                     Log.d("GeoQuery", "Data entered: ${dataSnapshot.key} at (${location.latitude}, ${location.longitude})")
-                                    val patrolLocationData = dataSnapshot.getValue<PatrolLocationData>()
-                                        ?: run {
-                                            Log.w("FirebaseData", "Automatic deserialization failed for ${dataSnapshot.key}, trying manual")
-                                            val data = dataSnapshot.value as? Map<*, *> ?: run {
-                                                Log.e("FirebaseData", "Invalid data for ${dataSnapshot.key}: ${dataSnapshot.value}")
-                                                return
-                                            }
-                                            PatrolLocationData(
-                                                id = (data["vigilanteId"] as? String) ?: dataSnapshot.key,
-                                                geohash = data["g"] as? String,
-                                                locationArray = (data["l"] as? List<*>)?.mapNotNull { it as? Double },
-                                                vigilanteId = data["vigilanteId"] as? String,
-                                                name = data["name"] as? String,
-                                                time = data["time"] as? Long,
-                                                isActive = data["active"] as? Boolean,
-                                                fcmToken = data["fcmToken"] as? String
-                                            )
-                                        }
+                                    val patrolLocationData = dataSnapshot.getValue<PatrolLocationData>() ?:
+                                        throw IllegalArgumentException("Automatic deserialization failed for ${dataSnapshot.key}")
+
                                     patrolLocationData.let {
-                                        val updatedData = it
+                                        val updatedData = PatrolLocationData(
+                                            id = dataSnapshot.key,
+                                            geohash = data["g"] as? String ?: "",
+                                            locationArray = listOf(location.latitude, location.longitude),
+                                            vigilanteId = patrolLocationData.vigilanteId,
+                                            name = patrolLocationData.name,
+                                            isActive = patrolLocationData.isActive,
+                                            time = patrolLocationData.time,
+                                            fcmToken = patrolLocationData.fcmToken
+                                        )
                                         val expiredTime = System.currentTimeMillis() - EXPIRY_TIME_IN_MS
-                                        Log.d("FirebaseData", "Data for ${dataSnapshot.key}: $updatedData")
                                         if (it.isActive == true && it.time!! >= expiredTime) {
                                             val index = patrolLocationDataList.indexOfFirst { data -> data.id == updatedData.id }
                                             if (index >= 0) {
                                                 patrolLocationDataList[index] = updatedData
-                                                Log.d("GeoQuery", "Updated vigilante: ${updatedData.id}")
                                             } else {
                                                 patrolLocationDataList.add(updatedData)
-                                                Log.d("GeoQuery", "Added vigilante: ${updatedData.id}")
                                             }
                                             sendLocationUpdate(patrolLocationDataList)
                                         } else {
                                             patrolLocationDataList.removeAll { data -> data.id == updatedData.id }
-                                            Log.d("GeoQuery", "Removed inactive/expired vigilante: ${updatedData.id}")
                                             sendLocationUpdate(patrolLocationDataList)
                                         }
-                                    } ?: Log.e("FirebaseData", "PatrolLocationData is null for ${dataSnapshot.key}")
+                                    }
                                 }
 
                                 override fun onDataExited(dataSnapshot: DataSnapshot) {
@@ -270,32 +262,6 @@ class LocationTrackerService : Service() {
             .addOnFailureListener { e ->
                 Log.e("LocationError", "Failed to request location updates: ${e.message}")
             }
-
-
-//        val thirtyMinutesAgo = System.currentTimeMillis() - EXPIRY_TIME_IN_MS
-//        patrolListener = object : ValueEventListener {
-//            override fun onDataChange(snapshot: DataSnapshot) {
-//                val patrolLocationDataList = mutableListOf<PatrolLocationData>()
-//                for (child in snapshot.children) {
-//                    val patrolLocationData = child.getValue(PatrolLocationData::class.java)
-//                    patrolLocationData?.let {
-//                        if (it.isActive == true) { // Only include active patrols
-//                            patrolLocationDataList.add(it)
-//                        }
-//                    }
-//                }
-//                // Broadcast the list of active patrol data
-//                sendLocationUpdate(patrolLocationDataList)
-//            }
-//
-//            override fun onCancelled(error: DatabaseError) {
-//                // Log error or handle as needed (e.g., notify UI of failure)
-//            }
-//        }
-//        refVigilanteLoc
-//            .orderByChild("time")
-//            .startAt(thirtyMinutesAgo.toDouble())
-//            .addValueEventListener(patrolListener!!)
     }
 
     private fun startListeningForDistress() {

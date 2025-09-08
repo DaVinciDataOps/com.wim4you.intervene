@@ -10,4 +10,5 @@ object AppState {
 
     var vigilante: VigilanteData? = null
     var person: PersonData? = null
+    var DistressRadius: Double = 2.0 //km
 }
