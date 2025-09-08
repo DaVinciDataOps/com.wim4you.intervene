@@ -194,8 +194,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
         // Add or update markers for active patrols
         patrolLocationDataList.forEach { patrolData ->
-            patrolData.location?.let { loc ->
-                val latLng = LatLng(loc.latitude, loc.longitude)
+            patrolData.locationArray?.let { loc ->
+                val latLng = LatLng(loc[0], loc[1])
                 val marker = patrolMarkers[patrolData.id]
                 if (marker == null) {
                     // Add new marker
@@ -206,7 +206,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                             .icon(getIcon(patrolData.vigilanteId))
                     )
                     if (newMarker != null) {
-                        patrolMarkers[patrolData.id] = newMarker
+                        patrolMarkers[patrolData.id as String] = newMarker
                     }
                 } else {
                     // Update existing marker position

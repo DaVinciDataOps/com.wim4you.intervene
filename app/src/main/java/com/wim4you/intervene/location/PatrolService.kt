@@ -100,10 +100,7 @@ class PatrolService : Service() {
                             id = vigilanteData.id,
                             vigilanteId = vigilanteData.id,
                             name = vigilanteData.name,
-                            location =  PatrolLocationData.GeoFireLocation(
-                                latitude= it.latitude,
-                                longitude = it.longitude
-                            ),
+                            locationArray =  listOf(it.latitude, it.longitude),
                             time = System.currentTimeMillis(),
                             isActive = true,
                             fcmToken = null // Replace with actual FCM token if needed
@@ -160,7 +157,7 @@ class PatrolService : Service() {
             "fcmToken" to patrolLocationData.fcmToken
         )
 
-        database.child("vigilanteLoc").child(patrolLocationData.id).
+        database.child("vigilanteLoc").child(patrolLocationData.id.toString()).
         updateChildren(patrolDataMap)
             .addOnSuccessListener {
                 Log.i("Firebase", "Success saving patrol:")
