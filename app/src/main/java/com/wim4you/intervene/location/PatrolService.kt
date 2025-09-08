@@ -10,6 +10,8 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import com.firebase.geofire.GeoFire
+import com.firebase.geofire.GeoLocation
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -41,6 +43,7 @@ class PatrolService : Service() {
     private var patrolJob: Job? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private lateinit var vigilanteStore: VigilanteDataRepository
+    private val geoFire = GeoFire(database.child("vigilanteLoc"))
 
     override fun onCreate() {
         super.onCreate()
@@ -91,19 +94,21 @@ class PatrolService : Service() {
                 try {
                     val location = getLastLocation()
                     location?.let {
+                        val geoLocation = GeoLocation(it.latitude, it.longitude)
+
                         val patrolLocationData = PatrolLocationData(
                             id = vigilanteData.id,
                             vigilanteId = vigilanteData.id,
                             name = vigilanteData.name,
-                            location = mapOf(
-                                "latitude" to it.latitude,
-                                "longitude" to it.longitude
+                            location =  PatrolLocationData.GeoFireLocation(
+                                latitude= it.latitude,
+                                longitude = it.longitude
                             ),
-                            Time = System.currentTimeMillis(),
+                            time = System.currentTimeMillis(),
                             isActive = true,
                             fcmToken = null // Replace with actual FCM token if needed
                         )
-                        sendToFirebase(patrolLocationData)
+                        sendToFirebase(patrolLocationData,geoLocation)
                     }
                     delay(15_000)
                 }
@@ -137,8 +142,26 @@ class PatrolService : Service() {
         }
     }
 
-    private fun sendToFirebase(patrolLocationData: PatrolLocationData) {
-        database.child("vigilanteLoc").child(patrolLocationData.id).setValue(patrolLocationData)
+    private fun sendToFirebase(patrolLocationData: PatrolLocationData, geoLocation: GeoLocation) {
+        geoFire.setLocation(patrolLocationData.id, geoLocation) { key, error ->
+            if (error != null) {
+                Log.e("Firebase", "Error saving GeoFire location: ${error.message}")
+            } else {
+                Log.i("Firebase", "Success saving GeoFire location for key: $key")
+            }
+        }
+
+        // Save additional patrol data without overwriting GeoFire fields
+        val patrolDataMap = mapOf(
+            "vigilanteId" to patrolLocationData.vigilanteId,
+            "name" to patrolLocationData.name,
+            "time" to patrolLocationData.time,
+            "active" to patrolLocationData.isActive,
+            "fcmToken" to patrolLocationData.fcmToken
+        )
+
+        database.child("vigilanteLoc").child(patrolLocationData.id).
+        updateChildren(patrolDataMap)
             .addOnSuccessListener {
                 Log.i("Firebase", "Success saving patrol:")
             }
@@ -156,6 +179,17 @@ class PatrolService : Service() {
             .addOnFailureListener { exception ->
                 Log.e("Firebase", "Error saving patrol:")
             }
+
+        // Remove location from GeoFire when inactive
+        if (!active) {
+            geoFire.removeLocation(id) { key, error ->
+                if (error != null) {
+                    Log.e("Firebase", "Error removing GeoFire location: ${error.message}")
+                } else {
+                    Log.i("Firebase", "Success removing GeoFire location for key: $key")
+                }
+            }
+        }
     }
 
     private fun createNotificationChannel() {

@@ -27,7 +27,6 @@ data class PatrolLocationData (
     @PropertyName("fcmToken")
     var fcmToken: String? = null
 ): Parcelable{
-
     @Parcelize
     data class GeoFireLocation(
         @PropertyName("0") val latitude: Double = 0.0,
