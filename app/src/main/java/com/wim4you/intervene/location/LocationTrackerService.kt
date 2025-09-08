@@ -75,65 +75,13 @@ class LocationTrackerService : Service() {
 
         startForeground(notificationId, notification)
 
-        //fetchInitialData()
         startListeningForPatrols()
         startListeningForDistress()
-    }
-
-    private fun fetchInitialData() {
-        val thirtyMinutesAgo = System.currentTimeMillis() - EXPIRY_TIME_IN_MS
-        coroutineScope.launch {
-            fetchInitialPatrols(thirtyMinutesAgo)
-            fetchInitialDistress(thirtyMinutesAgo)
-        }
-    }
-
-    private suspend fun fetchInitialPatrols(thirtyMinutesAgo: Long) {
-        try {
-            val patrolSnapshot = refPatrolLoc
-                .orderByChild("time").startAt(thirtyMinutesAgo.toDouble())
-                .get().await()
-
-            val patrolLocationDataList = mutableListOf<PatrolLocationData>()
-            for (child in patrolSnapshot.children) {
-                val patrolLocationData = child.getValue(PatrolLocationData::class.java)
-                patrolLocationData?.let {
-                    if (it.isActive == true) {
-                        patrolLocationDataList.add(it)
-                    }
-                }
-            }
-            sendLocationUpdate(patrolLocationDataList)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private suspend fun fetchInitialDistress(thirtyMinutesAgo: Long) {
-        try {
-            val distressSnapshot = refDistress
-                .orderByChild("time").startAt(thirtyMinutesAgo.toDouble())
-                .get().await()
-
-            val distressDataList = mutableListOf<DistressLocationData>()
-            for (child in distressSnapshot.children) {
-                val distressData = child.getValue(DistressLocationData::class.java)
-                distressData?.let {
-                    if(distressData.isActive == true)
-                        distressDataList.add(it)
-                }
-            }
-            sendDistressUpdate(distressDataList)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
     }
 
     private fun startListeningForPatrols() {
         val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         val geoFire = GeoFire(refPatrolLoc)
-        val vigilanteListeners = mutableMapOf<String, ValueEventListener>()
-
 
         val locationRequest = LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY,
