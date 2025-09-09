@@ -82,7 +82,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         distressMarker = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher_round)
             .scale(90, 90, false)
 
-        viewModel.registerLocationReceiver(requireContext())
+        viewModel.registerLocationTrackerReceiver(requireContext())
         viewModel.startLocationService(requireContext())
 
         viewModel.patrolLocations.observe(viewLifecycleOwner) { patrolDataList ->
@@ -160,8 +160,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
         // Add or update markers for active patrols
         distressDataList.forEach { distressData ->
-            distressData.location?.let { loc ->
-                val latLng = LatLng(loc["latitude"] ?: 0.0, loc["longitude"] ?: 0.0)
+            distressData.locationArray?.let { loc ->
+                val latLng = LatLng(loc[0], loc[1])
                 val marker = distressMarkers[distressData.id]
                 if (marker == null) {
                     // Add new marker
@@ -172,7 +172,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                             .icon(BitmapDescriptorFactory.fromBitmap(distressMarker))
                     )
                     if (newMarker != null) {
-                        distressMarkers[distressData.id] = newMarker
+                        distressMarkers[distressData.id.toString()] = newMarker
                     }
                     hasNewMarkers = true
                 } else {

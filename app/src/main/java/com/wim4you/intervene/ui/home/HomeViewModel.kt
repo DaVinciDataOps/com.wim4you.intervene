@@ -43,7 +43,7 @@ class HomeViewModel(
     private val _currentLocation = MutableLiveData<LatLng?>()
 
     // Register this in the Fragment to receive updates
-    private val locationReceiver = object : BroadcastReceiver() {
+    private val locationTrackerServiceReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == LocationTrackerService.ACTION_PATROL_UPDATE) {
                 val patrolLocationDataList = intent.getParcelableArrayListExtra<PatrolLocationData>(LocationTrackerService.EXTRA_PATROL_DATA)
@@ -56,13 +56,13 @@ class HomeViewModel(
         }
     }
 
-    fun registerLocationReceiver(context: Context) {
+    fun registerLocationTrackerReceiver(context: Context) {
         LocalBroadcastManager.getInstance(context)
-            .registerReceiver(locationReceiver,
+            .registerReceiver(locationTrackerServiceReceiver,
                 IntentFilter(LocationTrackerService.ACTION_PATROL_UPDATE)
             )
         LocalBroadcastManager.getInstance(context)
-            .registerReceiver(locationReceiver,
+            .registerReceiver(locationTrackerServiceReceiver,
                 IntentFilter(LocationTrackerService.ACTION_DISTRESS_UPDATE)
             )
     }

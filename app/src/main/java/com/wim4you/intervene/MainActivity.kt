@@ -2,7 +2,6 @@ package com.wim4you.intervene
 import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Intent
-import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.Menu
 import androidx.appcompat.app.AppCompatActivity
@@ -136,6 +135,7 @@ class MainActivity : AppCompatActivity()  {
 
     private fun stopSound() {
         AppState.isDistressState = false
+        DistressService.stop(this)
         DistressSoundService.stop(this) // Stop the sound service
     }
 }

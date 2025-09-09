@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
@@ -11,6 +12,8 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import com.firebase.geofire.GeoFire
+import com.firebase.geofire.GeoLocation
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -37,10 +40,18 @@ class DistressService : Service() {
     private val channelId = "TripServiceChannel"
     private val notificationId = 1004
     private val database = FirebaseDatabase.getInstance().reference
+    private val geoFire = GeoFire(database.child("distress"))
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var distressJob: Job? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private lateinit var personStore: PersonDataRepository
+
+    companion object   {
+        fun stop(context: Context) {
+            val intent = Intent(context, DistressService::class.java)
+            context.stopService(intent)
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -90,8 +101,9 @@ class DistressService : Service() {
                 try {
                     val location = getLastLocation()
                     location?.let {
+                        val geoLocation = GeoLocation(it.latitude, it.longitude)
                         val distressData = data(personData.id,it, isActive = active)
-                        sendToFirebase(distressData)
+                        sendStopDistressToFirebase(distressData, geoLocation)
                     }
                     delay(15_000)
                 }
@@ -106,10 +118,7 @@ class DistressService : Service() {
         val distressLocationData = DistressLocationData(
             id = id,
             personId = id,
-            location = mapOf(
-                "latitude" to geoLocation.latitude,
-                "longitude" to geoLocation.longitude
-            ),
+            locationArray =  listOf(geoLocation.latitude, geoLocation.longitude),
             time = System.currentTimeMillis(),
             fcmToken = null,
             isActive = isActive
@@ -142,19 +151,35 @@ class DistressService : Service() {
             }
         }
 
-    private fun sendToFirebase(distressLocationData: DistressLocationData) {
-        database.child("distress").child(distressLocationData.id).setValue(distressLocationData)
+    private fun sendStopDistressToFirebase(distressLocationData: DistressLocationData, geoLocation: GeoLocation) {
+        geoFire.setLocation(distressLocationData.id, geoLocation) { key, error ->
+            if (error != null) {
+                Log.e("Firebase", "Error saving GeoFire location: ${error.message}")
+            } else {
+                Log.i("Firebase", "Success saving GeoFire location for key: $key")
+            }
+        }
+
+        val distressDataMap = mapOf(
+            "personId" to distressLocationData.personId,
+            "time" to distressLocationData.time,
+            "active" to distressLocationData.isActive,
+            "fcmToken" to distressLocationData.fcmToken
+        )
+
+        database.child("distress").child(distressLocationData.id.toString()).
+        updateChildren(distressDataMap)
             .addOnSuccessListener {
-                Log.i("Firebase", "Success saving distress:")
+                Log.i("Firebase", "Success saving patrol:")
             }
             .addOnFailureListener { exception ->
-                Log.e("Firebase", "Error saving distress:")
+                Log.e("Firebase", "Error saving patrol:")
             }
     }
 
-    private fun sendToFirebase(id:String, active: Boolean) {
+    private fun sendStopDistressToFirebase(id:String) {
         database.child("distress").child(id)
-            .updateChildren(mapOf("active" to active))
+            .updateChildren(mapOf("active" to false))
             .addOnSuccessListener {
                 Log.i("Firebase", "Success saving distress:")
             }
@@ -183,7 +208,7 @@ class DistressService : Service() {
                     stopSelf()
                 }
                 else {
-                    sendToFirebase(personData.id, false)
+                    sendStopDistressToFirebase(personData.id )
                 }
             }
         }
