@@ -16,14 +16,22 @@ android {
         applicationId = "com.wim4you.intervene"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
+    signingConfigs {
+        create("release") {
+            keyAlias = "intervene"
+            keyPassword = "Strawberry"
+            storeFile = file("C:/Users/frank.de.pijper/AndroidStudioProjects/keystore/com.wim4you.intervene.keystore/InterVeneKey.jks")
+            storePassword = "Strawberry"
+        }
+    }
     buildTypes {
         release {
+            // signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

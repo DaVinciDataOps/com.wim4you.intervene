@@ -11,9 +11,9 @@ data class DistressLocationData (
     @PropertyName("personId")
     var personId: String?,
     @PropertyName("g")
-    val geohash: String? = null,
+    var geohash: String? = null,
     @PropertyName("l")
-    val locationArray: List<Double>? = null,
+    var locationArray: List<Double>? = null,
     @PropertyName("time")
     var time: Long? = System.currentTimeMillis(),
     @PropertyName("fcmToken")

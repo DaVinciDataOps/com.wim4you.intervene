@@ -47,9 +47,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         )
     }
 
-    //private val viewModel: HomeViewModel by viewModels()
-    // private lateinit var viewModel: HomeViewModel
-
     private lateinit var mMap: GoogleMap
     private lateinit var patrolMarker:Bitmap
     private lateinit var myPatrolMarker:Bitmap
@@ -97,9 +94,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
         val vigilanteStore =
             VigilanteDataRepository(DatabaseProvider.getDatabase(requireContext()).vigilanteDataDao())
-
-//        viewModel = ViewModelProvider(this, HomeViewModelFactory(personStore,vigilanteStore))
-//            .get(HomeViewModel::class.java)
 
         if(AppState.isGuidedTrip){
             binding.panicButton.visibility = View.VISIBLE

@@ -20,6 +20,7 @@ import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.ActivityMainBinding
 import com.wim4you.intervene.distress.DistressService
 import com.wim4you.intervene.distress.DistressSoundService
+import com.wim4you.intervene.location.LocationTrackerService
 import com.wim4you.intervene.location.PatrolService
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
@@ -58,7 +59,12 @@ class MainActivity : AppCompatActivity()  {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
-        fun updatePatrolState(activity: Activity, isPatrolling: Boolean) {
+        fun setTrackingServiceState(activity: Activity){
+            val intent = Intent(activity, LocationTrackerService::class.java)
+            activity.startService(intent)
+        }
+
+        fun setPatrolServiceState(activity: Activity, isPatrolling: Boolean) {
             val intent = Intent(activity, PatrolService::class.java)
             if (isPatrolling) {
                 activity.startService(intent)
@@ -67,7 +73,7 @@ class MainActivity : AppCompatActivity()  {
             }
         }
 
-        fun updateDistressState(activity: Activity, isDistress: Boolean) {
+        fun setDistressServiceState(activity: Activity, isDistress: Boolean) {
             val intent = Intent(activity, DistressService::class.java)
             if (isDistress) {
                 activity.startService(intent)
@@ -75,6 +81,8 @@ class MainActivity : AppCompatActivity()  {
                 activity.stopService(intent)
             }
         }
+
+        // setTrackingServiceState(this)
 
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
@@ -92,7 +100,7 @@ class MainActivity : AppCompatActivity()  {
                 R.id.nav_startstop_patrolling -> {
                     AppState.isPatrolling = !AppState.isPatrolling
                     navView.menu.findItem(R.id.nav_startstop_guided_trip)?.isVisible = !AppState.isPatrolling
-                    updatePatrolState(this,AppState.isPatrolling)
+                    setPatrolServiceState(this,AppState.isPatrolling)
                     menuItem.title = if (AppState.isPatrolling) "Stop patrolling" else "Start patrolling"
                     navController.navigate(R.id.nav_home)
                     true
@@ -101,7 +109,7 @@ class MainActivity : AppCompatActivity()  {
                 R.id.nav_stop_distress -> {
                     AppState.isDistressState = false
                     stopSound()
-                    updateDistressState(this,AppState.isDistressState)
+                    setDistressServiceState(this,AppState.isDistressState)
                     navController.navigate(R.id.nav_home)
                     true
                 }
