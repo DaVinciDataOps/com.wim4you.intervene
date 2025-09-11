@@ -121,14 +121,20 @@ class LocationTrackerService : Service() {
         geoQueryPatrols = geoFirePatrols.queryAtLocation(location, 2.0)
         geoQueryPatrols.addGeoQueryDataEventListener(object : GeoQueryDataEventListener {
             override fun onDataEntered(dataSnapshot: DataSnapshot, location: GeoLocation) {
-                // Patrol found within 2km
+                // Active patrol found within 2km
                 val patrolLocationData = dataSnapshot.getValue<PatrolLocationData>()
-                if (patrolLocationData != null) {
+                if (patrolLocationData != null && patrolLocationData.isActive == true) {
                     patrolLocationData.id = patrolLocationData.vigilanteId
                     patrolLocationData.locationArray = listOf(location.latitude, location.longitude)
-                    patrolLocationDataList.add(patrolLocationData)
+                    val index = patrolLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
+
+                    if(index == -1)
+                        patrolLocationDataList.add(patrolLocationData)
+                    else
+                        patrolLocationDataList[index] = patrolLocationData
+
+                    broadcastPatrolUpdate(patrolLocationDataList)
                 }
-                broadcastPatrolUpdate(patrolLocationDataList)
             }
 
             override fun onDataExited(dataSnapshot: DataSnapshot) {
@@ -150,8 +156,6 @@ class LocationTrackerService : Service() {
                     broadcastPatrolUpdate(patrolLocationDataList)
                 }
 
-                val index = patrolLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
-                val moved = listOf(location.latitude, location.longitude)
                 broadcastPatrolUpdate(patrolLocationDataList)
             }
 
@@ -179,11 +183,13 @@ class LocationTrackerService : Service() {
                 // Distress found within 2km
                 val distressLocationData = dataSnapshot.getValue<DistressLocationData>()
                 val expiredTime = System.currentTimeMillis() - EXPIRY_TIME_IN_MS
-                    if (distressLocationData != null) {
-                        distressLocationData.locationArray = listOf(location.latitude, location.longitude)
-                        distressLocationDataList.add(distressLocationData)
-                    }
-                    broadcastDistressUpdate(distressLocationDataList)
+                if (distressLocationData != null) {
+                    distressLocationData.id = distressLocationData.personId
+                    distressLocationData.locationArray =
+                        listOf(location.latitude, location.longitude)
+                    distressLocationDataList.add(distressLocationData)
+                }
+                broadcastDistressUpdate(distressLocationDataList)
             }
 
             override fun onDataExited(dataSnapshot: DataSnapshot) {
@@ -208,12 +214,14 @@ class LocationTrackerService : Service() {
             override fun onDataChanged(dataSnapshot: DataSnapshot, location: GeoLocation){
                 // Distress data changed
                 val distressLocationData = dataSnapshot.getValue<DistressLocationData>()
-                if(distressLocationData != null) {
+                if(distressLocationData != null && distressLocationData.isActive == true) {
                     distressLocationData.locationArray =
                         listOf(location.latitude, location.longitude)
                     val index = distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
-                    distressLocationDataList[index] = distressLocationData
-                    broadcastDistressUpdate(distressLocationDataList)
+                    if(index != -1) {
+                        distressLocationDataList[index] = distressLocationData
+                        broadcastDistressUpdate(distressLocationDataList)
+                    }
                 }
             }
 
