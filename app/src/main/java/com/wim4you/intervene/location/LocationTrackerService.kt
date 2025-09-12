@@ -183,12 +183,20 @@ class LocationTrackerService : Service() {
                 // Distress found within 2km
                 val distressLocationData = dataSnapshot.getValue<DistressLocationData>()
                 val expiredTime = System.currentTimeMillis() - EXPIRY_TIME_IN_MS
-                if (distressLocationData != null) {
+                if (distressLocationData != null && distressLocationData.isActive == true) {
                     distressLocationData.id = distressLocationData.personId
                     distressLocationData.locationArray =
                         listOf(location.latitude, location.longitude)
-                    distressLocationDataList.add(distressLocationData)
+                    val index = distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
+                    if(index ==-1)
+                        distressLocationDataList.add(distressLocationData)
+                    else
+                        distressLocationDataList[index] = distressLocationData
                 }
+                else{
+                    distressLocationDataList.removeAll { it.id == dataSnapshot.key }
+                }
+                distressLocationDataList.removeAll { it.id == null}
                 broadcastDistressUpdate(distressLocationDataList)
             }
 
@@ -202,10 +210,9 @@ class LocationTrackerService : Service() {
                 // Distress moved within range
                 val distressLocationData = dataSnapshot.getValue<DistressLocationData>()
                 if(distressLocationData != null) {
+                    distressLocationData.id = distressLocationData.personId
                     distressLocationData.locationArray = listOf(location.latitude, location.longitude)
                     val index = distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
-                    val moved = listOf(location.latitude, location.longitude)
-                    distressLocationData.locationArray = moved
                     distressLocationDataList[index] = distressLocationData
                     broadcastDistressUpdate(distressLocationDataList)
                 }
@@ -214,14 +221,19 @@ class LocationTrackerService : Service() {
             override fun onDataChanged(dataSnapshot: DataSnapshot, location: GeoLocation){
                 // Distress data changed
                 val distressLocationData = dataSnapshot.getValue<DistressLocationData>()
-                if(distressLocationData != null && distressLocationData.isActive == true) {
-                    distressLocationData.locationArray =
-                        listOf(location.latitude, location.longitude)
+                if(distressLocationData != null && distressLocationData.personId != null) {
+                    distressLocationData.id = distressLocationData.personId
+                    distressLocationData.locationArray = listOf(location.latitude, location.longitude)
                     val index = distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
                     if(index != -1) {
-                        distressLocationDataList[index] = distressLocationData
+                        if (distressLocationData.isActive == false)
+                            distressLocationDataList.removeAll { it.id == dataSnapshot.key }
+                        else
+                            distressLocationDataList[index] = distressLocationData
+
                         broadcastDistressUpdate(distressLocationDataList)
                     }
+
                 }
             }
 

@@ -3,6 +3,7 @@ import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
@@ -24,9 +25,14 @@ import com.wim4you.intervene.location.LocationTrackerService
 import com.wim4you.intervene.location.PatrolService
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
-class MainActivity : AppCompatActivity()  {
+class MainActivity : AppCompatActivity() {
     private lateinit var mMap: GoogleMap
+
     // private var mediaPlayer: MediaPlayer? = null
     private lateinit var playStateReceiver: BroadcastReceiver
     private lateinit var appBarConfiguration: AppBarConfiguration
@@ -38,28 +44,32 @@ class MainActivity : AppCompatActivity()  {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         personStore = PersonDataRepository(DatabaseProvider.getDatabase(this).personDataDao())
-        vigilanteStore = VigilanteDataRepository(DatabaseProvider.getDatabase(this).vigilanteDataDao())
-     binding = ActivityMainBinding.inflate(layoutInflater)
-     setContentView(binding.root)
+        vigilanteStore =
+            VigilanteDataRepository(DatabaseProvider.getDatabase(this).vigilanteDataDao())
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         setSupportActionBar(binding.appBarMain.toolbar)
 
         binding.appBarMain.fab.setOnClickListener { view ->
             Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null)
-                    .setAnchorView(R.id.fab).show()
+                .setAction("Action", null)
+                .setAnchorView(R.id.fab).show()
         }
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
-        appBarConfiguration = AppBarConfiguration(setOf(
-            R.id.nav_home, R.id.nav_vigilantes, R.id.nav_settings), drawerLayout)
+        appBarConfiguration = AppBarConfiguration(
+            setOf(
+                R.id.nav_home, R.id.nav_vigilantes, R.id.nav_settings
+            ), drawerLayout
+        )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
-        fun setTrackingServiceState(activity: Activity){
+        fun setTrackingServiceState(activity: Activity) {
             val intent = Intent(activity, LocationTrackerService::class.java)
             activity.startService(intent)
         }
@@ -88,20 +98,24 @@ class MainActivity : AppCompatActivity()  {
             when (menuItem.itemId) {
                 R.id.nav_startstop_guided_trip -> {
                     AppState.isGuidedTrip = !AppState.isGuidedTrip
-                    if(!AppState.isGuidedTrip)
+                    if (!AppState.isGuidedTrip)
                         AppState.isDistressState = false
 
-                    navView.menu.findItem(R.id.nav_startstop_patrolling)?.isVisible = !AppState.isGuidedTrip
-                    menuItem.title = if (AppState.isGuidedTrip) "Stop guided trip" else "Start guided trip"
+                    navView.menu.findItem(R.id.nav_startstop_patrolling)?.isVisible =
+                        !AppState.isGuidedTrip
+                    menuItem.title =
+                        if (AppState.isGuidedTrip) "Stop guided trip" else "Start guided trip"
                     navController.navigate(R.id.nav_home)
                     true
                 }
 
                 R.id.nav_startstop_patrolling -> {
                     AppState.isPatrolling = !AppState.isPatrolling
-                    navView.menu.findItem(R.id.nav_startstop_guided_trip)?.isVisible = !AppState.isPatrolling
-                    setPatrolServiceState(this,AppState.isPatrolling)
-                    menuItem.title = if (AppState.isPatrolling) "Stop patrolling" else "Start patrolling"
+                    navView.menu.findItem(R.id.nav_startstop_guided_trip)?.isVisible =
+                        !AppState.isPatrolling
+                    setPatrolServiceState(this, AppState.isPatrolling)
+                    menuItem.title =
+                        if (AppState.isPatrolling) "Stop patrolling" else "Start patrolling"
                     navController.navigate(R.id.nav_home)
                     true
                 }
@@ -109,18 +123,19 @@ class MainActivity : AppCompatActivity()  {
                 R.id.nav_stop_distress -> {
                     AppState.isDistressState = false
                     stopSound()
-                    setDistressServiceState(this,AppState.isDistressState)
+                    setDistressServiceState(this, AppState.isDistressState)
                     navController.navigate(R.id.nav_home)
                     true
                 }
-            else -> {
-                navController.navigate(menuItem.itemId)
-                true
+
+                else -> {
+                    navController.navigate(menuItem.itemId)
+                    true
                 }
             }
-            .also {
-                drawerLayout.closeDrawers()
-            }
+                .also {
+                    drawerLayout.closeDrawers()
+                }
         }
 
         PermissionsUtils.requestPermissions(this)
@@ -144,6 +159,21 @@ class MainActivity : AppCompatActivity()  {
     private fun stopSound() {
         AppState.isDistressState = false
         DistressService.stop(this)
+        CoroutineScope(Dispatchers.Main).launch {
+            updateDistress()
+        }
         DistressSoundService.stop(this) // Stop the sound service
+    }
+
+    private suspend fun updateDistress() {
+        var personData = personStore.fetch();
+        database.child("distress").child(personData?.id ?: "")
+            .updateChildren(mapOf("active" to false))
+            .addOnSuccessListener {
+                Log.i("Firebase", "Success saving distress:")
+            }
+            .addOnFailureListener { exception ->
+                Log.e("Firebase", "Error saving distress:")
+            }
     }
 }

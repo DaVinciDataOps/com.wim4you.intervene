@@ -21,5 +21,9 @@ data class DistressLocationData (
     @PropertyName("active")
     var isActive: Boolean? = false
 ): Parcelable{
-    constructor() : this(null, "", null, null,  fcmToken = null, time = null, isActive = null)
+    constructor() : this(null, null, null, null, null, null, null)
+
+    // Helper properties for convenience
+    val latitude: Double? get() = locationArray?.getOrNull(0)
+    val longitude: Double? get() = locationArray?.getOrNull(1)
 }
