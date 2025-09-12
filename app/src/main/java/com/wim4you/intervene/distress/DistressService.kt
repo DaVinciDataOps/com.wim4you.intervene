@@ -103,7 +103,7 @@ class DistressService : Service() {
                     location?.let {
                         val geoLocation = GeoLocation(it.latitude, it.longitude)
                         val distressData = data(personData.id,it, isActive = active)
-                        sendStopDistressToFirebase(distressData, geoLocation)
+                        sendStartStopDistressToFirebase(distressData, geoLocation)
                     }
                     delay(15_000)
                 }
@@ -151,7 +151,7 @@ class DistressService : Service() {
             }
         }
 
-    private fun sendStopDistressToFirebase(distressLocationData: DistressLocationData, geoLocation: GeoLocation) {
+    private fun sendStartStopDistressToFirebase(distressLocationData: DistressLocationData, geoLocation: GeoLocation) {
         geoFire.setLocation(distressLocationData.id, geoLocation) { key, error ->
             if (error != null) {
                 Log.e("Firebase", "Error saving GeoFire location: ${error.message}")
@@ -177,7 +177,7 @@ class DistressService : Service() {
             }
     }
 
-    private fun sendStopDistressToFirebase(id:String) {
+    private fun sendStartStopDistressToFirebase(id:String) {
         database.child("distress").child(id)
             .updateChildren(mapOf("active" to false))
             .addOnSuccessListener {
@@ -208,7 +208,7 @@ class DistressService : Service() {
                     stopSelf()
                 }
                 else {
-                    sendStopDistressToFirebase(personData.id )
+                    sendStartStopDistressToFirebase(personData.id )
                 }
             }
         }

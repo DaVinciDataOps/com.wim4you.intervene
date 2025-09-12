@@ -233,7 +233,6 @@ class LocationTrackerService : Service() {
 
                         broadcastDistressUpdate(distressLocationDataList)
                     }
-
                 }
             }
 

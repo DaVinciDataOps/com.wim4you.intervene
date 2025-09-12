@@ -27,7 +27,6 @@ import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -69,7 +68,7 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
-        fun setTrackingServiceState(activity: Activity) {
+        fun startTrackingServiceState(activity: Activity) {
             val intent = Intent(activity, LocationTrackerService::class.java)
             activity.startService(intent)
         }
@@ -83,7 +82,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        fun setDistressServiceState(activity: Activity, isDistress: Boolean) {
+        fun startStopDistressServiceState(activity: Activity, isDistress: Boolean) {
             val intent = Intent(activity, DistressService::class.java)
             if (isDistress) {
                 activity.startService(intent)
@@ -92,7 +91,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // setTrackingServiceState(this)
+        startTrackingServiceState(this)
 
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
@@ -123,7 +122,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_stop_distress -> {
                     AppState.isDistressState = false
                     stopSound()
-                    setDistressServiceState(this, AppState.isDistressState)
+                    startStopDistressServiceState(this, AppState.isDistressState)
                     navController.navigate(R.id.nav_home)
                     true
                 }
@@ -158,7 +157,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun stopSound() {
         AppState.isDistressState = false
-        DistressService.stop(this)
+        //DistressService.stop(this)
         CoroutineScope(Dispatchers.Main).launch {
             updateDistress()
         }

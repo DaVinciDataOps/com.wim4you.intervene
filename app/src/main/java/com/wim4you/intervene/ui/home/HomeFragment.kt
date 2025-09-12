@@ -89,12 +89,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             updateDistressMapMarkers(distressDataList)
         }
 
-        val personStore =
-            PersonDataRepository(DatabaseProvider.getDatabase(requireContext()).personDataDao())
-
-        val vigilanteStore =
-            VigilanteDataRepository(DatabaseProvider.getDatabase(requireContext()).vigilanteDataDao())
-
         if(AppState.isGuidedTrip){
             binding.panicButton.visibility = View.VISIBLE
         }
@@ -121,7 +115,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        viewModel.stopLocationService(requireContext())
+        // viewModel.stopLocationService(requireContext())
         _binding = null
     }
 
