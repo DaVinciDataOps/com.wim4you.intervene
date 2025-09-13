@@ -13,6 +13,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.firebase.geofire.GeoFire
+import com.firebase.geofire.GeoFireUtils
 import com.firebase.geofire.GeoLocation
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -102,8 +103,7 @@ class DistressService : Service() {
                     val location = getLastLocation()
                     location?.let {
                         val geoLocation = GeoLocation(it.latitude, it.longitude)
-                        val distressData = data(personData.id,it, isActive = active)
-                        sendStartStopDistressToFirebase(distressData, geoLocation)
+                        sendStartDistressToFirebase(personData, geoLocation)
                     }
                     delay(15_000)
                 }
@@ -112,18 +112,6 @@ class DistressService : Service() {
                 }
             }
         }
-    }
-
-    private fun data(id:String, geoLocation: Location, isActive: Boolean): DistressLocationData {
-        val distressLocationData = DistressLocationData(
-            id = id,
-            personId = id,
-            locationArray =  listOf(geoLocation.latitude, geoLocation.longitude),
-            time = System.currentTimeMillis(),
-            fcmToken = null,
-            isActive = isActive
-        )
-        return distressLocationData
     }
 
     private suspend fun getLastLocation(maxAgeMillis: Long = 60_000): Location? =
@@ -151,23 +139,18 @@ class DistressService : Service() {
             }
         }
 
-    private fun sendStartStopDistressToFirebase(distressLocationData: DistressLocationData, geoLocation: GeoLocation) {
-        geoFire.setLocation(distressLocationData.id, geoLocation) { key, error ->
-            if (error != null) {
-                Log.e("Firebase", "Error saving GeoFire location: ${error.message}")
-            } else {
-                Log.i("Firebase", "Success saving GeoFire location for key: $key")
-            }
-        }
-
+    private fun sendStartDistressToFirebase(personData: PersonData, geoLocation: GeoLocation) {
         val distressDataMap = mapOf(
-            "personId" to distressLocationData.personId,
-            "time" to distressLocationData.time,
-            "active" to distressLocationData.isActive,
-            "fcmToken" to distressLocationData.fcmToken
+            "l" to listOf(geoLocation.latitude, geoLocation.longitude),
+            "g" to GeoFireUtils.getGeoHashForLocation(geoLocation),
+            "alias" to personData.alias,
+            "personId" to personData.id,
+            "time" to System.currentTimeMillis(),
+            "active" to true,
+            "fcmToken" to null
         )
 
-        database.child("distress").child(distressLocationData.id.toString()).
+        database.child("distress").child(personData.id.toString()).
         updateChildren(distressDataMap)
             .addOnSuccessListener {
                 Log.i("Firebase", "Success saving patrol:")
@@ -177,7 +160,7 @@ class DistressService : Service() {
             }
     }
 
-    private fun sendStartStopDistressToFirebase(id:String) {
+    private fun sendStopDistressToFirebase(id:String) {
         database.child("distress").child(id)
             .updateChildren(mapOf("active" to false))
             .addOnSuccessListener {
@@ -208,7 +191,7 @@ class DistressService : Service() {
                     stopSelf()
                 }
                 else {
-                    sendStartStopDistressToFirebase(personData.id )
+                    sendStopDistressToFirebase(personData.id )
                 }
             }
         }
