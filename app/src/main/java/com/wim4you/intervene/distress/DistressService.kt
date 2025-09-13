@@ -179,6 +179,7 @@ class DistressService : Service() {
             "location" to geoLocation,
             "time" to System.currentTimeMillis(),
         )
+
         val id = "${personData.id}_${System.currentTimeMillis()}"
 
         database.child("distress_history").child(id).
