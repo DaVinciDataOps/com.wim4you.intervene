@@ -16,6 +16,8 @@ data class DistressLocationData (
     var geohash: String? = null,
     @PropertyName("l")
     var locationArray: List<Double>? = null,
+    @PropertyName("startTime")
+    var startTime: Long? = System.currentTimeMillis(),
     @PropertyName("time")
     var time: Long? = System.currentTimeMillis(),
     @PropertyName("fcmToken")

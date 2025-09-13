@@ -34,6 +34,7 @@ import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.repository.PersonDataRepository
 import androidx.core.graphics.scale
 import com.wim4you.intervene.fbdata.DistressLocationData
+import com.wim4you.intervene.helpers.TimestampConverter
 
 class HomeFragment : Fragment(), OnMapReadyCallback {
 
@@ -163,7 +164,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                     val newMarker = mMap.addMarker(
                         MarkerOptions()
                             .position(latLng)
-                            .title("!HELP!")
+                            .title("${distressData.alias} !HELP!")
+                            .snippet(getTimeLapsString(System.currentTimeMillis(),distressData.startTime ))
                             .icon(BitmapDescriptorFactory.fromBitmap(distressMarker))
                     )
                     if (newMarker != null) {
@@ -173,6 +175,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 } else {
                     // Update existing marker position
                     marker.position = latLng
+                    marker.snippet = getTimeLapsString(System.currentTimeMillis(),distressData.startTime )
                 }
             }
         }
@@ -180,6 +183,13 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         if(AppState.isPatrolling && hasNewMarkers)
             playPatrolDistressSound()
     }
+
+    private fun getTimeLapsString(currentTimestamp: Long?, startTimestamp: Long?): String {
+        val lap = TimestampConverter.lapSeconds(startTimestamp, currentTimestamp).toString()
+        val start = TimestampConverter.toTime(startTimestamp)
+        return "time:${start} [lap:${lap} sec]"
+    }
+
     private fun updatePatrolMapMarkers(patrolLocationDataList: List<PatrolLocationData>){
         if(!mMapInitialized)
             return

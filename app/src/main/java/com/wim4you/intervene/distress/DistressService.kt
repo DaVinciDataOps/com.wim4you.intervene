@@ -78,14 +78,14 @@ class DistressService : Service() {
                   stopSelf()
                 }
                 else {
-                  startDistressUpdates(personData,AppState.isDistressState)
+                  startDistressUpdates(personData, true,AppState.isDistressState)
                 }
             }
         }
         return START_STICKY
     }
 
-    private fun startDistressUpdates(personData: PersonData, active: Boolean) {
+    private fun startDistressUpdates(personData: PersonData, init:Boolean, active: Boolean) {
         if (ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -94,16 +94,22 @@ class DistressService : Service() {
             // Handle missing permissions (e.g., stop service or notify user)
             stopSelf()
             return
+
         }
 
         distressJob?.cancel()
         distressJob = coroutineScope.launch {
+            val location = getLastLocation()
+            location?.let{
+                val geoLocation = GeoLocation(location.latitude, location.longitude)
+                sendStartDistressToFirebase(personData, true, geoLocation)
+            }
+
             while (isActive && AppState.isDistressState) {
                 try {
-                    val location = getLastLocation()
                     location?.let {
                         val geoLocation = GeoLocation(it.latitude, it.longitude)
-                        sendStartDistressToFirebase(personData, geoLocation)
+                        sendStartDistressToFirebase(personData, false, geoLocation)
                     }
                     delay(15_000)
                 }
@@ -139,8 +145,8 @@ class DistressService : Service() {
             }
         }
 
-    private fun sendStartDistressToFirebase(personData: PersonData, geoLocation: GeoLocation) {
-        val distressDataMap = mapOf(
+    private fun sendStartDistressToFirebase(personData: PersonData, init:Boolean, geoLocation: GeoLocation) {
+        val distressDataMap = mutableMapOf(
             "l" to listOf(geoLocation.latitude, geoLocation.longitude),
             "g" to GeoFireUtils.getGeoHashForLocation(geoLocation),
             "alias" to personData.alias,
@@ -149,6 +155,10 @@ class DistressService : Service() {
             "active" to true,
             "fcmToken" to null
         )
+
+        if (init) {
+            distressDataMap["startTime"] = System.currentTimeMillis()
+        }
 
         database.child("distress").child(personData.id.toString()).
         updateChildren(distressDataMap)
