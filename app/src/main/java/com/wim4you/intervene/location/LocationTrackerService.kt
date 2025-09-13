@@ -187,6 +187,10 @@ class LocationTrackerService : Service() {
         })
     }
 
+    private fun validData(distress:DistressLocationData?): Boolean{
+        val expiredTime = System.currentTimeMillis() - EXPIRY_TIME_IN_MS
+        return distress != null && distress.isActive == true && distress.time!! > expiredTime
+    }
     private fun queryNearbyDistress(location: GeoLocation) {
         // Query distress calls within 2km
         geoQueryDistress = geoFireDistress.queryAtLocation(location, 2.0)
@@ -194,21 +198,21 @@ class LocationTrackerService : Service() {
             override fun onDataEntered(dataSnapshot: DataSnapshot, location: GeoLocation) {
                 // Distress found within 2km
                 val distressLocationData = dataSnapshot.getValue<DistressLocationData>()
-                val expiredTime = System.currentTimeMillis() - EXPIRY_TIME_IN_MS
-                if (distressLocationData != null && distressLocationData.isActive == true) {
-                    distressLocationData.id = distressLocationData.personId
-                    distressLocationData.locationArray =
-                        listOf(location.latitude, location.longitude)
-                    val index = distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
-                    if(index ==-1)
-                        distressLocationDataList.add(distressLocationData)
-                    else
-                        distressLocationDataList[index] = distressLocationData
-                }
-                else{
+                if (validData(distressLocationData)) {
+                    distressLocationData?.let { distressLocationData ->
+                        distressLocationData.id = distressLocationData.personId
+                        distressLocationData.locationArray =
+                            listOf(location.latitude, location.longitude)
+                        val index =
+                            distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
+                        if (index == -1)
+                            distressLocationDataList.add(distressLocationData)
+                        else
+                            distressLocationDataList[index] = distressLocationData
+                    }
+                } else {
                     distressLocationDataList.removeAll { it.id == dataSnapshot.key }
                 }
-                distressLocationDataList.removeAll { it.id == null}
                 broadcastDistressUpdate(distressLocationDataList)
             }
 
@@ -221,29 +225,37 @@ class LocationTrackerService : Service() {
             override fun onDataMoved(dataSnapshot: DataSnapshot, location: GeoLocation) {
                 // Distress moved within range
                 val distressLocationData = dataSnapshot.getValue<DistressLocationData>()
-                if(distressLocationData != null) {
-                    distressLocationData.id = distressLocationData.personId
-                    distressLocationData.locationArray = listOf(location.latitude, location.longitude)
-                    val index = distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
-                    distressLocationDataList[index] = distressLocationData
-                    broadcastDistressUpdate(distressLocationDataList)
+                if(validData(distressLocationData)) {
+                    distressLocationData?.let {
+                        distressLocationData.id = distressLocationData.personId
+                        distressLocationData.locationArray =
+                            listOf(location.latitude, location.longitude)
+                        val index =
+                            distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
+                        distressLocationDataList[index] = distressLocationData
+                        broadcastDistressUpdate(distressLocationDataList)
+                    }
                 }
             }
 
-            override fun onDataChanged(dataSnapshot: DataSnapshot, location: GeoLocation){
+            override fun onDataChanged(dataSnapshot: DataSnapshot, location: GeoLocation) {
                 // Distress data changed
                 val distressLocationData = dataSnapshot.getValue<DistressLocationData>()
-                if(distressLocationData != null && distressLocationData.personId != null) {
-                    distressLocationData.id = distressLocationData.personId
-                    distressLocationData.locationArray = listOf(location.latitude, location.longitude)
-                    val index = distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
-                    if(index != -1) {
-                        if (distressLocationData.isActive == false)
-                            distressLocationDataList.removeAll { it.id == dataSnapshot.key }
-                        else
-                            distressLocationDataList[index] = distressLocationData
+                if (validData(distressLocationData)) {
+                    distressLocationData?.let {
+                        distressLocationData.id = distressLocationData.personId
+                        distressLocationData.locationArray =
+                            listOf(location.latitude, location.longitude)
+                        val index =
+                            distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
+                        if (index != -1) {
+                            if (distressLocationData.isActive == false)
+                                distressLocationDataList.removeAll { it.id == dataSnapshot.key }
+                            else
+                                distressLocationDataList[index] = distressLocationData
 
-                        broadcastDistressUpdate(distressLocationDataList)
+                            broadcastDistressUpdate(distressLocationDataList)
+                        }
                     }
                 }
             }
