@@ -168,6 +168,27 @@ class DistressService : Service() {
             .addOnFailureListener { exception ->
                 Log.e("Firebase", "Error saving patrol:")
             }
+
+        if(init)
+            sendDistressToHistory(personData, geoLocation)
+    }
+
+    private fun sendDistressToHistory(personData: PersonData, geoLocation: GeoLocation){
+        val historyMap = mutableMapOf(
+            "personData" to personData,
+            "location" to geoLocation,
+            "time" to System.currentTimeMillis(),
+        )
+        val id = "${personData.id}_${System.currentTimeMillis()}"
+
+        database.child("distress_history").child(id).
+        setValue(historyMap)
+            .addOnSuccessListener {
+                Log.i("Firebase", "Success saving distress history:")
+            }
+            .addOnFailureListener { exception ->
+                Log.e("Firebase", "Error saving distress history:")
+            }
     }
 
     private fun sendStopDistressToFirebase(id:String) {
