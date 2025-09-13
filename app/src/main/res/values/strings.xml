@@ -37,4 +37,11 @@
         <item>X</item>
         <item>Won\'t say</item>
     </string-array>
+
+    <string-array name="gender_ids">
+        <item>M</item>
+        <item>F</item>
+        <item>X</item>
+        <item>U</item>
+    </string-array>
 </resources>

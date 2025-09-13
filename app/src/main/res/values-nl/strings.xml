@@ -1,0 +1,42 @@
+<resources>
+    <string name="app_name">InterVene</string>
+    <string name="navigation_drawer_open">Navigatiepaneel openen</string>
+    <string name="navigation_drawer_close">Navigatiepaneel sluiten</string>
+    <string name="nav_header_title">Intervene Paniek</string>
+    <string name="nav_header_subtitle">intervene@wim4you.com</string>
+    <string name="nav_header_desc">Navigatiekop</string>
+    <string name="action_settings">Instellingen</string>
+
+    <string name="menu_home">Home</string>
+    <string name="menu_vigilantes">Vigilantes</string>
+    <string name="menu_settings">Instellingen</string>
+    <string name="menu_register">Registreren</string>
+
+    <string name="btn_panic">!HELP!</string>
+    <string name="btn_save">Opslaan</string>
+    <string name="vigilante_group_name">Naam van de vigilantegroep</string>
+    <string name="vigilante_group_size">Groepsgrootte</string>
+    <string name="register_gender">Geslacht</string>
+    <string name="register_alias">Alias</string>
+    <string name="register_age">Leeftijd</string>
+    <string name="register_safe_word">Veilig woord</string>
+    <string name="register_phone_number">Telefoonnummer</string>
+    <string name="register_e_mail">E-mail</string>
+    <string name="vigilante_image">Vigilante-afbeelding</string>
+    <string name="vigilante_explanatory_text">Registreer jezelf of je groep als vigilantes/buurtwacht en word actief in het voorkomen van misdaden.</string>
+    <string name="home_start_patrolling">Start met patrouilleren</string>
+    <string name="home_stop_patrolling">Stop met patrouilleren</string>
+    <string name="home_start_guided_trip">Start begeleide reis</string>
+    <string name="nav_startstop_guided_trip">Begeleide reis starten</string>
+    <string name="nav_startstop_patrolling">Patrouilleren starten</string>
+    <string name="nav_cancel_distress_call">Noodoproep annuleren</string>
+
+    <string-array name="gender_options">
+        <item>Man</item>
+        <item>Vrouw</item>
+        <item>X</item>
+        <item>Zeg ik liever niet</item>
+    </string-array>
+
+
+</resources>
