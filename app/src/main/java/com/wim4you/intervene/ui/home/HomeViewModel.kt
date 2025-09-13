@@ -39,9 +39,6 @@ class HomeViewModel(
     private val panicButtonPressWindowMs = 5000L // 5 seconds time window for presses
     private var lastPressTime = 0L
 
-    // LiveData for current location (for map marker)
-    private val _currentLocation = MutableLiveData<LatLng?>()
-
     // Register this in the Fragment to receive updates
     private val locationTrackerServiceReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {

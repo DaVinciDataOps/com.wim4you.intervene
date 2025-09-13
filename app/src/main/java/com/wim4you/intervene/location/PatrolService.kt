@@ -11,6 +11,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.firebase.geofire.GeoFire
+import com.firebase.geofire.GeoFireUtils
 import com.firebase.geofire.GeoLocation
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -57,7 +58,7 @@ class PatrolService : Service() {
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle("InterVene")
             .setContentText("Running in the background")
-            .setSmallIcon(R.drawable.ic_startstop_patrolling) // Replace with your icon
+            .setSmallIcon(R.drawable.ic_startstop_patrolling)
             .build()
 
         startForeground(notificationId, notification)
@@ -100,7 +101,6 @@ class PatrolService : Service() {
                             id = vigilanteData.id,
                             vigilanteId = vigilanteData.id,
                             name = vigilanteData.name,
-                            locationArray =  listOf(it.latitude, it.longitude),
                             time = System.currentTimeMillis(),
                             isActive = true,
                             fcmToken = null // Replace with actual FCM token if needed
@@ -140,16 +140,13 @@ class PatrolService : Service() {
     }
 
     private fun sendToFirebase(patrolLocationData: PatrolLocationData, geoLocation: GeoLocation) {
-        geoFire.setLocation(patrolLocationData.id, geoLocation) { key, error ->
-            if (error != null) {
-                Log.e("Firebase", "Error saving GeoFire location: ${error.message}")
-            } else {
-                Log.i("Firebase", "Success saving GeoFire location for key: $key")
-            }
-        }
+        patrolLocationData.id = patrolLocationData.vigilanteId
+        patrolLocationData.locationArray = listOf(geoLocation.latitude, geoLocation.longitude)
+        patrolLocationData.geohash = GeoFireUtils.getGeoHashForLocation(geoLocation)
 
-        // Save additional patrol data without overwriting GeoFire fields
         val patrolDataMap = mapOf(
+            "l" to listOf(geoLocation.latitude, geoLocation.longitude),
+            "g" to GeoFireUtils.getGeoHashForLocation(geoLocation),
             "vigilanteId" to patrolLocationData.vigilanteId,
             "name" to patrolLocationData.name,
             "time" to patrolLocationData.time,

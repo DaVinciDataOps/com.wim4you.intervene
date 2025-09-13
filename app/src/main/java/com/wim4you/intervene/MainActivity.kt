@@ -30,10 +30,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var mMap: GoogleMap
-
-    // private var mediaPlayer: MediaPlayer? = null
-    private lateinit var playStateReceiver: BroadcastReceiver
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private lateinit var personStore: PersonDataRepository
@@ -91,7 +87,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        startTrackingServiceState(this)
+        if (!PermissionsUtils.areLocationPermissionsGranted(this)) {
+            PermissionsUtils.requestPermissions(this)
+        } else {
+            // Permissions already granted, start the service
+            startTrackingServiceState(this)
+        }
 
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {

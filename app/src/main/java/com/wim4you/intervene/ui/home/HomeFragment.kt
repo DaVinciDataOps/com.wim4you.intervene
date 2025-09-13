@@ -32,7 +32,6 @@ import com.wim4you.intervene.databinding.FragmentHomeBinding
 import com.wim4you.intervene.fbdata.PatrolLocationData
 import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.repository.PersonDataRepository
-import com.wim4you.intervene.repository.VigilanteDataRepository
 import androidx.core.graphics.scale
 import com.wim4you.intervene.fbdata.DistressLocationData
 
@@ -48,6 +47,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     }
 
     private lateinit var mMap: GoogleMap
+    private var mMapInitialized = false
     private lateinit var patrolMarker:Bitmap
     private lateinit var myPatrolMarker:Bitmap
     private lateinit var distressMarker:Bitmap
@@ -80,7 +80,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             .scale(90, 90, false)
 
         viewModel.registerLocationTrackerReceiver(requireContext())
-        viewModel.startLocationService(requireContext())
 
         viewModel.patrolLocations.observe(viewLifecycleOwner) { patrolDataList ->
             updatePatrolMapMarkers(patrolDataList)
@@ -136,9 +135,17 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 }
             }
         }
+
+        mMapInitialized = true
+
+        //viewModel.registerLocationTrackerReceiver(requireContext())
+        //viewModel.startLocationService(requireContext())
     }
 
     private fun updateDistressMapMarkers(distressDataList: List<DistressLocationData>){
+        if(!mMapInitialized)
+            return
+
         val currentIds = distressDataList.map { it.id }.toSet()
         var hasNewMarkers = false;
         distressMarkers.keys.filter { it !in currentIds }.forEach { id ->
@@ -174,6 +181,9 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             playPatrolDistressSound()
     }
     private fun updatePatrolMapMarkers(patrolLocationDataList: List<PatrolLocationData>){
+        if(!mMapInitialized)
+            return
+
         val currentIds = patrolLocationDataList.map { it.id }.toSet()
         patrolMarkers.keys.filter { it !in currentIds }.forEach { id ->
             patrolMarkers[id]?.remove()
@@ -190,7 +200,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                     val newMarker = mMap.addMarker(
                         MarkerOptions()
                             .position(latLng)
-                            .title(patrolData.name ?: "Vigilante")
+                            .title(patrolData.name ?: "Patrol")
                             .icon(getIcon(patrolData.vigilanteId))
                     )
                     if (newMarker != null) {

@@ -87,7 +87,7 @@ class LocationTrackerService : Service() {
     }
 
     private fun createNotification(): Notification {
-        return NotificationCompat.Builder(this, "location_service_channel")
+        return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Location Tracking")
             .setContentText("Tracking your location for patrols and distress calls")
             .setSmallIcon(R.drawable.ic_location) // Replace with your icon
@@ -152,17 +152,29 @@ class LocationTrackerService : Service() {
                     val moved = listOf(location.latitude, location.longitude)
                     patrolLocationData.id = patrolLocationData.vigilanteId
                     patrolLocationData.locationArray = moved
-                    patrolLocationDataList[index] = patrolLocationData
+                    if(index == -1)
+                        patrolLocationDataList.add(patrolLocationData)
+                    else
+                        patrolLocationDataList[index] = patrolLocationData
+
                     broadcastPatrolUpdate(patrolLocationDataList)
                 }
-
-                broadcastPatrolUpdate(patrolLocationDataList)
             }
 
             override fun onDataChanged(dataSnapshot: DataSnapshot, location: GeoLocation){
                 val patrolLocationData = dataSnapshot.getValue<PatrolLocationData>()
-                val index = patrolLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
-                broadcastPatrolUpdate(patrolLocationDataList)
+                if(patrolLocationData != null) {
+                    val index = patrolLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
+                    val moved = listOf(location.latitude, location.longitude)
+                    patrolLocationData.id = patrolLocationData.vigilanteId
+                    patrolLocationData.locationArray = moved
+                    if(index == -1)
+                        patrolLocationDataList.add(patrolLocationData)
+                    else
+                        patrolLocationDataList[index] = patrolLocationData
+
+                    broadcastPatrolUpdate(patrolLocationDataList)
+                }
             }
 
             override fun onGeoQueryReady() {
