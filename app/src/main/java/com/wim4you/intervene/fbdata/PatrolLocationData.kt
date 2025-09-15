@@ -14,7 +14,7 @@ data class PatrolLocationData (
     var locationArray: List<Double>? = null,
 
     @PropertyName("vigilanteId")
-    val vigilanteId: String? = null,
+    var vigilanteId: String? = null,
     @PropertyName("name")
     var name: String? = null,
 

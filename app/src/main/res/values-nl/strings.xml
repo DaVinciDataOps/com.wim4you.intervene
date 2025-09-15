@@ -30,6 +30,7 @@
     <string name="nav_startstop_guided_trip">Begeleide reis starten</string>
     <string name="nav_startstop_patrolling">Patrouilleren starten</string>
     <string name="nav_cancel_distress_call">Noodoproep annuleren</string>
+    <string name="ask_for_assistance">Vraag assistentie</string>
 
     <string-array name="gender_options">
         <item>Man</item>

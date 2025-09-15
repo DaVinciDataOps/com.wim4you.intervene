@@ -19,6 +19,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.database.database
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.ActivityMainBinding
+import com.wim4you.intervene.distress.DistressNotificationManager
 import com.wim4you.intervene.distress.DistressService
 import com.wim4you.intervene.distress.DistressSoundService
 import com.wim4you.intervene.location.LocationTrackerService
@@ -118,6 +119,14 @@ class MainActivity : AppCompatActivity() {
                     menuItem.title =
                         if (AppState.isPatrolling) "Stop patrolling" else "Start patrolling"
                     navController.navigate(R.id.nav_home)
+                    true
+                }
+
+                R.id.nav_call_assistance -> {
+                    if(AppState.isPatrolling == true) {
+                        DistressNotificationManager.sendDistressNotification(this)
+                    }
+                    //navController.navigate(R.id.nav_home)
                     true
                 }
 

@@ -116,6 +116,16 @@ class LocationTrackerService : Service() {
         }
     }
 
+    private fun validData(patrol:PatrolLocationData?): Boolean{
+        val expiredTime = System.currentTimeMillis() - EXPIRY_TIME_IN_MS
+        return patrol != null && patrol.isActive == true && patrol.time!! > expiredTime
+    }
+
+    private fun validData(distress:DistressLocationData?): Boolean{
+        val expiredTime = System.currentTimeMillis() - EXPIRY_TIME_IN_MS
+        return distress != null && distress.isActive == true && distress.time!! > expiredTime
+    }
+
     private fun queryNearbyPatrols(location: GeoLocation) {
         // Query patrols within 2km
         geoQueryPatrols = geoFirePatrols.queryAtLocation(location, 2.0)
@@ -123,17 +133,21 @@ class LocationTrackerService : Service() {
             override fun onDataEntered(dataSnapshot: DataSnapshot, location: GeoLocation) {
                 // Active patrol found within 2km
                 val patrolLocationData = dataSnapshot.getValue<PatrolLocationData>()
-                if (patrolLocationData != null && patrolLocationData.isActive == true) {
-                    patrolLocationData.id = patrolLocationData.vigilanteId
-                    patrolLocationData.locationArray = listOf(location.latitude, location.longitude)
-                    val index = patrolLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
+                if (validData(patrolLocationData)) {
+                    patrolLocationData?.let { patrolLocationData ->
+                        patrolLocationData.id = patrolLocationData.vigilanteId
+                        patrolLocationData.locationArray =
+                            listOf(location.latitude, location.longitude)
+                        val index =
+                            patrolLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
 
-                    if(index == -1)
-                        patrolLocationDataList.add(patrolLocationData)
-                    else
-                        patrolLocationDataList[index] = patrolLocationData
+                        if (index == -1)
+                            patrolLocationDataList.add(patrolLocationData)
+                        else
+                            patrolLocationDataList[index] = patrolLocationData
 
-                    broadcastPatrolUpdate(patrolLocationDataList)
+                        broadcastPatrolUpdate(patrolLocationDataList)
+                    }
                 }
             }
 
@@ -146,34 +160,41 @@ class LocationTrackerService : Service() {
             override fun onDataMoved(dataSnapshot: DataSnapshot, location: GeoLocation) {
                 // Patrol moved within range
                 val patrolLocationData = dataSnapshot.getValue<PatrolLocationData>()
-                if(patrolLocationData != null) {
-                    patrolLocationData.locationArray = listOf(location.latitude, location.longitude)
-                    val index = patrolLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
-                    val moved = listOf(location.latitude, location.longitude)
-                    patrolLocationData.id = patrolLocationData.vigilanteId
-                    patrolLocationData.locationArray = moved
-                    if(index == -1)
-                        patrolLocationDataList.add(patrolLocationData)
-                    else
-                        patrolLocationDataList[index] = patrolLocationData
+                if (validData(patrolLocationData)) {
+                    patrolLocationData?.let { patrolLocationData ->
+                        patrolLocationData.locationArray =
+                            listOf(location.latitude, location.longitude)
+                        val index =
+                            patrolLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
+                        val moved = listOf(location.latitude, location.longitude)
+                        patrolLocationData.id = patrolLocationData.vigilanteId
+                        patrolLocationData.locationArray = moved
+                        if (index == -1)
+                            patrolLocationDataList.add(patrolLocationData)
+                        else
+                            patrolLocationDataList[index] = patrolLocationData
 
-                    broadcastPatrolUpdate(patrolLocationDataList)
+                        broadcastPatrolUpdate(patrolLocationDataList)
+                    }
                 }
             }
 
             override fun onDataChanged(dataSnapshot: DataSnapshot, location: GeoLocation){
                 val patrolLocationData = dataSnapshot.getValue<PatrolLocationData>()
-                if(patrolLocationData != null) {
-                    val index = patrolLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
-                    val moved = listOf(location.latitude, location.longitude)
-                    patrolLocationData.id = patrolLocationData.vigilanteId
-                    patrolLocationData.locationArray = moved
-                    if(index == -1)
-                        patrolLocationDataList.add(patrolLocationData)
-                    else
-                        patrolLocationDataList[index] = patrolLocationData
+                if (validData(patrolLocationData)) {
+                    patrolLocationData?.let { patrolLocationData ->
+                        val index =
+                            patrolLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
+                        val moved = listOf(location.latitude, location.longitude)
+                        patrolLocationData.id = patrolLocationData.vigilanteId
+                        patrolLocationData.locationArray = moved
+                        if (index == -1)
+                            patrolLocationDataList.add(patrolLocationData)
+                        else
+                            patrolLocationDataList[index] = patrolLocationData
 
-                    broadcastPatrolUpdate(patrolLocationDataList)
+                        broadcastPatrolUpdate(patrolLocationDataList)
+                    }
                 }
             }
 
@@ -187,10 +208,7 @@ class LocationTrackerService : Service() {
         })
     }
 
-    private fun validData(distress:DistressLocationData?): Boolean{
-        val expiredTime = System.currentTimeMillis() - EXPIRY_TIME_IN_MS
-        return distress != null && distress.isActive == true && distress.time!! > expiredTime
-    }
+
     private fun queryNearbyDistress(location: GeoLocation) {
         // Query distress calls within 2km
         geoQueryDistress = geoFireDistress.queryAtLocation(location, 2.0)

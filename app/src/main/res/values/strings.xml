@@ -30,6 +30,7 @@
     <string name="nav_startstop_guided_trip">Start guided trip</string>
     <string name="nav_startstop_patrolling">Start patrolling</string>
     <string name="nav_cancel_distress_call">Cancel distress call</string>
+    <string name="ask_for_assistance">Ask for assistance</string>
 
     <string-array name="gender_options">
         <item>Male</item>
