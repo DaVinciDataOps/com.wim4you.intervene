@@ -124,7 +124,8 @@ class MainActivity : AppCompatActivity() {
 
                 R.id.nav_call_assistance -> {
                     if(AppState.isPatrolling == true) {
-                        DistressNotificationManager.sendDistressNotification(this)
+                        Log.i("Firebase", "Sending distress notification")
+                        //DistressNotificationManager.sendDistressNotification(this)
                     }
                     //navController.navigate(R.id.nav_home)
                     true

@@ -75,6 +75,7 @@ dependencies {
     implementation(libs.firebase.database)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.geofire.android)
+    implementation(libs.firebase.messaging)
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
