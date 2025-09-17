@@ -8,6 +8,6 @@ You remain 100% anonymous and are only visible to others in an emergency.
 <img src="./README_CONTENT/screenshot_distress.png" alt="App screenshot" height="400"/>
 
 ## DEMO
-<a href="https://www.youtube.com/watch?v=k_v6BY9r834&ab_channel=FrankPolman" target="video">
+<a href="https://www.youtube.com/watch?v=k_v6BY9r834&ab_channel=FrankPolman" target="_blank">
   <img src="./README_CONTENT/video-thumbnail.png" alt="App Demo Thumbnail" width="500">
 </a>
