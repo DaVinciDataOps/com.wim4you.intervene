@@ -242,8 +242,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun populateSnackBar(list: List<DistressLocationData>) {
-        var message = list.take(5).joinToString("\n") {call ->
-            "${call.alias}: ${call.address ?: "Unknown address"} at ${call.startTime} \n ------------------"
+        var message = list.take(5).joinToString("\n------------\n") {call ->
+            "${call.alias}: ${call.address ?: "Unknown address"} at ${TimestampConverter.toTime(call.startTime)}"
         }
         if(list.count() ==0)
             message = "No Distress calls"

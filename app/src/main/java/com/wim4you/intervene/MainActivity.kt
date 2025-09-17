@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.WindowManager
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
@@ -49,9 +50,16 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.appBarMain.toolbar)
 
         binding.appBarMain.fab.setOnClickListener { view ->
-            Snackbar.make(view, AppState.snackBarMessage, Snackbar.LENGTH_LONG)
+            var snackbar = Snackbar.make(view, AppState.snackBarMessage, Snackbar.LENGTH_LONG)
                 .setAction("Action", null)
-                .setAnchorView(R.id.fab).show()
+                .setAnchorView(R.id.fab)
+
+
+            val snackbarView = snackbar.view
+            val textView = snackbarView.findViewById<TextView>(com.google.android.material.R.id.snackbar_text)
+            textView.isSingleLine = false
+            textView.maxLines = 10
+            snackbar.show()
         }
 
 
