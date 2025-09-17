@@ -33,8 +33,12 @@ import com.wim4you.intervene.fbdata.PatrolLocationData
 import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.repository.PersonDataRepository
 import androidx.core.graphics.scale
+import com.google.android.material.snackbar.Snackbar
 import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.helpers.TimestampConverter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class HomeFragment : Fragment(), OnMapReadyCallback {
 
@@ -53,6 +57,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     private lateinit var myPatrolMarker:Bitmap
     private lateinit var distressMarker:Bitmap
 
+    private var distressDataList: List<DistressLocationData> = emptyList()
     private val patrolMarkers = mutableMapOf<String, Marker>()
     private val distressMarkers = mutableMapOf<String, Marker>()
 
@@ -87,6 +92,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         }
         viewModel.distressLocations.observe(viewLifecycleOwner) { distressDataList ->
             updateDistressMapMarkers(distressDataList)
+            populateSnackBar(distressDataList)
         }
 
         if(AppState.isGuidedTrip){
@@ -187,7 +193,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     private fun getSnippetString(distressData: DistressLocationData, currentTimestamp: Long?, startTimestamp: Long?): String {
         val lap = TimestampConverter.lapSeconds(startTimestamp, currentTimestamp).toString()
         val start = TimestampConverter.toTime(startTimestamp)
-        return "time:${start} [lap:${lap} sec] \r\n ${distressData.address}"
+        return "time:${start} [lap:${lap} sec]"
     }
 
     private fun updatePatrolMapMarkers(patrolLocationDataList: List<PatrolLocationData>){
@@ -235,6 +241,14 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
+    private fun populateSnackBar(list: List<DistressLocationData>) {
+        var message = list.take(5).joinToString("\n") {call ->
+            "${call.alias}: ${call.address ?: "Unknown address"} at ${call.startTime} \n ------------------"
+        }
+        if(list.count() ==0)
+            message = "No Distress calls"
+        AppState.snackBarMessage = message;
+    }
     private fun playPatrolDistressSound() {
         val mediaPlayer = MediaPlayer.create(context, android.provider.Settings.System.DEFAULT_NOTIFICATION_URI)
         mediaPlayer?.let { player ->
