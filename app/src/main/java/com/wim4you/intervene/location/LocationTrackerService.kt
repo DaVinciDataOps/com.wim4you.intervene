@@ -243,14 +243,18 @@ class LocationTrackerService : Service() {
             override fun onDataMoved(dataSnapshot: DataSnapshot, location: GeoLocation) {
                 // Distress moved within range
                 val distressLocationData = dataSnapshot.getValue<DistressLocationData>()
-                if(validData(distressLocationData)) {
+                if (validData(distressLocationData)) {
                     distressLocationData?.let {
                         distressLocationData.id = distressLocationData.personId
                         distressLocationData.locationArray =
                             listOf(location.latitude, location.longitude)
                         val index =
                             distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
-                        distressLocationDataList[index] = distressLocationData
+                        if (index == -1)
+                            distressLocationDataList.add(distressLocationData)
+                        else
+                            distressLocationDataList[index] = distressLocationData
+
                         broadcastDistressUpdate(distressLocationDataList)
                     }
                 }
