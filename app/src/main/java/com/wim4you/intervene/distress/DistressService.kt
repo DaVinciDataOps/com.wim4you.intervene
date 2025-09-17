@@ -7,6 +7,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Geocoder
 import android.location.Location
 import android.os.IBinder
 import android.util.Log
@@ -15,6 +16,8 @@ import androidx.core.content.ContextCompat
 import com.firebase.geofire.GeoFire
 import com.firebase.geofire.GeoFireUtils
 import com.firebase.geofire.GeoLocation
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -34,6 +37,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.Locale
 import kotlin.coroutines.resumeWithException
 
 class DistressService : Service() {
@@ -174,10 +178,18 @@ class DistressService : Service() {
     }
 
     private fun sendDistressToHistory(personData: PersonData, geoLocation: GeoLocation){
+        val address = getAddress(geoLocation)
+        val personDataMap = mapOf(
+            "id" to personData.id,
+            "alias" to personData.alias,
+            "gender" to personData.gender,
+            "age" to personData.age
+        )
         val historyMap = mutableMapOf(
-            "personData" to personData,
+            "personData" to personDataMap,
             "location" to geoLocation,
             "time" to System.currentTimeMillis(),
+            "address" to address
         )
 
         val id = "${personData.id}_${System.currentTimeMillis()}"
@@ -211,6 +223,22 @@ class DistressService : Service() {
         )
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(channel)
+    }
+
+    private fun getAddress(geoLocation: GeoLocation): String {
+        var addressString = "Unknown location"
+        val apiAvailability = GoogleApiAvailability.getInstance()
+        val resultCode = apiAvailability.isGooglePlayServicesAvailable(this)
+        if (resultCode != ConnectionResult.SUCCESS) {
+            return addressString
+        }
+
+        val geocoder = Geocoder(this, Locale.getDefault())
+        val address = geocoder.getFromLocation(geoLocation.latitude, geoLocation.longitude, 1)
+        if (!address.isNullOrEmpty())
+            addressString = "${address.first().getAddressLine(0)}"
+
+        return addressString
     }
 
     override fun onDestroy() {
