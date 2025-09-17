@@ -12,6 +12,8 @@ data class DistressLocationData (
     var personId: String?,
     @PropertyName("alias")
     var alias: String?,
+    @PropertyName("address")
+    var address: String?,
     @PropertyName("g")
     var geohash: String? = null,
     @PropertyName("l")

@@ -165,7 +165,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                         MarkerOptions()
                             .position(latLng)
                             .title("${distressData.alias} !HELP!")
-                            .snippet(getTimeLapsString(System.currentTimeMillis(),distressData.startTime ))
+                            .snippet(getSnippetString(distressData,System.currentTimeMillis(),distressData.startTime ))
                             .icon(BitmapDescriptorFactory.fromBitmap(distressMarker))
                     )
                     if (newMarker != null) {
@@ -175,7 +175,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 } else {
                     // Update existing marker position
                     marker.position = latLng
-                    marker.snippet = getTimeLapsString(System.currentTimeMillis(),distressData.startTime )
+                    marker.snippet = getSnippetString(distressData,System.currentTimeMillis(),distressData.startTime )
                 }
             }
         }
@@ -184,10 +184,10 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             playPatrolDistressSound()
     }
 
-    private fun getTimeLapsString(currentTimestamp: Long?, startTimestamp: Long?): String {
+    private fun getSnippetString(distressData: DistressLocationData, currentTimestamp: Long?, startTimestamp: Long?): String {
         val lap = TimestampConverter.lapSeconds(startTimestamp, currentTimestamp).toString()
         val start = TimestampConverter.toTime(startTimestamp)
-        return "time:${start} [lap:${lap} sec]"
+        return "time:${start} [lap:${lap} sec] \r\n ${distressData.address}"
     }
 
     private fun updatePatrolMapMarkers(patrolLocationDataList: List<PatrolLocationData>){

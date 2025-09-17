@@ -150,6 +150,8 @@ class DistressService : Service() {
         }
 
     private fun sendStartDistressToFirebase(personData: PersonData, init:Boolean, geoLocation: GeoLocation) {
+        val address = getAddress(geoLocation)
+
         val distressDataMap = mutableMapOf(
             "l" to listOf(geoLocation.latitude, geoLocation.longitude),
             "g" to GeoFireUtils.getGeoHashForLocation(geoLocation),
@@ -157,7 +159,8 @@ class DistressService : Service() {
             "personId" to personData.id,
             "time" to System.currentTimeMillis(),
             "active" to true,
-            "fcmToken" to null
+            "fcmToken" to null,
+            "address" to address
         )
 
         if (init) {
@@ -174,11 +177,10 @@ class DistressService : Service() {
             }
 
         if(init)
-            sendDistressToHistory(personData, geoLocation)
+            sendDistressToHistory(personData, geoLocation, address)
     }
 
-    private fun sendDistressToHistory(personData: PersonData, geoLocation: GeoLocation){
-        val address = getAddress(geoLocation)
+    private fun sendDistressToHistory(personData: PersonData, geoLocation: GeoLocation, address: String){
         val personDataMap = mapOf(
             "id" to personData.id,
             "alias" to personData.alias,
