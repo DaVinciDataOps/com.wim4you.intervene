@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.findNavController
@@ -107,6 +108,7 @@ class MainActivity : AppCompatActivity() {
                         !AppState.isGuidedTrip
                     menuItem.title =
                         if (AppState.isGuidedTrip) "Stop guided trip" else "Start guided trip"
+                    updateScreenKeepOn(AppState.isGuidedTrip)
                     navController.navigate(R.id.nav_home)
                     true
                 }
@@ -116,6 +118,7 @@ class MainActivity : AppCompatActivity() {
                     navView.menu.findItem(R.id.nav_startstop_guided_trip)?.isVisible =
                         !AppState.isPatrolling
                     setPatrolServiceState(this, AppState.isPatrolling)
+                    updateScreenKeepOn(AppState.isPatrolling)
                     menuItem.title =
                         if (AppState.isPatrolling) "Stop patrolling" else "Start patrolling"
                     navController.navigate(R.id.nav_home)
@@ -186,5 +189,13 @@ class MainActivity : AppCompatActivity() {
             .addOnFailureListener { exception ->
                 Log.e("Firebase", "Error saving distress:")
             }
+    }
+
+    private fun updateScreenKeepOn(keepOn: Boolean) {
+        if (keepOn) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
     }
 }
