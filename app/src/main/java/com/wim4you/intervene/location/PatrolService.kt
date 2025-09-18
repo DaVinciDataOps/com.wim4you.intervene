@@ -102,7 +102,7 @@ class PatrolService : Service() {
                             vigilanteId = vigilanteData.id,
                             name = vigilanteData.name,
                             time = System.currentTimeMillis(),
-                            isActive = true,
+                            isActive = AppState.isPatrolling,
                             fcmToken = null // Replace with actual FCM token if needed
                         )
                         sendToFirebase(patrolLocationData,geoLocation)
@@ -175,15 +175,15 @@ class PatrolService : Service() {
             }
 
         // Remove location from GeoFire when inactive
-        if (!active) {
-            geoFire.removeLocation(id) { key, error ->
-                if (error != null) {
-                    Log.e("Firebase", "Error removing GeoFire location: ${error.message}")
-                } else {
-                    Log.i("Firebase", "Success removing GeoFire location for key: $key")
-                }
-            }
-        }
+//        if (!active) {
+//            geoFire.removeLocation(id) { key, error ->
+//                if (error != null) {
+//                    Log.e("Firebase", "Error removing GeoFire location: ${error.message}")
+//                } else {
+//                    Log.i("Firebase", "Success removing GeoFire location for key: $key")
+//                }
+//            }
+//        }
     }
 
     private fun createNotificationChannel() {
