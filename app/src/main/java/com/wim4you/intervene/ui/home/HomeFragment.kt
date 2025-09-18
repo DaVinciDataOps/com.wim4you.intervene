@@ -3,7 +3,6 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Bundle
@@ -26,19 +25,14 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.wim4you.intervene.AppState
-import com.wim4you.intervene.R
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.FragmentHomeBinding
+import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.fbdata.PatrolLocationData
+import com.wim4you.intervene.helpers.GoogleMapMarkers
+import com.wim4you.intervene.helpers.TimestampConverter
 import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.repository.PersonDataRepository
-import androidx.core.graphics.scale
-import com.google.android.material.snackbar.Snackbar
-import com.wim4you.intervene.fbdata.DistressLocationData
-import com.wim4you.intervene.helpers.TimestampConverter
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class HomeFragment : Fragment(), OnMapReadyCallback {
 
@@ -56,8 +50,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     private lateinit var patrolMarker:Bitmap
     private lateinit var myPatrolMarker:Bitmap
     private lateinit var distressMarker:Bitmap
-
-    private var distressDataList: List<DistressLocationData> = emptyList()
     private val patrolMarkers = mutableMapOf<String, Marker>()
     private val distressMarkers = mutableMapOf<String, Marker>()
 
@@ -77,13 +69,10 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             childFragmentManager.findFragmentById(binding.googleMap.id) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        patrolMarker = BitmapFactory.decodeResource(resources, R.drawable.png_patrol_marker)
-            .scale(64, 64, false)
-        myPatrolMarker = BitmapFactory.decodeResource(resources, R.drawable.png_my_patrol_marker)
-            .scale(64, 64, false)
-
-        distressMarker = BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher_round)
-            .scale(90, 90, false)
+        GoogleMapMarkers.initialize(requireContext());
+        patrolMarker = GoogleMapMarkers.patrolMarker
+        myPatrolMarker = GoogleMapMarkers.myPatrolMarker
+        distressMarker = GoogleMapMarkers.distressMarker
 
         viewModel.registerLocationTrackerReceiver(requireContext())
 
@@ -144,9 +133,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         }
 
         mMapInitialized = true
-
-        //viewModel.registerLocationTrackerReceiver(requireContext())
-        //viewModel.startLocationService(requireContext())
     }
 
     private fun updateDistressMapMarkers(distressDataList: List<DistressLocationData>){

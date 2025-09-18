@@ -26,8 +26,8 @@ import com.google.firebase.database.FirebaseDatabase
 import com.wim4you.intervene.AppState
 import com.wim4you.intervene.R
 import com.wim4you.intervene.dao.DatabaseProvider
+import com.wim4you.intervene.data.AddressData
 import com.wim4you.intervene.data.PersonData
-import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.repository.PersonDataRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -160,7 +160,9 @@ class DistressService : Service() {
             "time" to System.currentTimeMillis(),
             "active" to true,
             "fcmToken" to null,
-            "address" to address
+            "address" to address.street,
+            "city" to address.city,
+            "country" to address.country
         )
 
         if (init) {
@@ -177,10 +179,10 @@ class DistressService : Service() {
             }
 
         if(init)
-            sendDistressToHistory(personData, geoLocation, address)
+            sendDistressToHistory(personData, distressDataMap)
     }
 
-    private fun sendDistressToHistory(personData: PersonData, geoLocation: GeoLocation, address: String){
+    private fun sendDistressToHistory(personData: PersonData, distressMap : MutableMap<String,Any?> ){
         val personDataMap = mapOf(
             "id" to personData.id,
             "alias" to personData.alias,
@@ -189,9 +191,7 @@ class DistressService : Service() {
         )
         val historyMap = mutableMapOf(
             "personData" to personDataMap,
-            "location" to geoLocation,
-            "time" to System.currentTimeMillis(),
-            "address" to address
+            "distress" to distressMap
         )
 
         val id = "${personData.id}_${System.currentTimeMillis()}"
@@ -227,20 +227,22 @@ class DistressService : Service() {
         manager.createNotificationChannel(channel)
     }
 
-    private fun getAddress(geoLocation: GeoLocation): String {
-        var addressString = "Unknown location"
+    private fun getAddress(geoLocation: GeoLocation): AddressData {
+        var unknown = "Unknown location"
         val apiAvailability = GoogleApiAvailability.getInstance()
         val resultCode = apiAvailability.isGooglePlayServicesAvailable(this)
         if (resultCode != ConnectionResult.SUCCESS) {
-            return addressString
+            return AddressData(street = unknown, city = unknown, country = unknown)
         }
 
         val geocoder = Geocoder(this, Locale.getDefault())
-        val address = geocoder.getFromLocation(geoLocation.latitude, geoLocation.longitude, 1)
-        if (!address.isNullOrEmpty())
-            addressString = "${address.first().getAddressLine(0)}"
+        val addresses = geocoder.getFromLocation(geoLocation.latitude, geoLocation.longitude, 1)
+        if (!addresses.isNullOrEmpty()){
+            var address = addresses.first()
+            return AddressData(street = "${address.thoroughfare} ${address.subThoroughfare}", city = address.locality, country = address.countryName)
+        }
 
-        return addressString
+        return AddressData(street = unknown, city = unknown, country = unknown)
     }
 
     override fun onDestroy() {
