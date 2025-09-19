@@ -54,7 +54,6 @@ class MainActivity : AppCompatActivity() {
                 .setAction("Action", null)
                 .setAnchorView(R.id.fab)
 
-
             val snackbarView = snackbar.view
             val textView = snackbarView.findViewById<TextView>(com.google.android.material.R.id.snackbar_text)
             textView.isSingleLine = false
