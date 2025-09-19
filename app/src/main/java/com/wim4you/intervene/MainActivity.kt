@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.appBarMain.toolbar)
 
         binding.appBarMain.fab.setOnClickListener { view ->
-            var snackbar = Snackbar.make(view, AppState.snackBarMessage, Snackbar.LENGTH_LONG)
+            val snackbar = Snackbar.make(view, AppState.snackBarMessage, Snackbar.LENGTH_LONG)
                 .setAction("Action", null)
                 .setAnchorView(R.id.fab)
 
