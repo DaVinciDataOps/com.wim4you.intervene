@@ -49,7 +49,7 @@
             android:foregroundServiceType="mediaPlayback" />
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyCaOSHoojXZKhmR50FpWkDRgEG0hzKKaZ0" />
+            android:value ="AIzaSyAVoAURCuGyHpK5Ud_5d-r_6apjVIlyBaY"  />
         <activity
             android:name=".MainActivity"
             android:exported="true"

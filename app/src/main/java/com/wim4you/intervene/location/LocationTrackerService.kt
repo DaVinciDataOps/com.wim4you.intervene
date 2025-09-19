@@ -24,6 +24,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -75,6 +76,7 @@ class LocationTrackerService : Service() {
         val distressRef = database.getReference("distress")
         geoFirePatrols = GeoFire(patrolsRef)
         geoFireDistress = GeoFire(distressRef)
+        Log.d("LocationTrackerService", "Firebase auth: ${FirebaseAuth.getInstance().currentUser?.uid ?: "null"}")
     }
 
     private fun createNotificationChannel() {
@@ -128,6 +130,11 @@ class LocationTrackerService : Service() {
     }
 
     private fun queryNearbyPatrols(location: GeoLocation) {
+        if (::geoQueryPatrols.isInitialized) {
+            geoQueryPatrols.removeAllListeners()
+            Log.d("LocationTrackerService", "Removed previous GeoQueryPatrols listeners")
+        }
+
         // Query patrols within 2km
         geoQueryPatrols = geoFirePatrols.queryAtLocation(location, 2.0)
         geoQueryPatrols.addGeoQueryDataEventListener(object : GeoQueryDataEventListener {
@@ -204,7 +211,7 @@ class LocationTrackerService : Service() {
             }
 
             override fun onGeoQueryError(error: DatabaseError) {
-                // Handle error
+                Log.e("LocationTrackerService Patrol", error.message)
             }
         })
     }
