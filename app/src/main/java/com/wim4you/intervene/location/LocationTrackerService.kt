@@ -218,6 +218,11 @@ class LocationTrackerService : Service() {
 
 
     private fun queryNearbyDistress(location: GeoLocation) {
+        if (::geoQueryDistress.isInitialized) {
+            geoQueryDistress.removeAllListeners()
+            Log.d("LocationTrackerService", "Removed previous GeoQueryDistress listeners")
+        }
+
         // Query distress calls within 2km
         geoQueryDistress = geoFireDistress.queryAtLocation(location, 2.0)
         geoQueryDistress.addGeoQueryDataEventListener(object : GeoQueryDataEventListener {
