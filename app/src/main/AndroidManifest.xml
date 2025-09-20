@@ -11,6 +11,12 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <attribution android:label="@string/tag_patrol_service" android:tag="patrol_service" />
+    <attribution android:label="@string/tag_distress_service" android:tag="distress_service" />
+    <attribution android:label="@string/tag_distress_alarm" android:tag="distress_alarm" />
+    <attribution android:label="@string/tag_tracker_service" android:tag="tracker_service" />
+    <attribution android:label="@string/tag_distress_notification_service" android:tag="distress_messaging_service" />
+
     <application
         android:name=".InterVeneApplication"
         android:allowBackup="true"
@@ -23,7 +29,8 @@
         android:theme="@style/Theme.Intervene" >
         <service
             android:name=".distress.DistressMessagingService"
-            android:exported="false">
+            android:exported="false"
+            android:attributionTags="distress_messaging_service">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
@@ -31,22 +38,26 @@
         <service
             android:name=".location.LocationTrackerService"
             android:exported="false"
-            android:foregroundServiceType="location" />
+            android:foregroundServiceType="location"
+            android:attributionTags="tracker_service" />
         <receiver android:name=".location.LocationTrackerReceiver" />
         <service
             android:name=".distress.DistressService"
             android:exported="false"
-            android:foregroundServiceType="location" />
+            android:foregroundServiceType="location"
+            android:attributionTags="distress_service" />
         <receiver android:name=".distress.DistressReceiver" />
         <service
             android:name=".location.PatrolService"
             android:exported="false"
-            android:foregroundServiceType="location" />
+            android:foregroundServiceType="location"
+            android:attributionTags="patrol_service" />
         <receiver android:name=".location.PatrolReceiver" />
         <service
             android:name=".distress.DistressSoundService"
             android:exported="false"
-            android:foregroundServiceType="mediaPlayback" />
+            android:foregroundServiceType="mediaPlayback"
+            android:attributionTags="distress_alarm" />
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value ="AIzaSyAVoAURCuGyHpK5Ud_5d-r_6apjVIlyBaY"  />

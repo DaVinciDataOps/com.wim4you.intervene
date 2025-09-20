@@ -49,15 +49,16 @@ class PatrolService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        vigilanteStore = VigilanteDataRepository(DatabaseProvider.getDatabase(this).vigilanteDataDao())
-        LocationProvider.initialize(this)
+        val attributedContext = createAttributionContext("patrol_service")
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(attributedContext)
+        vigilanteStore = VigilanteDataRepository(DatabaseProvider.getDatabase(attributedContext).vigilanteDataDao())
+        LocationProvider.initialize(attributedContext)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createNotificationChannel()
-
-        val notification = NotificationCompat.Builder(this, channelId)
+        val attributedContext = createAttributionContext("patrol_service")
+        val notification = NotificationCompat.Builder(attributedContext, channelId)
             .setContentTitle("InterVene")
             .setContentText("Running in the background")
             .setSmallIcon(R.drawable.ic_startstop_patrolling)
@@ -81,8 +82,9 @@ class PatrolService : Service() {
     }
 
     private fun startLocationUpdates(vigilanteData: VigilanteData) {
+        val attributedContext = createAttributionContext("patrol_service")
         if (ContextCompat.checkSelfPermission(
-                this,
+                attributedContext,
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -118,29 +120,6 @@ class PatrolService : Service() {
         }
     }
 
-//    private suspend fun getLastLocation(maxAgeMillis: Long = 60_000): Location? = suspendCancellableCoroutine { continuation ->
-//        try {
-//            val cancellationTokenSource = CancellationTokenSource()
-//            val request = CurrentLocationRequest.Builder()
-//                .setMaxUpdateAgeMillis(maxAgeMillis)
-//                .build()
-//
-//            fusedLocationClient.getCurrentLocation(request, cancellationTokenSource.token)
-//                .addOnSuccessListener { newLocation ->
-//                    continuation.resume(newLocation) { cause, _, _ -> cancellationTokenSource }
-//                }
-//                .addOnFailureListener { exception ->
-//                    continuation.resumeWithException(exception)
-//                }
-//
-//            continuation.invokeOnCancellation {
-//                cancellationTokenSource.cancel()
-//            }
-//        } catch (e: SecurityException) {
-//            continuation.resumeWithException(e)
-//        }
-//    }
-
     private fun sendToFirebase(patrolLocationData: PatrolLocationData, geoLocation: GeoLocation) {
         patrolLocationData.id = patrolLocationData.vigilanteId
         patrolLocationData.locationArray = listOf(geoLocation.latitude, geoLocation.longitude)
@@ -175,18 +154,7 @@ class PatrolService : Service() {
             .addOnFailureListener { exception ->
                 Log.e("Firebase", "Error saving patrol:")
             }
-
-        // Remove location from GeoFire when inactive
-//        if (!active) {
-//            geoFire.removeLocation(id) { key, error ->
-//                if (error != null) {
-//                    Log.e("Firebase", "Error removing GeoFire location: ${error.message}")
-//                } else {
-//                    Log.i("Firebase", "Success removing GeoFire location for key: $key")
-//                }
-//            }
-//        }
-    }
+   }
 
     private fun createNotificationChannel() {
         val channel = NotificationChannel(

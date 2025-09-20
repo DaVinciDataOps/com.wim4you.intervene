@@ -81,12 +81,13 @@ class MainActivity : AppCompatActivity() {
             activity.startService(intent)
         }
 
-        fun setPatrolServiceState(activity: Activity, isPatrolling: Boolean) {
-            val intent = Intent(activity, PatrolService::class.java)
+        fun setPatrolServiceState(isPatrolling: Boolean) {
+            val attributedContext = createAttributionContext("patrol_service")
+            val intent = Intent(attributedContext, PatrolService::class.java)
             if (isPatrolling) {
-                activity.startService(intent)
+                attributedContext.startService(intent)
             } else {
-                activity.stopService(intent)
+                attributedContext.stopService(intent)
             }
         }
 
@@ -126,7 +127,7 @@ class MainActivity : AppCompatActivity() {
                     AppState.isPatrolling = !AppState.isPatrolling
                     navView.menu.findItem(R.id.nav_startstop_guided_trip)?.isVisible =
                         !AppState.isPatrolling
-                    setPatrolServiceState(this, AppState.isPatrolling)
+                    setPatrolServiceState(AppState.isPatrolling)
                     updateScreenKeepOn(AppState.isPatrolling)
                     menuItem.title =
                         if (AppState.isPatrolling) "Stop patrolling" else "Start patrolling"

@@ -72,6 +72,9 @@ class DistressSoundService: Service(), AudioManager.OnAudioFocusChangeListener {
             mediaPlayer = null
         }
 
+        val attributedContext = createAttributionContext("distress_alarm")
+        val audioManager = attributedContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
         val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
             .setAudioAttributes(
                 AudioAttributes.Builder()

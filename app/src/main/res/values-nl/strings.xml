@@ -31,6 +31,11 @@
     <string name="nav_startstop_patrolling">Patrouilleren starten</string>
     <string name="nav_cancel_distress_call">Noodoproep annuleren</string>
     <string name="ask_for_assistance">Vraag assistentie</string>
+    <string name="tag_patrol_service">Patrol Service</string>
+    <string name="tag_distress_service">Distress Service</string>
+    <string name="tag_tracker_service">Tracker Service</string>
+    <string name="tag_distress_alarm">Distress Alarm</string>
+    <string name="tag_distress_notification_service">Distress Notification Service</string>
 
     <string-array name="gender_options">
         <item>Man</item>

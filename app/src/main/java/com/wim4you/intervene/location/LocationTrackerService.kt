@@ -5,8 +5,10 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioManager
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
@@ -56,9 +58,11 @@ class LocationTrackerService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        val attributedContext = createAttributionContext("tracker_service")
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(attributedContext)
         patrolLocationDataList.clear()
         distressLocationDataList.clear()
+
         setupFirebase()
         createNotificationChannel()
     }

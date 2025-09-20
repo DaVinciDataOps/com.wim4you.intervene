@@ -14,7 +14,7 @@ android {
 
     defaultConfig {
         applicationId = "com.wim4you.intervene"
-        minSdk = 26
+        minSdk = 31
         targetSdk = 36
         versionCode = 6
         versionName = "1.6"
