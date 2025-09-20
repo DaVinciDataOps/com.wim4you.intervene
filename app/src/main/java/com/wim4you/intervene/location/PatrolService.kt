@@ -23,6 +23,7 @@ import com.wim4you.intervene.R
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.fbdata.PatrolLocationData
+import com.wim4you.intervene.helpers.LocationProvider
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -50,6 +51,7 @@ class PatrolService : Service() {
         super.onCreate()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         vigilanteStore = VigilanteDataRepository(DatabaseProvider.getDatabase(this).vigilanteDataDao())
+        LocationProvider.initialize(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -93,7 +95,7 @@ class PatrolService : Service() {
         patrolJob = coroutineScope.launch {
             while (isActive && AppState.isPatrolling) {
                 try {
-                    val location = getLastLocation()
+                    val location = LocationProvider.getLastLocation()
                     location?.let {
                         val geoLocation = GeoLocation(it.latitude, it.longitude)
 
@@ -116,28 +118,28 @@ class PatrolService : Service() {
         }
     }
 
-    private suspend fun getLastLocation(maxAgeMillis: Long = 60_000): Location? = suspendCancellableCoroutine { continuation ->
-        try {
-            val cancellationTokenSource = CancellationTokenSource()
-            val request = CurrentLocationRequest.Builder()
-                .setMaxUpdateAgeMillis(maxAgeMillis)
-                .build()
-
-            fusedLocationClient.getCurrentLocation(request, cancellationTokenSource.token)
-                .addOnSuccessListener { newLocation ->
-                    continuation.resume(newLocation) { cause, _, _ -> cancellationTokenSource }
-                }
-                .addOnFailureListener { exception ->
-                    continuation.resumeWithException(exception)
-                }
-
-            continuation.invokeOnCancellation {
-                cancellationTokenSource.cancel()
-            }
-        } catch (e: SecurityException) {
-            continuation.resumeWithException(e)
-        }
-    }
+//    private suspend fun getLastLocation(maxAgeMillis: Long = 60_000): Location? = suspendCancellableCoroutine { continuation ->
+//        try {
+//            val cancellationTokenSource = CancellationTokenSource()
+//            val request = CurrentLocationRequest.Builder()
+//                .setMaxUpdateAgeMillis(maxAgeMillis)
+//                .build()
+//
+//            fusedLocationClient.getCurrentLocation(request, cancellationTokenSource.token)
+//                .addOnSuccessListener { newLocation ->
+//                    continuation.resume(newLocation) { cause, _, _ -> cancellationTokenSource }
+//                }
+//                .addOnFailureListener { exception ->
+//                    continuation.resumeWithException(exception)
+//                }
+//
+//            continuation.invokeOnCancellation {
+//                cancellationTokenSource.cancel()
+//            }
+//        } catch (e: SecurityException) {
+//            continuation.resumeWithException(e)
+//        }
+//    }
 
     private fun sendToFirebase(patrolLocationData: PatrolLocationData, geoLocation: GeoLocation) {
         patrolLocationData.id = patrolLocationData.vigilanteId

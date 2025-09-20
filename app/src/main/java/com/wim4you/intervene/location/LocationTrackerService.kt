@@ -124,7 +124,8 @@ class LocationTrackerService : Service() {
         return patrol != null && patrol.isActive == true && patrol.time!! > expiredTime
     }
 
-    private fun validData(distress:DistressLocationData?): Boolean{
+    private fun
+            validData(distress:DistressLocationData?): Boolean{
         val expiredTime = System.currentTimeMillis() - EXPIRY_TIME_IN_MS
         return distress != null && distress.isActive == true && distress.time!! > expiredTime
     }

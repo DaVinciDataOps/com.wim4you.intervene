@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Geocoder
-import android.location.Location
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -18,16 +17,16 @@ import com.firebase.geofire.GeoFireUtils
 import com.firebase.geofire.GeoLocation
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
-import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.firebase.database.FirebaseDatabase
 import com.wim4you.intervene.AppState
 import com.wim4you.intervene.R
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.data.AddressData
 import com.wim4you.intervene.data.PersonData
+import com.wim4you.intervene.helpers.LocationProvider
+import com.wim4you.intervene.mappings.DataMappings
 import com.wim4you.intervene.repository.PersonDataRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,9 +35,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
-import kotlin.coroutines.resumeWithException
 
 class DistressService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -62,6 +59,7 @@ class DistressService : Service() {
         super.onCreate()
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         personStore = PersonDataRepository(DatabaseProvider.getDatabase(this).personDataDao())
+        LocationProvider.initialize(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -103,14 +101,15 @@ class DistressService : Service() {
 
         distressJob?.cancel()
         distressJob = coroutineScope.launch {
-            val location = getLastLocation()
+            var location = LocationProvider.getLastLocation()
             location?.let{
                 val geoLocation = GeoLocation(location.latitude, location.longitude)
-                sendStartDistressToFirebase(personData, true, geoLocation)
+                sendDistressToHistory(personData, geoLocation)
             }
 
             while (isActive && AppState.isDistressState) {
                 try {
+                    location = LocationProvider.getLastLocation()
                     location?.let {
                         val geoLocation = GeoLocation(it.latitude, it.longitude)
                         sendStartDistressToFirebase(personData, false, geoLocation)
@@ -124,46 +123,9 @@ class DistressService : Service() {
         }
     }
 
-    private suspend fun getLastLocation(maxAgeMillis: Long = 60_000): Location? =
-        suspendCancellableCoroutine { continuation ->
-            try {
-
-                val cancellationTokenSource = CancellationTokenSource()
-                val request = CurrentLocationRequest.Builder()
-                    .setMaxUpdateAgeMillis(maxAgeMillis)
-                    .build()
-
-                fusedLocationClient.getCurrentLocation(request, cancellationTokenSource.token)
-                    .addOnSuccessListener { newLocation ->
-                        continuation.resume(newLocation) { cause, _, _ -> cancellationTokenSource }
-                    }
-                    .addOnFailureListener { exception ->
-                        continuation.resumeWithException(exception)
-                    }
-
-                continuation.invokeOnCancellation {
-                    cancellationTokenSource.cancel()
-                }
-            } catch (e: SecurityException) {
-                continuation.resumeWithException(e)
-            }
-        }
-
     private fun sendStartDistressToFirebase(personData: PersonData, init:Boolean, geoLocation: GeoLocation) {
         val address = getAddress(geoLocation)
-
-        val distressDataMap = mutableMapOf(
-            "l" to listOf(geoLocation.latitude, geoLocation.longitude),
-            "g" to GeoFireUtils.getGeoHashForLocation(geoLocation),
-            "alias" to personData.alias,
-            "personId" to personData.id,
-            "time" to System.currentTimeMillis(),
-            "active" to true,
-            "fcmToken" to null,
-            "address" to address.street,
-            "city" to address.city,
-            "country" to address.country
-        )
+        val distressDataMap = DataMappings.toDistressDataMap(personData, geoLocation, address, init)
 
         if (init) {
             distressDataMap["startTime"] = System.currentTimeMillis()
@@ -177,21 +139,22 @@ class DistressService : Service() {
             .addOnFailureListener { exception ->
                 Log.e("Firebase", "Error saving patrol:")
             }
-
-        if(init)
-            sendDistressToHistory(personData, distressDataMap)
     }
 
-    private fun sendDistressToHistory(personData: PersonData, distressMap : MutableMap<String,Any?> ){
+    private fun sendDistressToHistory(personData: PersonData, geoLocation: GeoLocation ){
+        val address = getAddress(geoLocation)
+        val distressDataMap = DataMappings.toDistressDataMap(personData, geoLocation, address)
         val personDataMap = mapOf(
             "id" to personData.id,
             "alias" to personData.alias,
             "gender" to personData.gender,
             "age" to personData.age
         )
+
         val historyMap = mutableMapOf(
             "personData" to personDataMap,
-            "distress" to distressMap
+            "distress" to distressDataMap,
+            "time" to System.currentTimeMillis()
         )
 
         val id = "${personData.id}_${System.currentTimeMillis()}"
