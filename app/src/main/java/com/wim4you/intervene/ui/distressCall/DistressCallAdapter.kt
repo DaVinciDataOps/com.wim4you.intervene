@@ -74,18 +74,6 @@ class DistressCallAdapter(
                 }
             }
         }
-
-//        holder.btnDistressCall.setOnClickListener {
-//            val currentPosition = holder.bindingAdapterPosition
-//            if (currentPosition != RecyclerView.NO_POSITION && currentPosition != selectedPosition) {
-//                val oldPosition = selectedPosition
-//                selectedPosition = currentPosition
-//                if (oldPosition != -1) {
-//                    notifyItemChanged(oldPosition)
-//                }
-//                notifyItemChanged(currentPosition)
-//            }
-//        }
     }
 
     fun updateDistressCalls(newList: List<DistressCallData>) {
