@@ -81,7 +81,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         }
         viewModel.distressLocations.observe(viewLifecycleOwner) { distressDataList ->
             updateDistressMapMarkers(distressDataList)
-            populateSnackBar(distressDataList)
+            //populateSnackBar(distressDataList)
         }
 
         if(AppState.isGuidedTrip){

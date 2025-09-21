@@ -151,11 +151,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 R.id.nav_distress_list -> {
-                    if(AppState.isPatrolling == true) {
-                        Log.i("Firebase", "Sending distress notification")
-                        navController.navigate(menuItem.itemId)
-                    }
-                    //navController.navigate(R.id.nav_home)
+                    navController.navigate(menuItem.itemId)
                     true
                 }
 
