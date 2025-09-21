@@ -30,8 +30,6 @@ data class DistressLocationData (
     val city: String? = null,
     @PropertyName("country")
     val country: String? = null,
-    @PropertyName("interveningVigilanteId")
-    val interveningVigilanteId: String? = null
 ): Parcelable{
     constructor() : this(null, null, null, null, null, null, null)
 
