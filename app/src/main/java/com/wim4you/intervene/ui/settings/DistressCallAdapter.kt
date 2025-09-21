@@ -3,7 +3,9 @@ package com.wim4you.intervene.ui.settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -14,9 +16,12 @@ class DistressCallAdapter(
     private val onItemClick: (DistressCallData) -> Unit
 ) : ListAdapter<DistressCallData, DistressCallAdapter.ViewHolder>(DistressCallDiffCallback()) {
 
+    private var selectedPosition = -1
+
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvAlias: TextView = itemView.findViewById(R.id.tvAlias)
         val tvAddress: TextView = itemView.findViewById(R.id.tvAddress)
+        val btnDistressCall: ImageButton = itemView.findViewById(R.id.ibDistress)
     }
 
     class DistressCallDiffCallback : DiffUtil.ItemCallback<DistressCallData>() {
@@ -37,6 +42,26 @@ class DistressCallAdapter(
         holder.tvAlias.text = item.alias
         holder.tvAddress.text = item.address
         holder.itemView.setOnClickListener { onItemClick(item) }
+
+        if (position == selectedPosition) {
+            holder.itemView.setBackgroundColor(ContextCompat.getColor(holder.itemView.context, android.R.color.holo_green_dark))
+            holder.btnDistressCall.setImageResource(R.mipmap.ic_vigilantes_patrolling) // Replace with your selected drawable
+        } else {
+            holder.itemView.setBackgroundColor(android.R.attr.selectableItemBackground)
+            holder.btnDistressCall.setImageResource(R.mipmap.ic_launcher_round) // Replace with your normal drawable
+        }
+
+        holder.btnDistressCall.setOnClickListener {
+            val currentPosition = holder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION && currentPosition != selectedPosition) {
+                val oldPosition = selectedPosition
+                selectedPosition = currentPosition
+                if (oldPosition != -1) {
+                    notifyItemChanged(oldPosition)
+                }
+                notifyItemChanged(currentPosition)
+            }
+        }
     }
 
     fun updateDistressCalls(newList: List<DistressCallData>) {

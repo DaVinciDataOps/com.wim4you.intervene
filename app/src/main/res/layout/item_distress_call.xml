@@ -8,20 +8,42 @@
     android:clickable="true"
     android:focusable="true">
 
-    <TextView
-        android:id="@+id/tvAlias"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:text="Alias" />
+        android:orientation="horizontal">
 
-    <TextView
-        android:id="@+id/tvAddress"
-        android:layout_width="match_parent"
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvAlias"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:text="Alias" />
+
+        <TextView
+            android:id="@+id/tvAddress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@android:color/darker_gray"
+            android:text="Address" />
+        </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/ibDistress"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="14sp"
-        android:textColor="@android:color/darker_gray"
-        android:text="Address" />
+        android:layout_gravity="center_vertical"
+        android:src="@mipmap/ic_launcher_round"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/btn_item_vigilante" />
 
+    </LinearLayout>
 </LinearLayout>
