@@ -1,4 +1,4 @@
-package com.wim4you.intervene.ui.settings
+package com.wim4you.intervene.ui.distressCall
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData

@@ -1,4 +1,4 @@
-package com.wim4you.intervene.ui.settings
+package com.wim4you.intervene.ui.distressCall
 
 import android.os.Bundle
 import android.view.LayoutInflater

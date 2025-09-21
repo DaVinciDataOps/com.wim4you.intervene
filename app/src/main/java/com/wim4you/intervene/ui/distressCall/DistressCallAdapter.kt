@@ -1,4 +1,4 @@
-package com.wim4you.intervene.ui.settings
+package com.wim4you.intervene.ui.distressCall
 
 import android.view.LayoutInflater
 import android.view.View
@@ -9,6 +9,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.wim4you.intervene.AppState
 import com.wim4you.intervene.R
 import com.wim4you.intervene.data.DistressCallData
 
@@ -16,7 +17,7 @@ class DistressCallAdapter(
     private val onItemClick: (DistressCallData) -> Unit
 ) : ListAdapter<DistressCallData, DistressCallAdapter.ViewHolder>(DistressCallDiffCallback()) {
 
-    private var selectedPosition = -1
+    private var selectedPosition = AppState.selectedDistressCall
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvAlias: TextView = itemView.findViewById(R.id.tvAlias)
@@ -46,6 +47,7 @@ class DistressCallAdapter(
         if (position == selectedPosition) {
             holder.itemView.setBackgroundColor(ContextCompat.getColor(holder.itemView.context, android.R.color.holo_green_dark))
             holder.btnDistressCall.setImageResource(R.mipmap.ic_vigilantes_patrolling) // Replace with your selected drawable
+            AppState.selectedDistressCall = position
         } else {
             holder.itemView.setBackgroundColor(android.R.attr.selectableItemBackground)
             holder.btnDistressCall.setImageResource(R.mipmap.ic_launcher_round) // Replace with your normal drawable
@@ -53,15 +55,37 @@ class DistressCallAdapter(
 
         holder.btnDistressCall.setOnClickListener {
             val currentPosition = holder.bindingAdapterPosition
-            if (currentPosition != RecyclerView.NO_POSITION && currentPosition != selectedPosition) {
-                val oldPosition = selectedPosition
-                selectedPosition = currentPosition
-                if (oldPosition != -1) {
-                    notifyItemChanged(oldPosition)
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                if (currentPosition == selectedPosition) {
+                    // Deselect the currently selected item
+                    val oldPosition = selectedPosition
+                    selectedPosition = -1
+                    AppState.selectedDistressCall = -1
+                    notifyItemChanged(currentPosition)
+                } else {
+                    // Select a new item
+                    val oldPosition = selectedPosition
+                    selectedPosition = currentPosition
+                    AppState.selectedDistressCall = currentPosition
+                    if (oldPosition != -1) {
+                        notifyItemChanged(oldPosition)
+                    }
+                    notifyItemChanged(currentPosition)
                 }
-                notifyItemChanged(currentPosition)
             }
         }
+
+//        holder.btnDistressCall.setOnClickListener {
+//            val currentPosition = holder.bindingAdapterPosition
+//            if (currentPosition != RecyclerView.NO_POSITION && currentPosition != selectedPosition) {
+//                val oldPosition = selectedPosition
+//                selectedPosition = currentPosition
+//                if (oldPosition != -1) {
+//                    notifyItemChanged(oldPosition)
+//                }
+//                notifyItemChanged(currentPosition)
+//            }
+//        }
     }
 
     fun updateDistressCalls(newList: List<DistressCallData>) {

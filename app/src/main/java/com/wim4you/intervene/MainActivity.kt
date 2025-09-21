@@ -30,7 +30,7 @@ import com.wim4you.intervene.location.LocationTrackerService.Companion.ACTION_DI
 import com.wim4you.intervene.location.PatrolService
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
-import com.wim4you.intervene.ui.settings.DistressListViewModel
+import com.wim4you.intervene.ui.distressCall.DistressListViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -197,7 +197,8 @@ class MainActivity : AppCompatActivity() {
         CoroutineScope(Dispatchers.Main).launch {
             updateDistress()
         }
-        DistressSoundService.stop(this) // Stop the sound service
+        // Stop the sound service
+        DistressSoundService.stop(this)
     }
 
     private suspend fun updateDistress() {
@@ -219,5 +220,4 @@ class MainActivity : AppCompatActivity() {
             window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
-
 }

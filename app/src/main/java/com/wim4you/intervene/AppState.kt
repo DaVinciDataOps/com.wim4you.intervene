@@ -7,10 +7,8 @@ object AppState {
     var isPatrolling: Boolean = false
     var isGuidedTrip: Boolean = false
     var isDistressState: Boolean = false
-
+    var selectedDistressCall: Int = -1
     var vigilante: VigilanteData? = null
-    var person: PersonData? = null
-    var DistressRadius: Double = 2.0 //km
 
     var snackBarMessage:String = ""
 }

@@ -7,4 +7,10 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <color name="background_light">#FFFFFF</color>  <!-- Main background -->
+    <color name="surface_light">#FFFFFF</color>    <!-- Cards, lists -->
+    <color name="on_surface_light">#000000</color> <!-- Text on surfaces -->
+    <color name="on_background_light">#000000</color> <!-- Text on background -->
+    <color name="error_light">#F44336</color>     <!-- Red for alerts -->
 </resources>
