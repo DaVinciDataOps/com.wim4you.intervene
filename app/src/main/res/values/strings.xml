@@ -36,6 +36,13 @@
     <string name="tag_tracker_service">Tracker Service</string>
     <string name="tag_distress_alarm">Distress Alarm</string>
     <string name="tag_distress_notification_service">Distress Notification Service</string>
+    <string name="register_label_e_mail">e-Mail</string>
+    <string name="register_label_phone_number">Phone number</string>
+    <string name="register_label_safe_word">Safe word</string>
+    <string name="register_label_age">Age</string>
+    <string name="register_label_gender">Gender</string>
+    <string name="register_label_alias">Alias</string>
+    <string name="register_label_name">Name</string>
 
 
     <string-array name="gender_options">

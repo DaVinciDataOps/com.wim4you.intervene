@@ -13,31 +13,33 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/groupNameInputLayout"
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/vigilante_group_name"
-        app:boxBackgroundMode="outline">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/groupNameInputEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="text" />
-    </com.google.android.material.textfield.TextInputLayout>
+        android:text="@string/vigilante_group_name"
+        android:textColor="?attr/colorSecondary"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        style="@style/TextAppearance.Material3.BodyMedium" />
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/groupNameInputEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="text" />
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/groupSizeInputLayout"
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/vigilante_group_size"
-        app:boxBackgroundMode="outline">
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/groupSizeInputEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="number" />
-    </com.google.android.material.textfield.TextInputLayout>
+        android:text="@string/vigilante_group_size"
+        android:textColor="?attr/colorSecondary"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        style="@style/TextAppearance.Material3.BodyMedium" />
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/groupSizeInputEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="number" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/membersRecyclerView"

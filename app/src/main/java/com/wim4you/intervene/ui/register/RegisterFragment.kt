@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import com.wim4you.intervene.R
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.data.PersonData
 import com.wim4you.intervene.databinding.FragmentRegisterBinding
@@ -39,9 +40,11 @@ class RegisterFragment: Fragment() {
 
         viewModel.recentPerson.observe(viewLifecycleOwner) { person ->
             person?.let {
+                val genderOptions = resources.getStringArray(R.array.gender_options)
+                val genderPosition = genderOptions.indexOf(it.gender)
                 binding.nameInputEditText.setText(it.name)
                 binding.aliasInputEditText.setText(it.alias)
-                binding.genderAutoCompleteTextView.setText(it.gender)
+                binding.genderAutoCompleteTextView.setSelection(genderPosition)
                 binding.ageInputEditText.setText(it.age.toString())
                 binding.phoneNumberInputEditText.setText(it.phoneNumber)
                 binding.safeWordInputEditText.setText(it.safeWord)
@@ -54,7 +57,7 @@ class RegisterFragment: Fragment() {
         binding.saveButton.setOnClickListener {
             val name = binding.nameInputEditText.text.toString().trim()
             val alias = binding.aliasInputEditText.text.toString().trim()
-            val gender = binding.genderAutoCompleteTextView.text.toString().trim()
+            val gender = binding.genderAutoCompleteTextView.selectedItem as? String ?: ""
             val age = binding.ageInputEditText.text.toString().trim()
             val phoneNumber = binding.phoneNumberInputEditText.text.toString().trim()
             val safeWord = binding.safeWordInputEditText.text.toString().trim()
@@ -90,7 +93,7 @@ class RegisterFragment: Fragment() {
     private fun clearForm() {
         binding.nameInputEditText.text?.clear()
         binding.aliasInputEditText.text?.clear()
-        binding.genderAutoCompleteTextView.text?.clear()
+        binding.genderAutoCompleteTextView.setSelection(-1)
         binding.ageInputEditText.text?.clear()
         binding.phoneNumberInputEditText.text?.clear()
         binding.safeWordInputEditText.text?.clear()

@@ -14,111 +14,114 @@
         android:orientation="vertical">
 
     <!-- Name -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/nameInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Name"
-        app:boxBackgroundMode="outline">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/register_label_name"
+            android:textColor="?attr/colorSecondary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            style="@style/TextAppearance.Material3.BodyMedium" />
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/nameInputEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="text" />
-    </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Alias -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/aliasInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="@string/register_alias"
-        android:layout_marginTop="16dp"
-        app:boxBackgroundMode="outline">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/register_label_alias"
+            android:textColor="?attr/colorSecondary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            style="@style/TextAppearance.Material3.BodyMedium" />
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/aliasInputEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="text" />
-    </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Gender -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/genderInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="@string/register_gender"
-        android:layout_marginTop="16dp"
-        app:boxBackgroundMode="outline"
-        app:endIconMode="dropdown_menu">
-        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/register_label_gender"
+            android:textColor="?attr/colorSecondary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            style="@style/TextAppearance.Material3.BodyMedium" />
+
+        <Spinner
             android:id="@+id/genderAutoCompleteTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="none"
-            app:simpleItems="@array/gender_options" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:entries="@array/gender_options"
+            android:background="?attr/selectableItemBackground"
+             />
 
     <!-- Age -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/ageInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="@string/register_age"
-        android:layout_marginTop="16dp"
-        app:boxBackgroundMode="outline">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/register_label_age"
+            android:textColor="?attr/colorSecondary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            style="@style/TextAppearance.Material3.BodyMedium" />
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/ageInputEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="number"
             android:maxLength="3" />
-    </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Safe Word -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/safeWordInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="@string/register_safe_word"
-        android:layout_marginTop="16dp"
-        app:boxBackgroundMode="outline">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/register_label_safe_word"
+            android:textColor="?attr/colorSecondary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            style="@style/TextAppearance.Material3.BodyMedium" />
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/safeWordInputEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="text" />
-    </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Phone Number -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/phoneNumberInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="@string/register_phone_number"
-        android:layout_marginTop="16dp"
-        app:boxBackgroundMode="outline">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/register_label_phone_number"
+            android:textColor="?attr/colorSecondary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            style="@style/TextAppearance.Material3.BodyMedium" />
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/phoneNumberInputEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="phone" />
-    </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Phone Number -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/emailInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="@string/register_e_mail"
-        android:layout_marginTop="16dp"
-        app:boxBackgroundMode="outline">
+
+        <!-- e-mail -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/register_label_e_mail"
+            android:textColor="?attr/colorSecondary"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            style="@style/TextAppearance.Material3.BodyMedium" />
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/emailInputEditText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="text" />
-    </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Save Button -->
     <Button
