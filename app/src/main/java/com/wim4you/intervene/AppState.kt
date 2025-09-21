@@ -1,7 +1,6 @@
 package com.wim4you.intervene
 
 import com.wim4you.intervene.data.PersonData
-import com.wim4you.intervene.data.SnackBarData
 import com.wim4you.intervene.data.VigilanteData
 
 object AppState {

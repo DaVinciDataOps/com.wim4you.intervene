@@ -9,7 +9,7 @@
 
     <string name="menu_home">Home</string>
     <string name="menu_vigilantes">Vigilantes</string>
-    <string name="menu_settings">Settings</string>
+    <string name="menu_distress_list">Distress List</string>
     <string name="menu_register">Register</string>
 
     <string name="btn_panic">!HELP!</string>
@@ -30,7 +30,7 @@
     <string name="nav_startstop_guided_trip">Start guided trip</string>
     <string name="nav_startstop_patrolling">Start patrolling</string>
     <string name="nav_cancel_distress_call">Cancel distress call</string>
-    <string name="ask_for_assistance">Ask for assistance</string>
+    <string name="nav_distress_list">Pick distress call</string>
     <string name="tag_patrol_service">Patrol Service</string>
     <string name="tag_distress_service">Distress Service</string>
     <string name="tag_tracker_service">Tracker Service</string>

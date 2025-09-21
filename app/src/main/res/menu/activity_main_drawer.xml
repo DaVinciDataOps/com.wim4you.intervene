@@ -31,9 +31,9 @@
             android:title="@string/nav_startstop_patrolling" />
 
         <item
-            android:id="@+id/nav_call_assistance"
+            android:id="@+id/nav_distress_list"
             android:icon="@drawable/ic_assistance"
-            android:title="@string/ask_for_assistance" />
+            android:title="@string/nav_distress_list" />
 
         <item
             android:id="@+id/nav_stop_distress"

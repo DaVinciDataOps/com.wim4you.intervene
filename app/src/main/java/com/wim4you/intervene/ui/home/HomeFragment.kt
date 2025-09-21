@@ -148,7 +148,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
         // Add or update markers for active patrols
         distressDataList.forEach { distressData ->
-            distressData.locationArray?.let { loc ->
+            distressData.l?.let { loc ->
                 val latLng = LatLng(loc[0], loc[1])
                 val marker = distressMarkers[distressData.id]
                 if (marker == null) {
@@ -194,7 +194,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
         // Add or update markers for active patrols
         patrolLocationDataList.forEach { patrolData ->
-            patrolData.locationArray?.let { loc ->
+            patrolData.l?.let { loc ->
                 val latLng = LatLng(loc[0], loc[1])
                 val marker = patrolMarkers[patrolData.id]
                 if (marker == null) {

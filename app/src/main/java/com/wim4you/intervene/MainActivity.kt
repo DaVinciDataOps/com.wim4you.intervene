@@ -1,15 +1,16 @@
 package com.wim4you.intervene
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.WindowManager
 import android.widget.TextView
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.lifecycle.lifecycleScope
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
@@ -21,16 +22,18 @@ import com.google.firebase.Firebase
 import com.google.firebase.database.database
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.ActivityMainBinding
+import com.wim4you.intervene.distress.DistressReceiver
 import com.wim4you.intervene.distress.DistressService
 import com.wim4you.intervene.distress.DistressSoundService
 import com.wim4you.intervene.location.LocationTrackerService
+import com.wim4you.intervene.location.LocationTrackerService.Companion.ACTION_DISTRESS_UPDATE
 import com.wim4you.intervene.location.PatrolService
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
+import com.wim4you.intervene.ui.settings.DistressListViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
     private lateinit var appBarConfiguration: AppBarConfiguration
@@ -38,6 +41,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var personStore: PersonDataRepository
     private lateinit var vigilanteStore: VigilanteDataRepository
     private val database by lazy { Firebase.database.getReference() }
+
+    private val distressListviewModel: DistressListViewModel by viewModels()
+    private val distressListener =  IDistressUpdateListener { distressCalls ->
+            distressListviewModel.updateDistressCalls(distressCalls)
+        }
+
+    private lateinit var distressUpdateReceiver: DistressReceiver
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -107,6 +118,10 @@ class MainActivity : AppCompatActivity() {
             startTrackingServiceState(this)
         }
 
+        distressUpdateReceiver = DistressReceiver(distressListener)
+        val filter = IntentFilter(ACTION_DISTRESS_UPDATE)
+        LocalBroadcastManager.getInstance(this).registerReceiver(distressUpdateReceiver, filter)
+
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.nav_startstop_guided_trip -> {
@@ -135,10 +150,10 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
 
-                R.id.nav_call_assistance -> {
+                R.id.nav_distress_list -> {
                     if(AppState.isPatrolling == true) {
                         Log.i("Firebase", "Sending distress notification")
-                        //DistressNotificationManager.sendDistressNotification(this)
+                        navController.navigate(menuItem.itemId)
                     }
                     //navController.navigate(R.id.nav_home)
                     true

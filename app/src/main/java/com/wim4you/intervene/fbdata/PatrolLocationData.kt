@@ -9,9 +9,9 @@ data class PatrolLocationData (
     @PropertyName("id")
     var id: String?,
     @PropertyName("g")
-    var geohash: String? = null,
+    var g: String? = null,
     @PropertyName("l")
-    var locationArray: List<Double>? = null,
+    var l: List<Double>? = null,
 
     @PropertyName("vigilanteId")
     var vigilanteId: String? = null,

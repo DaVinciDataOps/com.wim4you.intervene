@@ -46,7 +46,6 @@
             android:exported="false"
             android:foregroundServiceType="location"
             android:attributionTags="distress_service" />
-        <receiver android:name=".distress.DistressReceiver" />
         <service
             android:name=".location.PatrolService"
             android:exported="false"

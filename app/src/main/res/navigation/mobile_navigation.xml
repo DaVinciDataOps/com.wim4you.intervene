@@ -18,10 +18,10 @@
         tools:layout="@layout/fragment_vigilantes" />
 
     <fragment
-        android:id="@+id/nav_settings"
-        android:name="com.wim4you.intervene.ui.settings.SettingsFragment"
-        android:label="@string/menu_settings"
-        tools:layout="@layout/fragment_settings" />
+        android:id="@+id/nav_distress_list"
+        android:name="com.wim4you.intervene.ui.settings.DistressListFragment"
+        android:label="@string/menu_distress_list"
+        tools:layout="@layout/fragment_distress_list" />
 
     <fragment
         android:id="@+id/nav_register"

@@ -5,7 +5,6 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.Location
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -13,10 +12,8 @@ import androidx.core.content.ContextCompat
 import com.firebase.geofire.GeoFire
 import com.firebase.geofire.GeoFireUtils
 import com.firebase.geofire.GeoLocation
-import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.firebase.database.FirebaseDatabase
 import com.wim4you.intervene.AppState
 import com.wim4you.intervene.R
@@ -33,8 +30,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resumeWithException
 
 class PatrolService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -122,8 +117,8 @@ class PatrolService : Service() {
 
     private fun sendToFirebase(patrolLocationData: PatrolLocationData, geoLocation: GeoLocation) {
         patrolLocationData.id = patrolLocationData.vigilanteId
-        patrolLocationData.locationArray = listOf(geoLocation.latitude, geoLocation.longitude)
-        patrolLocationData.geohash = GeoFireUtils.getGeoHashForLocation(geoLocation)
+        patrolLocationData.l = listOf(geoLocation.latitude, geoLocation.longitude)
+        patrolLocationData.g = GeoFireUtils.getGeoHashForLocation(geoLocation)
 
         val patrolDataMap = mapOf(
             "l" to listOf(geoLocation.latitude, geoLocation.longitude),

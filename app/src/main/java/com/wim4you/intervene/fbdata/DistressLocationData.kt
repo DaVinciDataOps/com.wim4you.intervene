@@ -15,9 +15,9 @@ data class DistressLocationData (
     @PropertyName("address")
     var address: String?,
     @PropertyName("g")
-    var geohash: String? = null,
+    var g: String? = null,
     @PropertyName("l")
-    var locationArray: List<Double>? = null,
+    var l: List<Double>? = null,
     @PropertyName("startTime")
     var startTime: Long? = System.currentTimeMillis(),
     @PropertyName("time")
@@ -25,11 +25,15 @@ data class DistressLocationData (
     @PropertyName("fcmToken")
     var fcmToken: String? = null,
     @PropertyName("active")
-    var isActive: Boolean? = false
+    var isActive: Boolean? = false,
+    @PropertyName("city")
+    val city: String? = null,
+    @PropertyName("country")
+    val country: String? = null
 ): Parcelable{
     constructor() : this(null, null, null, null, null, null, null)
 
     // Helper properties for convenience
-    val latitude: Double? get() = locationArray?.getOrNull(0)
-    val longitude: Double? get() = locationArray?.getOrNull(1)
+    val latitude: Double? get() = l?.getOrNull(0)
+    val longitude: Double? get() = l?.getOrNull(1)
 }

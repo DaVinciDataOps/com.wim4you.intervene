@@ -5,10 +5,8 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.AudioManager
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
@@ -149,7 +147,7 @@ class LocationTrackerService : Service() {
                 if (validData(patrolLocationData)) {
                     patrolLocationData?.let { patrolLocationData ->
                         patrolLocationData.id = patrolLocationData.vigilanteId
-                        patrolLocationData.locationArray =
+                        patrolLocationData.l =
                             listOf(location.latitude, location.longitude)
                         val index =
                             patrolLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
@@ -175,13 +173,13 @@ class LocationTrackerService : Service() {
                 val patrolLocationData = dataSnapshot.getValue<PatrolLocationData>()
                 if (validData(patrolLocationData)) {
                     patrolLocationData?.let { patrolLocationData ->
-                        patrolLocationData.locationArray =
+                        patrolLocationData.l =
                             listOf(location.latitude, location.longitude)
                         val index =
                             patrolLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
                         val moved = listOf(location.latitude, location.longitude)
                         patrolLocationData.id = patrolLocationData.vigilanteId
-                        patrolLocationData.locationArray = moved
+                        patrolLocationData.l = moved
                         if (index == -1)
                             patrolLocationDataList.add(patrolLocationData)
                         else
@@ -200,7 +198,7 @@ class LocationTrackerService : Service() {
                             patrolLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
                         val moved = listOf(location.latitude, location.longitude)
                         patrolLocationData.id = patrolLocationData.vigilanteId
-                        patrolLocationData.locationArray = moved
+                        patrolLocationData.l = moved
                         if (index == -1)
                             patrolLocationDataList.add(patrolLocationData)
                         else
@@ -237,7 +235,7 @@ class LocationTrackerService : Service() {
                 if (validData(distressLocationData)) {
                     distressLocationData?.let { distressLocationData ->
                         distressLocationData.id = distressLocationData.personId
-                        distressLocationData.locationArray =
+                        distressLocationData.l =
                             listOf(location.latitude, location.longitude)
                         val index =
                             distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
@@ -264,7 +262,7 @@ class LocationTrackerService : Service() {
                 if (validData(distressLocationData)) {
                     distressLocationData?.let {
                         distressLocationData.id = distressLocationData.personId
-                        distressLocationData.locationArray =
+                        distressLocationData.l =
                             listOf(location.latitude, location.longitude)
                         val index =
                             distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
@@ -284,7 +282,7 @@ class LocationTrackerService : Service() {
                 if (validData(distressLocationData)) {
                     distressLocationData?.let {
                         distressLocationData.id = distressLocationData.personId
-                        distressLocationData.locationArray =
+                        distressLocationData.l =
                             listOf(location.latitude, location.longitude)
                         val index =
                             distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
