@@ -30,7 +30,7 @@ import com.wim4you.intervene.location.LocationTrackerService.Companion.ACTION_DI
 import com.wim4you.intervene.location.PatrolService
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
-import com.wim4you.intervene.ui.distressCall.DistressListViewModel
+import com.wim4you.intervene.ui.distresscall.DistressListViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

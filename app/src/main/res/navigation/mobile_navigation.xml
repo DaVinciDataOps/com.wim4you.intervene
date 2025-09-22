@@ -19,7 +19,7 @@
 
     <fragment
         android:id="@+id/nav_distress_list"
-        android:name="com.wim4you.intervene.ui.distressCall.DistressListFragment"
+        android:name="com.wim4you.intervene.ui.distresscall.DistressListFragment"
         android:label="@string/menu_distress_list"
         tools:layout="@layout/fragment_distress_list" />
 
