@@ -1,3 +1,4 @@
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -9,6 +10,11 @@ plugins {
 }
 
 android {
+    val localProperties = Properties().apply {
+        load(project.rootProject.file("local.properties").inputStream())
+    }
+    val apiKey = localProperties.getProperty("GOOGLE_MAPS_API_KEY") ?: throw IllegalArgumentException("GOOGLE_API_KEY not found in local.properties")
+
     namespace = "com.wim4you.intervene"
     compileSdk = 36
 
@@ -18,7 +24,7 @@ android {
         targetSdk = 36
         versionCode = 6
         versionName = "1.6"
-
+        manifestPlaceholders.put("google_maps_api_key", apiKey)
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
