@@ -5,6 +5,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.IBinder
@@ -29,6 +30,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.getValue
+import com.wim4you.intervene.Constants
 import com.wim4you.intervene.R
 import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.fbdata.PatrolLocationData
@@ -43,20 +45,21 @@ class LocationTrackerService : Service() {
 
     private val patrolLocationDataList = mutableListOf<PatrolLocationData>()
     private val distressLocationDataList = mutableListOf<DistressLocationData>()
+    private lateinit var attributedContext: Context
 
     companion object {
         const val ACTION_PATROL_UPDATE = "com.wim4you.intervene.LOCATION_UPDATE"
         const val ACTION_DISTRESS_UPDATE = "com.wim4you.intervene.DISTRESS_UPDATE"
         const val EXTRA_PATROL_DATA = "extra_patrol_data"
         const val EXTRA_DISTRESS_DATA = "extra_distress_data"
-        private const val NOTIFICATION_ID = 1
-        private const val CHANNEL_ID = "LocationServiceChannel"
+        private const val NOTIFICATION_ID = Constants.LOCATION_TRACKER_SERVICE_NOTIFICATION_ID
+        private const val CHANNEL_ID = Constants.LOCATION_TRACKER_SERVICE_CHANNEL_ID
         private const val EXPIRY_TIME_IN_MS = 30 * 60 * 1000
     }
 
     override fun onCreate() {
         super.onCreate()
-        val attributedContext = createAttributionContext("tracker_service")
+        attributedContext = createAttributionContext(Constants.TRACKER_SERVICE_CONTEXT_TAG)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(attributedContext)
         patrolLocationDataList.clear()
         distressLocationDataList.clear()
@@ -92,7 +95,7 @@ class LocationTrackerService : Service() {
     }
 
     private fun createNotification(): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        return NotificationCompat.Builder(attributedContext, CHANNEL_ID)
             .setContentTitle("Location Tracking")
             .setContentText("Tracking your location for patrols and distress calls")
             .setSmallIcon(R.drawable.ic_location) // Replace with your icon
@@ -116,7 +119,7 @@ class LocationTrackerService : Service() {
             }
         }
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(attributedContext, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
         }
     }
@@ -311,13 +314,13 @@ class LocationTrackerService : Service() {
     private fun broadcastPatrolUpdate(patrolLocationDataList: List<PatrolLocationData>) {
         val intent = Intent(ACTION_PATROL_UPDATE)
         intent.putParcelableArrayListExtra(EXTRA_PATROL_DATA, ArrayList(patrolLocationDataList))
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+        LocalBroadcastManager.getInstance(attributedContext).sendBroadcast(intent)
     }
 
     private fun broadcastDistressUpdate(distressLocationDataList: List<DistressLocationData>) {
         val intent = Intent(ACTION_DISTRESS_UPDATE)
         intent.putParcelableArrayListExtra(EXTRA_DISTRESS_DATA, ArrayList(distressLocationDataList))
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+        LocalBroadcastManager.getInstance(attributedContext).sendBroadcast(intent)
     }
 
     override fun onDestroy() {

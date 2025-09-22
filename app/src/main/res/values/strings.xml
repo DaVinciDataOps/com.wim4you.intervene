@@ -45,6 +45,7 @@
     <string name="register_label_name">Name</string>
     <string name="button_fab_image_messages">Messages</string>
     <string name="btn_item_vigilante">Vigilante</string>
+    <string name="switch_dark_mode">Dark Mode</string>
 
 
     <string-array name="gender_options">

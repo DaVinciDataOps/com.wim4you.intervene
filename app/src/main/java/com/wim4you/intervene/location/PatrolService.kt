@@ -3,6 +3,7 @@ import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.IBinder
@@ -16,6 +17,7 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.database.FirebaseDatabase
 import com.wim4you.intervene.AppState
+import com.wim4you.intervene.Constants
 import com.wim4you.intervene.R
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.data.VigilanteData
@@ -33,18 +35,20 @@ import kotlinx.coroutines.launch
 
 class PatrolService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private val channelId = "PatrolServiceChannel"
-    private val notificationId = 1003
+    private val channelId = Constants.PATROL_SERVICE_CHANNEL_ID
+    private val notificationId = Constants.PATROL_SERVICE_NOTIFICATION_ID
     private val database = FirebaseDatabase.getInstance().reference
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var patrolJob: Job? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private lateinit var vigilanteStore: VigilanteDataRepository
     private val geoFire = GeoFire(database.child("patrols"))
+    private lateinit var attributedContext: Context
+
 
     override fun onCreate() {
         super.onCreate()
-        val attributedContext = createAttributionContext("patrol_service")
+        attributedContext = createAttributionContext(Constants.PATROL_SERVICE_CONTEXT_TAG)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(attributedContext)
         vigilanteStore = VigilanteDataRepository(DatabaseProvider.getDatabase(attributedContext).vigilanteDataDao())
         LocationProvider.initialize(attributedContext)
@@ -52,7 +56,6 @@ class PatrolService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createNotificationChannel()
-        val attributedContext = createAttributionContext("patrol_service")
         val notification = NotificationCompat.Builder(attributedContext, channelId)
             .setContentTitle("InterVene")
             .setContentText("Running in the background")
@@ -77,7 +80,6 @@ class PatrolService : Service() {
     }
 
     private fun startLocationUpdates(vigilanteData: VigilanteData) {
-        val attributedContext = createAttributionContext("patrol_service")
         if (ContextCompat.checkSelfPermission(
                 attributedContext,
                 Manifest.permission.ACCESS_FINE_LOCATION

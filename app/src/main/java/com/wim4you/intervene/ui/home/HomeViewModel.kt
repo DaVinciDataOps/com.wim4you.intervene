@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.util.Log
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -91,7 +92,8 @@ class HomeViewModel(
             // Require 2 or 3 presses (adjust to 2 or 3 as needed)
             val requiredPresses = 3 // Change to 3 if you want 3 presses
             if (panicButtonPressCount < requiredPresses) {
-                _distressMessage.postValue("Press $requiredPresses times to activate distress")
+                if(panicButtonPressCount == 1)
+                    _distressMessage.postValue("Press $requiredPresses times to activate distress")
                 return@launch
             }
 
@@ -110,17 +112,4 @@ class HomeViewModel(
             DistressSoundService.start(activity)
         }
     }
-
-      // Start LocationService (call from Fragment when needed)
-    fun startLocationService(context: Context) {
-        val intent = Intent(context, LocationTrackerService::class.java)
-        context.startService(intent)
-    }
-
-    // Stop LocationService (call when Fragment is destroyed or as needed)
-    fun stopLocationService(context: Context) {
-        val intent = Intent(context, LocationTrackerService::class.java)
-        context.stopService(intent)
-    }
-
 }

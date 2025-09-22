@@ -16,14 +16,15 @@ import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.MutableLiveData
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.wim4you.intervene.Constants
 
 class DistressSoundService: Service(), AudioManager.OnAudioFocusChangeListener {
     private var mediaPlayer: MediaPlayer? = null
     private lateinit var audioManager: AudioManager
     private var audioFocusRequest: AudioFocusRequest? = null
-    private val notificationId = 1001
-    private val channelId = "DistressSoundServiceChannel"
-
+    private val notificationId = Constants.DISTRESS_SOUND_SERVICE_NOTIFICATION_ID
+    private val channelId = Constants.DISTRESS_SOUND_SERVICE_CHANNEL_ID
+    private lateinit var attributedContext: Context
     companion object {
         const val ACTION_PLAY_STATE_CHANGED = "com.wim4you.intervene.PLAY_STATE_CHANGED"
         const val EXTRA_IS_PLAYING = "is_playing"
@@ -45,7 +46,8 @@ class DistressSoundService: Service(), AudioManager.OnAudioFocusChangeListener {
 
     override fun onCreate() {
         super.onCreate()
-        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        attributedContext = createAttributionContext(Constants.DISTRESS_SOUND_CONTEXT_TAG)
+        audioManager = attributedContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -72,7 +74,6 @@ class DistressSoundService: Service(), AudioManager.OnAudioFocusChangeListener {
             mediaPlayer = null
         }
 
-        val attributedContext = createAttributionContext("distress_alarm")
         val audioManager = attributedContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
         val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
@@ -110,7 +111,7 @@ class DistressSoundService: Service(), AudioManager.OnAudioFocusChangeListener {
 
     private fun createAndPlayMediaPlayer() {
         try {
-            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val audioManager = attributedContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             audioManager.setStreamVolume(
                 AudioManager.STREAM_ALARM,
                 audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM),
@@ -142,7 +143,7 @@ class DistressSoundService: Service(), AudioManager.OnAudioFocusChangeListener {
         val intent = Intent(ACTION_PLAY_STATE_CHANGED).apply {
             putExtra(EXTRA_IS_PLAYING, isPlaying)
         }
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+        LocalBroadcastManager.getInstance(attributedContext).sendBroadcast(intent)
     }
 
     private fun createNotificationChannel(){
@@ -157,7 +158,7 @@ class DistressSoundService: Service(), AudioManager.OnAudioFocusChangeListener {
         manager.createNotificationChannel(channel)
     }
     private fun createNotification(): Notification {
-        return NotificationCompat.Builder(this, channelId)
+        return NotificationCompat.Builder(attributedContext, channelId)
             .setSmallIcon(android.R.drawable.ic_notification_overlay)
             .setContentTitle("Distress Alert Active")
             .setContentText("Distress sound is playing.")
