@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import com.wim4you.intervene.data.DistressCallData
 
 class DistressListViewModel : ViewModel() {
-
     private val _distressCalls = MutableLiveData<List<DistressCallData>>()
     val distressCalls: LiveData<List<DistressCallData>> get() = _distressCalls
 

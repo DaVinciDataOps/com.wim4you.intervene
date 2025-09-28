@@ -53,8 +53,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         personStore = PersonDataRepository(DatabaseProvider.getDatabase(this).personDataDao())
-        vigilanteStore =
-            VigilanteDataRepository(DatabaseProvider.getDatabase(this).vigilanteDataDao())
+        vigilanteStore = VigilanteDataRepository(DatabaseProvider.getDatabase(this).vigilanteDataDao())
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -72,7 +71,6 @@ class MainActivity : AppCompatActivity() {
             snackbar.show()
         }
 
-
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_content_main)
@@ -83,6 +81,14 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_home
             ), drawerLayout
         )
+
+        var menuPatrolling = navView.menu.findItem(R.id.nav_startstop_patrolling)
+        menuPatrolling.title = if (AppState.isPatrolling) "Stop patrolling" else "Start patrolling"
+        menuPatrolling.isVisible = !AppState.isGuidedTrip
+
+        var menuTrip = navView.menu.findItem(R.id.nav_startstop_guided_trip)
+        menuTrip.title = if (AppState.isGuidedTrip) "Stop guided trip" else "Start guided trip"
+        menuTrip.isVisible = !AppState.isPatrolling
 
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
