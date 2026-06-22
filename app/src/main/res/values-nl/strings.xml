@@ -36,6 +36,16 @@
     <string name="tag_tracker_service">Tracker Service</string>
     <string name="tag_distress_alarm">Distress Alarm</string>
     <string name="tag_distress_notification_service">Distress Notification Service</string>
+    <string name="register_label_e_mail">e-Mail</string>
+    <string name="register_label_phone_number">Phone number</string>
+    <string name="register_label_safe_word">Safe word</string>
+    <string name="register_label_age">Age</string>
+    <string name="register_label_gender">Geslacht</string>
+    <string name="register_label_alias">Alias</string>
+    <string name="register_label_name">Naam</string>
+    <string name="button_fab_image_messages">Berichten</string>
+    <string name="btn_item_vigilante">Vigilante</string>
+    <string name="switch_dark_mode">Dark Mode</string>
 
     <string-array name="gender_options">
         <item>Man</item>
