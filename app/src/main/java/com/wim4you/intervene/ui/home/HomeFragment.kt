@@ -215,12 +215,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         binding.showRouteButton.setOnClickListener { requestRoute() }
         binding.addDestinationButton.setOnClickListener { openDestinationPanel() }
         binding.closeDestinationButton.setOnClickListener { closeDestinationPanel() }
-        binding.clearRouteButton.setOnClickListener {
-            viewModel.clearRoute()
-            clearRouteFromMap()
-            binding.routeSummary.visibility = View.GONE
-            binding.destinationInput.text?.clear()
-        }
 
         binding.destinationInput.setOnEditorActionListener { _, actionId, _ ->
 
@@ -257,13 +251,11 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             when (state) {
 
                 RouteState.Idle -> {
-
                     binding.showRouteButton.isEnabled = true
-
                     binding.routeSummary.visibility = View.GONE
-
-                    clearRouteFromMap()
-
+                    if (!AppModeController.isGuidedTrip) {
+                        clearRouteFromMap()
+                    }
                 }
 
                 RouteState.Loading -> {
@@ -277,19 +269,14 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 }
 
                 is RouteState.Success -> {
-
                     binding.showRouteButton.isEnabled = true
-
                     binding.routeSummary.visibility = View.VISIBLE
-
                     binding.routeSummary.text = state.summary
-
                     if (mMapInitialized) {
-
                         drawRoute(state)
-
                     }
-
+                    isDestinationPanelOpen = false
+                    updateGuidedTripUi()
                 }
 
                 is RouteState.Error -> {
@@ -315,20 +302,16 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         if (!AppModeController.isGuidedTrip) {
             isDestinationPanelOpen = false
             viewModel.clearRoute()
+            clearRouteFromMap()
+        } else {
+            restoreRouteOnMap()
         }
         updateGuidedTripUi()
     }
 
-
-
     override fun onDestroyView() {
-
-        clearRouteFromMap()
-
         super.onDestroyView()
-
         _binding = null
-
     }
 
 
@@ -372,13 +355,16 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
 
         val currentRoute = viewModel.routeState.value
-
         if (currentRoute is RouteState.Success) {
-
             drawRoute(currentRoute)
-
         }
+    }
 
+    private fun restoreRouteOnMap() {
+        val currentRoute = viewModel.routeState.value
+        if (currentRoute is RouteState.Success && mMapInitialized) {
+            drawRoute(currentRoute)
+        }
     }
 
 
@@ -399,15 +385,16 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     private fun openDestinationPanel() {
         isDestinationPanelOpen = true
+        val currentRoute = viewModel.routeState.value
+        if (currentRoute is RouteState.Success) {
+            binding.routeSummary.visibility = View.VISIBLE
+            binding.routeSummary.text = currentRoute.summary
+        }
         updateGuidedTripUi()
     }
 
     private fun closeDestinationPanel() {
         isDestinationPanelOpen = false
-        viewModel.clearRoute()
-        clearRouteFromMap()
-        binding.routeSummary.visibility = View.GONE
-        binding.destinationInput.text?.clear()
         updateGuidedTripUi()
     }
 
