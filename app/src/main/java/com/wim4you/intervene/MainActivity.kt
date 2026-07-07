@@ -46,9 +46,11 @@ class MainActivity : AppCompatActivity() {
     private val mapDataViewModel: MapDataViewModel by viewModels()
     private lateinit var mapLocationReceiver: MapLocationReceiver
     private var overflowPopup: PopupWindow? = null
+    private var reopenOverflowPopup = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        reopenOverflowPopup = savedInstanceState?.getBoolean(KEY_REOPEN_OVERFLOW, false) ?: false
         personStore = PersonDataRepository(DatabaseProvider.getDatabase(this).personDataDao())
         vigilanteStore = VigilanteDataRepository(DatabaseProvider.getDatabase(this).vigilanteDataDao())
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -56,6 +58,10 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.appBarMain.toolbar)
         setupCustomOverflowMenu(binding.appBarMain.toolbar)
+        if (reopenOverflowPopup) {
+            reopenOverflowPopup = false
+            openOverflowPopup()
+        }
 
         binding.appBarMain.fab.setOnClickListener { view ->
             val snackbar = Snackbar.make(view, AppModeController.snackBarMessage, Snackbar.LENGTH_LONG)
@@ -130,6 +136,11 @@ class MainActivity : AppCompatActivity() {
         FirebaseUtils.onConnect(this) { db ->
             FirebaseUtils.getVigilantes(this, db, AppModeController.GEO_QUERY_RADIUS_KM)
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_REOPEN_OVERFLOW, reopenOverflowPopup)
     }
 
     override fun onDestroy() {
@@ -211,10 +222,15 @@ class MainActivity : AppCompatActivity() {
     private fun setupCustomOverflowMenu(toolbar: Toolbar) {
         toolbar.post {
             val overflowButton = findOverflowMenuButton(toolbar) ?: return@post
-            overflowButton.setOnClickListener { anchor ->
-                showOverflowPopup(anchor)
+            overflowButton.setOnClickListener {
+                openOverflowPopup()
             }
         }
+    }
+
+    private fun openOverflowPopup() {
+        val overflowButton = findOverflowMenuButton(binding.appBarMain.toolbar) ?: return
+        showOverflowPopup(overflowButton)
     }
 
     private fun findOverflowMenuButton(toolbar: Toolbar): View? {
@@ -245,38 +261,12 @@ class MainActivity : AppCompatActivity() {
 
         darkSwitch.setOnCheckedChangeListener(null)
         darkSwitch.isChecked = ThemePreferences.isDarkModeActive(this)
-        darkSwitch.setOnCheckedChangeListener { _, isChecked ->
-            val newMode = if (isChecked) {
-                ThemePreferences.Mode.DARK
-            } else {
-                ThemePreferences.Mode.LIGHT
-            }
-            if (ThemePreferences.getMode(this) != newMode) {
-                ThemePreferences.setMode(this, newMode)
-                overflowPopup?.dismiss()
-                recreate()
-            }
-        }
-
         systemSwitch.setOnCheckedChangeListener(null)
         systemSwitch.isChecked = ThemePreferences.getMode(this) == ThemePreferences.Mode.SYSTEM
-        systemSwitch.setOnCheckedChangeListener { _, isChecked ->
-            val newMode = if (isChecked) {
-                ThemePreferences.Mode.SYSTEM
-            } else if (ThemePreferences.isDarkModeActive(this)) {
-                ThemePreferences.Mode.DARK
-            } else {
-                ThemePreferences.Mode.LIGHT
-            }
-            if (ThemePreferences.getMode(this) != newMode) {
-                ThemePreferences.setMode(this, newMode)
-                overflowPopup?.dismiss()
-                recreate()
-            }
-        }
+        bindOverflowSwitchListeners(darkSwitch, systemSwitch)
 
         settingsItem.setOnClickListener {
-            overflowPopup?.dismiss()
+            // Settings placeholder — popup stays open until user taps outside
         }
 
         popupView.measure(
@@ -291,11 +281,58 @@ class MainActivity : AppCompatActivity() {
             true,
         )
         popup.isOutsideTouchable = true
-        popup.elevation = resources.getDimension(R.dimen.cardview_default_elevation)
+        popup.elevation = 8f * resources.displayMetrics.density
 
         val xOffset = anchor.width - popupView.measuredWidth
         popup.showAsDropDown(anchor, xOffset, 0, Gravity.END)
         overflowPopup = popup
+    }
+
+    private fun refreshOverflowSwitchStates(
+        darkSwitch: SwitchMaterial,
+        systemSwitch: SwitchMaterial,
+    ) {
+        darkSwitch.setOnCheckedChangeListener(null)
+        darkSwitch.isChecked = ThemePreferences.isDarkModeActive(this)
+        systemSwitch.setOnCheckedChangeListener(null)
+        systemSwitch.isChecked = ThemePreferences.getMode(this) == ThemePreferences.Mode.SYSTEM
+        bindOverflowSwitchListeners(darkSwitch, systemSwitch)
+    }
+
+    private fun bindOverflowSwitchListeners(
+        darkSwitch: SwitchMaterial,
+        systemSwitch: SwitchMaterial,
+    ) {
+        darkSwitch.setOnCheckedChangeListener { _, isChecked ->
+            val newMode = if (isChecked) {
+                ThemePreferences.Mode.DARK
+            } else {
+                ThemePreferences.Mode.LIGHT
+            }
+            if (ThemePreferences.getMode(this) != newMode) {
+                reopenOverflowPopup = true
+                ThemePreferences.setMode(this, newMode)
+                refreshOverflowSwitchStates(darkSwitch, systemSwitch)
+            }
+        }
+        systemSwitch.setOnCheckedChangeListener { _, isChecked ->
+            val newMode = if (isChecked) {
+                ThemePreferences.Mode.SYSTEM
+            } else if (ThemePreferences.isDarkModeActive(this)) {
+                ThemePreferences.Mode.DARK
+            } else {
+                ThemePreferences.Mode.LIGHT
+            }
+            if (ThemePreferences.getMode(this) != newMode) {
+                reopenOverflowPopup = true
+                ThemePreferences.setMode(this, newMode)
+                refreshOverflowSwitchStates(darkSwitch, systemSwitch)
+            }
+        }
+    }
+
+    private companion object {
+        const val KEY_REOPEN_OVERFLOW = "reopen_overflow_popup"
     }
 
     override fun onSupportNavigateUp(): Boolean {
