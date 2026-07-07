@@ -6,6 +6,8 @@
     <string name="nav_header_subtitle">intervene@wim4you.com</string>
     <string name="nav_header_desc">Navigatiekop</string>
     <string name="action_settings">Instellingen</string>
+    <string name="menu_about">Over</string>
+    <string name="about_text">InterVene is een communityveiligheidsapp voor Android die mensen die hulp nodig hebben verbindt met nabijgelegen vigilantes (buurtwachtvrijwilligers). De app ondersteunt twee complementaire rollen op een gedeelde Google Maps-interface.\n\nVoor mensen in een kwetsbare situatie: gebruikers registreren een profiel (alias, veilig woord, contactgegevens) en kunnen een begeleide reis starten—met live locatiedeling tijdens het lopen en optionele wandelrouteplanning. Een opvallende !HELP!-paniekknop activeert de noodmodus: een alarm klinkt, een foreground service zendt de GPS-positie uit naar Firebase (via GeoFire) en pushmeldingen waarschuwen anderen in de buurt.\n\nVoor hulpverleners: vigilantes registreren zich als individu of groep en starten patrouilleren om hun locatie in realtime te delen. Ze kunnen een lijst met actieve noodoproepen in de buurt bekijken en ernaartoe navigeren om te helpen.\n\nDe app coördineert deze modi via achtergrondlocatieservices en Firebase voor realtime georuimtelijke data en berichten. Kortom: InterVene is een paniekknop- en buurtwachtcoördinatietool gericht op criminaliteitspreventie en snellere hulp uit de community.</string>
     <string name="menu_version">Versie %1$s</string>
 
     <string name="menu_home">Home</string>

@@ -59,5 +59,15 @@
             android:text="@string/action_settings"
             android:textAppearance="?attr/textAppearanceBody1" />
 
+        <TextView
+            android:id="@+id/menu_about"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp"
+            android:text="@string/menu_about"
+            android:textAppearance="?attr/textAppearanceBody1" />
+
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

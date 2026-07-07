@@ -25,6 +25,7 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.switchmaterial.SwitchMaterial
@@ -256,6 +257,7 @@ class MainActivity : AppCompatActivity() {
         val darkSwitch = popupView.findViewById<SwitchMaterial>(R.id.switch_dark_mode)
         val systemSwitch = popupView.findViewById<SwitchMaterial>(R.id.switch_follow_system)
         val settingsItem = popupView.findViewById<TextView>(R.id.menu_settings)
+        val aboutItem = popupView.findViewById<TextView>(R.id.menu_about)
 
         versionText.text = getString(R.string.menu_version, getString(R.string.app_build_number))
 
@@ -267,6 +269,11 @@ class MainActivity : AppCompatActivity() {
 
         settingsItem.setOnClickListener {
             // Settings placeholder — popup stays open until user taps outside
+        }
+
+        aboutItem.setOnClickListener {
+            overflowPopup?.dismiss()
+            showAboutDialog()
         }
 
         popupView.measure(
@@ -286,6 +293,15 @@ class MainActivity : AppCompatActivity() {
         val xOffset = anchor.width - popupView.measuredWidth
         popup.showAsDropDown(anchor, xOffset, 0, Gravity.END)
         overflowPopup = popup
+    }
+
+    private fun showAboutDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_about, null)
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.menu_about)
+            .setView(dialogView)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
     }
 
     private fun refreshOverflowSwitchStates(
