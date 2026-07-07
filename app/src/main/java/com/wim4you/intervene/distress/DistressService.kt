@@ -98,7 +98,6 @@ class DistressService : Service() {
             // Handle missing permissions (e.g., stop service or notify user)
             stopSelf()
             return
-
         }
 
         distressJob?.cancel()
