@@ -16,7 +16,7 @@ import com.firebase.geofire.GeoLocation
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.database.FirebaseDatabase
-import com.wim4you.intervene.AppState
+import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.Constants
 import com.wim4you.intervene.R
 import com.wim4you.intervene.dao.DatabaseProvider
@@ -64,10 +64,10 @@ class PatrolService : Service() {
 
         startForeground(notificationId, notification)
 
-        if (AppState.isPatrolling) {
+        if (AppModeController.isPatrolling) {
             coroutineScope.launch {
-                AppState.vigilante = vigilanteStore.fetch();
-                var vigilanteData = AppState.vigilante
+                AppModeController.vigilante = vigilanteStore.fetch();
+                var vigilanteData = AppModeController.vigilante
                 if(vigilanteData  == null) {
                   stopSelf()
                 }
@@ -92,7 +92,7 @@ class PatrolService : Service() {
 
         patrolJob?.cancel()
         patrolJob = coroutineScope.launch {
-            while (isActive && AppState.isPatrolling) {
+            while (isActive && AppModeController.isPatrolling) {
                 try {
                     val location = LocationProvider.getLastLocation()
                     location?.let {
@@ -103,7 +103,7 @@ class PatrolService : Service() {
                             vigilanteId = vigilanteData.id,
                             name = vigilanteData.name,
                             time = System.currentTimeMillis(),
-                            isActive = AppState.isPatrolling,
+                            isActive = AppModeController.isPatrolling,
                             fcmToken = null // Replace with actual FCM token if needed
                         )
                         sendToFirebase(patrolLocationData,geoLocation)

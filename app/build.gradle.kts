@@ -3,9 +3,8 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    id("kotlin-kapt")
-    id("com.google.devtools.ksp")
-    id("com.google.gms.google-services")
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.google.services)
     id("kotlin-parcelize")
 }
 
@@ -13,7 +12,8 @@ android {
     val localProperties = Properties().apply {
         load(project.rootProject.file("local.properties").inputStream())
     }
-    val apiKey = localProperties.getProperty("GOOGLE_MAPS_API_KEY") ?: throw IllegalArgumentException("GOOGLE_API_KEY not found in local.properties")
+    val apiKey = localProperties.getProperty("GOOGLE_MAPS_API_KEY")
+        ?: throw IllegalArgumentException("GOOGLE_MAPS_API_KEY not found in local.properties")
 
     namespace = "com.wim4you.intervene"
     compileSdk = 36
@@ -49,11 +49,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
     buildFeatures {
         viewBinding = true
@@ -61,7 +61,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -79,12 +78,10 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.firebase.database)
-    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.geofire.android)
     implementation(libs.firebase.messaging)
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-
 }

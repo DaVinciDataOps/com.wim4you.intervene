@@ -19,7 +19,7 @@ import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.database.FirebaseDatabase
-import com.wim4you.intervene.AppState
+import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.Constants
 import com.wim4you.intervene.R
 import com.wim4you.intervene.dao.DatabaseProvider
@@ -75,14 +75,14 @@ class DistressService : Service() {
 
         startForeground(notificationId, notification)
 
-        if (AppState.isDistressState) {
+        if (AppModeController.isDistressActive) {
             coroutineScope.launch {
                 var personData = personStore.fetch();
                 if(personData == null) {
                   stopSelf()
                 }
                 else {
-                  startDistressUpdates(personData, true,AppState.isDistressState)
+                  startDistressUpdates(personData, true,AppModeController.isDistressActive)
                 }
             }
         }
@@ -109,7 +109,7 @@ class DistressService : Service() {
                 sendDistressToHistory(personData, geoLocation)
             }
 
-            while (isActive && AppState.isDistressState) {
+            while (isActive && AppModeController.isDistressActive) {
                 try {
                     location = LocationProvider.getLastLocation()
                     location?.let {
@@ -213,7 +213,7 @@ class DistressService : Service() {
     override fun onDestroy() {
         super.onDestroy()
 
-        if (!AppState.isDistressState) {
+        if (!AppModeController.isDistressActive) {
             serviceScope.launch {
                 val personData = personStore.fetch();
                 if(personData == null) {

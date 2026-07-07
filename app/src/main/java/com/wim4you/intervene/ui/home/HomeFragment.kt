@@ -14,6 +14,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -24,7 +25,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import com.wim4you.intervene.AppState
+import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.FragmentHomeBinding
 import com.wim4you.intervene.fbdata.DistressLocationData
@@ -33,6 +34,7 @@ import com.wim4you.intervene.helpers.GoogleMapMarkers
 import com.wim4you.intervene.helpers.TimestampConverter
 import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.repository.PersonDataRepository
+import com.wim4you.intervene.ui.map.MapDataViewModel
 
 class HomeFragment : Fragment(), OnMapReadyCallback {
 
@@ -44,12 +46,13 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             PersonDataRepository(DatabaseProvider.getDatabase(requireContext()).personDataDao()),
         )
     }
+    private val mapDataViewModel: MapDataViewModel by activityViewModels()
 
     private lateinit var mMap: GoogleMap
     private var mMapInitialized = false
-    private lateinit var patrolMarker:Bitmap
-    private lateinit var myPatrolMarker:Bitmap
-    private lateinit var distressMarker:Bitmap
+    private lateinit var patrolMarker: Bitmap
+    private lateinit var myPatrolMarker: Bitmap
+    private lateinit var distressMarker: Bitmap
     private val patrolMarkers = mutableMapOf<String, Marker>()
     private val distressMarkers = mutableMapOf<String, Marker>()
 
@@ -59,8 +62,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
-        val root: View = binding.root
-        return root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -69,27 +71,20 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             childFragmentManager.findFragmentById(binding.googleMap.id) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        GoogleMapMarkers.initialize(requireContext());
+        GoogleMapMarkers.initialize(requireContext())
         patrolMarker = GoogleMapMarkers.patrolMarker
         myPatrolMarker = GoogleMapMarkers.myPatrolMarker
         distressMarker = GoogleMapMarkers.distressMarker
 
-        viewModel.registerLocationTrackerReceiver(requireContext())
-
-        viewModel.patrolLocations.observe(viewLifecycleOwner) { patrolDataList ->
+        mapDataViewModel.patrolLocations.observe(viewLifecycleOwner) { patrolDataList ->
             updatePatrolMapMarkers(patrolDataList)
         }
-        viewModel.distressLocations.observe(viewLifecycleOwner) { distressDataList ->
+        mapDataViewModel.distressLocations.observe(viewLifecycleOwner) { distressDataList ->
             updateDistressMapMarkers(distressDataList)
-            //populateSnackBar(distressDataList)
+            populateSnackBar(distressDataList)
         }
 
-        if(AppState.isGuidedTrip){
-            binding.panicButton.visibility = View.VISIBLE
-        }
-        else {
-            binding.panicButton.visibility = View.GONE
-        }
+        binding.panicButton.visibility = if (AppModeController.isGuidedTrip) View.VISIBLE else View.GONE
 
         binding.panicButton.setOnClickListener {
             if (ContextCompat.checkSelfPermission(
@@ -110,7 +105,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // viewModel.stopLocationService(requireContext())
         _binding = null
     }
 
@@ -122,7 +116,6 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                 Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         ) {
-
             mMap.isMyLocationEnabled = true
 
             LocationUtils.getLocation(requireContext()) { currentLatLng ->
@@ -135,70 +128,70 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         mMapInitialized = true
     }
 
-    private fun updateDistressMapMarkers(distressDataList: List<DistressLocationData>){
-        if(!mMapInitialized)
-            return
+    private fun updateDistressMapMarkers(distressDataList: List<DistressLocationData>) {
+        if (!mMapInitialized) return
 
-        val currentIds = distressDataList.map { it.id }.toSet()
-        var hasNewMarkers = false;
+        val currentIds = distressDataList.mapNotNull { it.id }.toSet()
+        var hasNewMarkers = false
         distressMarkers.keys.filter { it !in currentIds }.forEach { id ->
             distressMarkers[id]?.remove()
             distressMarkers.remove(id)
         }
 
-        // Add or update markers for active patrols
         distressDataList.forEach { distressData ->
             distressData.l?.let { loc ->
                 val latLng = LatLng(loc[0], loc[1])
-                val marker = distressMarkers[distressData.id]
+                val markerId = distressData.id ?: return@let
+                val marker = distressMarkers[markerId]
                 if (marker == null) {
-                    // Add new marker
                     val newMarker = mMap.addMarker(
                         MarkerOptions()
                             .position(latLng)
                             .title("${distressData.alias} !HELP!")
-                            .snippet(getSnippetString(distressData,System.currentTimeMillis(),distressData.startTime ))
+                            .snippet(getSnippetString(distressData, System.currentTimeMillis(), distressData.startTime))
                             .icon(BitmapDescriptorFactory.fromBitmap(distressMarker))
                     )
                     if (newMarker != null) {
-                        distressMarkers[distressData.id.toString()] = newMarker
+                        distressMarkers[markerId] = newMarker
                     }
                     hasNewMarkers = true
                 } else {
-                    // Update existing marker position
                     marker.position = latLng
-                    marker.snippet = getSnippetString(distressData,System.currentTimeMillis(),distressData.startTime )
+                    marker.snippet = getSnippetString(distressData, System.currentTimeMillis(), distressData.startTime)
                 }
             }
         }
 
-        if(AppState.isPatrolling && hasNewMarkers)
+        if (AppModeController.isPatrolling && hasNewMarkers) {
             playPatrolDistressSound()
+        }
     }
 
-    private fun getSnippetString(distressData: DistressLocationData, currentTimestamp: Long?, startTimestamp: Long?): String {
+    private fun getSnippetString(
+        distressData: DistressLocationData,
+        currentTimestamp: Long?,
+        startTimestamp: Long?
+    ): String {
         val lap = TimestampConverter.lapSeconds(startTimestamp, currentTimestamp).toString()
         val start = TimestampConverter.toTime(startTimestamp)
-        return "time:${start} [lap:${lap} sec]"
+        return "time:$start [lap:${lap} sec]"
     }
 
-    private fun updatePatrolMapMarkers(patrolLocationDataList: List<PatrolLocationData>){
-        if(!mMapInitialized)
-            return
+    private fun updatePatrolMapMarkers(patrolLocationDataList: List<PatrolLocationData>) {
+        if (!mMapInitialized) return
 
-        val currentIds = patrolLocationDataList.map { it.id }.toSet()
+        val currentIds = patrolLocationDataList.mapNotNull { it.id }.toSet()
         patrolMarkers.keys.filter { it !in currentIds }.forEach { id ->
             patrolMarkers[id]?.remove()
             patrolMarkers.remove(id)
         }
 
-        // Add or update markers for active patrols
         patrolLocationDataList.forEach { patrolData ->
             patrolData.l?.let { loc ->
                 val latLng = LatLng(loc[0], loc[1])
-                val marker = patrolMarkers[patrolData.id]
+                val markerId = patrolData.id ?: return@let
+                val marker = patrolMarkers[markerId]
                 if (marker == null) {
-                    // Add new marker
                     val newMarker = mMap.addMarker(
                         MarkerOptions()
                             .position(latLng)
@@ -206,21 +199,18 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
                             .icon(getIcon(patrolData.vigilanteId))
                     )
                     if (newMarker != null) {
-                        patrolMarkers[patrolData.id as String] = newMarker
+                        patrolMarkers[markerId] = newMarker
                     }
                 } else {
-                    // Update existing marker position
                     marker.position = latLng
                 }
             }
         }
-
     }
 
     private fun getIcon(vigilanteId: String?): BitmapDescriptor {
-        // Handle null cases safely
-        var id = AppState.vigilante?.id
-        return if (vigilanteId != null && AppState.vigilante?.id != null && vigilanteId == id) {
+        val myId = AppModeController.vigilante?.id
+        return if (vigilanteId != null && myId != null && vigilanteId == myId) {
             BitmapDescriptorFactory.fromBitmap(myPatrolMarker)
         } else {
             BitmapDescriptorFactory.fromBitmap(patrolMarker)
@@ -228,32 +218,32 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun populateSnackBar(list: List<DistressLocationData>) {
-        var message = list.take(5).joinToString("\n------------\n") {call ->
-            "${call.alias}: ${call.address ?: "Unknown address"} at ${TimestampConverter.toTime(call.startTime)}"
+        val message = if (list.isEmpty()) {
+            "No Distress calls"
+        } else {
+            list.take(5).joinToString("\n------------\n") { call ->
+                "${call.alias}: ${call.address ?: "Unknown address"} at ${TimestampConverter.toTime(call.startTime)}"
+            }
         }
-        if(list.count() ==0)
-            message = "No Distress calls"
-        AppState.snackBarMessage = message;
+        AppModeController.snackBarMessage = message
     }
+
     private fun playPatrolDistressSound() {
         val mediaPlayer = MediaPlayer.create(context, android.provider.Settings.System.DEFAULT_NOTIFICATION_URI)
         mediaPlayer?.let { player ->
             try {
-                // Set volume to maximum
                 val audioManager = context?.getSystemService(Context.AUDIO_SERVICE) as AudioManager
                 audioManager.setStreamVolume(
                     AudioManager.STREAM_MUSIC,
                     audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
                     0
                 )
-                // Start playing the sound
                 player.isLooping = false
                 player.start()
-                // Stop after 10 seconds
                 Handler(Looper.getMainLooper()).postDelayed({
                     player.stop()
                     player.release()
-                }, 10000) // 10 seconds
+                }, 10000)
             } catch (e: Exception) {
                 e.printStackTrace()
                 player.release()

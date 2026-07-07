@@ -1,11 +1,12 @@
 [versions]
-agp = "8.12.3"
+agp = "9.2.1"
 firebaseBom = "34.2.0"
 firebaseAuth = "24.0.1"
 firebaseMessaging = "25.0.0"
 firebaseStore = "26.0.0"
 geofireAndroid = "3.2.0"
 googleServices = "4.4.3"
+ksp = "2.3.2"
 kotlin = "2.2.10"
 coreKtx = "1.17.0"
 junit = "4.13.2"
@@ -51,6 +52,5 @@ androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx"
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-google-services = {id="com.google.gms.google-services", version.ref = "googleServices"}
-
-
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

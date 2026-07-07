@@ -28,7 +28,11 @@
     <string name="home_stop_patrolling">Stop Patrolling</string>
     <string name="home_start_guided_trip">Start guided trip</string>
     <string name="nav_startstop_guided_trip">Start guided trip</string>
+    <string name="nav_stop_guided_trip">Stop guided trip</string>
     <string name="nav_startstop_patrolling">Start patrolling</string>
+    <string name="nav_stop_patrolling">Stop patrolling</string>
+    <string name="register_before_guided_trip">Register your profile before starting a guided trip</string>
+    <string name="register_vigilante_before_patrol">Register as a vigilante before patrolling</string>
     <string name="nav_cancel_distress_call">Cancel distress call</string>
     <string name="nav_distress_list">Pick distress call</string>
     <string name="tag_patrol_service">Patrol Service</string>
