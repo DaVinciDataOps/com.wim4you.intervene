@@ -18,5 +18,8 @@
         <item name="windowNoTitle">true</item>
     </style>
     <style name="Theme.Intervene.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
-    <style name="Theme.Intervene.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+    <style name="Theme.Intervene.PopupOverlay" parent="ThemeOverlay.AppCompat.Dark">
+        <item name="android:textColorPrimary">@color/white</item>
+        <item name="android:textColorSecondary">@color/white</item>
+    </style>
 </resources>

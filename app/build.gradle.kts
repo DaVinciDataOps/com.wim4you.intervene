@@ -1,3 +1,6 @@
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.Properties
 
 plugins {
@@ -14,6 +17,8 @@ android {
     }
     val apiKey = localProperties.getProperty("GOOGLE_MAPS_API_KEY")
         ?: throw IllegalArgumentException("GOOGLE_MAPS_API_KEY not found in local.properties")
+    val directionsApiKey = localProperties.getProperty("GOOGLE_DIRECTIONS_API_KEY") ?: apiKey
+    val buildNumber = SimpleDateFormat("yyyyMMddHHmm", Locale.US).format(Date())
 
     namespace = "com.wim4you.intervene"
     compileSdk = 36
@@ -25,7 +30,8 @@ android {
         versionCode = 6
         versionName = "1.6"
         manifestPlaceholders.put("google_maps_api_key", apiKey)
-        buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"$apiKey\"")
+        resValue("string", "app_build_number", buildNumber)
+        resValue("string", "google_directions_api_key", directionsApiKey)
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
@@ -58,7 +64,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
-        buildConfig = true
+        resValues = true
     }
 }
 

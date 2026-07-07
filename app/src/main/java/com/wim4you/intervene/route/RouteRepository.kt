@@ -1,17 +1,17 @@
 package com.wim4you.intervene.route
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.os.Build
 import com.google.android.gms.maps.model.LatLng
-import com.wim4you.intervene.BuildConfig
+import com.wim4you.intervene.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import java.net.URLEncoder
 import java.util.Locale
 import kotlin.coroutines.resume
 
@@ -23,6 +23,10 @@ data class RouteResult(
 )
 
 class RouteRepository(private val context: Context) {
+
+    private val directionsApiKey: String by lazy {
+        context.getString(R.string.google_directions_api_key)
+    }
 
     suspend fun geocodeAddress(address: String): LatLng? = withContext(Dispatchers.IO) {
         if (address.isBlank()) return@withContext null
@@ -54,9 +58,8 @@ class RouteRepository(private val context: Context) {
         withContext(Dispatchers.IO) {
             val originParam = "${origin.latitude},${origin.longitude}"
             val destParam = "${destination.latitude},${destination.longitude}"
-            val key = URLEncoder.encode(BuildConfig.GOOGLE_MAPS_API_KEY, Charsets.UTF_8.name())
             val urlString = "https://maps.googleapis.com/maps/api/directions/json" +
-                "?origin=$originParam&destination=$destParam&mode=walking&key=$key"
+                "?origin=$originParam&destination=$destParam&mode=walking&key=$directionsApiKey"
 
             val connection = (URL(urlString).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
@@ -73,14 +76,16 @@ class RouteRepository(private val context: Context) {
                 }
 
                 if (responseCode != HttpURLConnection.HTTP_OK) {
-                    return@withContext Result.failure(Exception("Directions request failed ($responseCode)"))
+                    return@withContext Result.failure(
+                        Exception(context.getString(R.string.route_directions_http_error, responseCode))
+                    )
                 }
 
                 val json = JSONObject(body)
                 val status = json.getString("status")
                 if (status != "OK") {
-                    val message = json.optString("error_message", status)
-                    return@withContext Result.failure(Exception(message))
+                    val apiMessage = json.optString("error_message", status)
+                    return@withContext Result.failure(Exception(mapDirectionsError(status, apiMessage)))
                 }
 
                 val route = json.getJSONArray("routes").getJSONObject(0)
@@ -103,4 +108,12 @@ class RouteRepository(private val context: Context) {
                 connection.disconnect()
             }
         }
+
+    private fun mapDirectionsError(status: String, apiMessage: String): String {
+        return when (status) {
+            "REQUEST_DENIED" -> context.getString(R.string.route_not_authorized)
+            "ZERO_RESULTS" -> context.getString(R.string.route_no_results)
+            else -> apiMessage.ifBlank { context.getString(R.string.route_fetch_failed) }
+        }
+    }
 }

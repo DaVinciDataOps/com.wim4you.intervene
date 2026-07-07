@@ -6,6 +6,7 @@
     <string name="nav_header_subtitle">intervene@wim4you.com</string>
     <string name="nav_header_desc">Navigatiekop</string>
     <string name="action_settings">Instellingen</string>
+    <string name="menu_version">Versie %1$s</string>
 
     <string name="menu_home">Home</string>
     <string name="menu_vigilantes">Vigilantes</string>
@@ -52,12 +53,19 @@
     <string name="switch_dark_mode">Dark Mode</string>
 
     <string name="route_destination_hint">Bestemmingsadres</string>
+    <string name="route_destination_optional">Bestemming (optioneel)</string>
+    <string name="route_add_destination">Bestemming toevoegen</string>
+    <string name="route_close">Sluiten</string>
     <string name="route_show">Route tonen</string>
     <string name="route_clear">Route wissen</string>
     <string name="route_destination_marker">Bestemming</string>
     <string name="route_loading">Route zoeken…</string>
     <string name="route_enter_destination">Voer een bestemmingsadres in</string>
     <string name="route_location_unavailable">Kon je huidige locatie niet bepalen</string>
+    <string name="route_not_authorized">Routes zijn niet geautoriseerd. Schakel Directions API in en voeg GOOGLE_DIRECTIONS_API_KEY toe in local.properties (API-sleutel zonder Android-app-beperking).</string>
+    <string name="route_no_results">Geen wandelroute gevonden naar die bestemming</string>
+    <string name="route_fetch_failed">Kon route niet ophalen</string>
+    <string name="route_directions_http_error">Routeverzoek mislukt (HTTP %1$d)</string>
 
     <string-array name="gender_options">
         <item>Man</item>

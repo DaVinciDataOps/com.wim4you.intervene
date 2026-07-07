@@ -69,9 +69,34 @@
             android:orientation="vertical"
             android:padding="12dp">
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/route_destination_optional"
+                    android:textAppearance="?attr/textAppearanceSubtitle1" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/closeDestinationButton"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="0dp"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:text="@string/route_close" />
+            </LinearLayout>
+
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:hint="@string/route_destination_hint">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -113,5 +138,15 @@
                 android:visibility="gone" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/addDestinationButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
+        android:text="@string/route_add_destination"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@id/googleMap"
+        app:layout_constraintTop_toTopOf="@id/googleMap" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

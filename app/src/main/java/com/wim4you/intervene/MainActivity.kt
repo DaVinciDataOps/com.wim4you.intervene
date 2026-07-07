@@ -194,6 +194,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main, menu)
+        menu.findItem(R.id.action_build_number)?.title =
+            getString(R.string.menu_version, getString(R.string.app_build_number))
         return true
     }
 
