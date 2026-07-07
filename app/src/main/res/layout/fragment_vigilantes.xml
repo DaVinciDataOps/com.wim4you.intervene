@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:background="@android:color/black"
+    android:background="?android:attr/colorBackground"
     >
 
     <LinearLayout
@@ -62,7 +62,7 @@
             android:layout_marginTop="16dp"
             android:layout_gravity="center_horizontal"
             android:text="@string/vigilante_explanatory_text"
-            android:textColor="@android:color/white"
+            android:textColor="?android:attr/textColorSecondary"
             android:textSize="16sp" />
     <ImageView
         android:id="@+id/imageView"

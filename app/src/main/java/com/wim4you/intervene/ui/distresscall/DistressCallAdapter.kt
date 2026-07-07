@@ -46,12 +46,12 @@ class DistressCallAdapter(
 
         if (position == selectedPosition) {
             holder.itemView.setBackgroundColor(
-                ContextCompat.getColor(holder.itemView.context, android.R.color.holo_green_dark)
+                ContextCompat.getColor(holder.itemView.context, R.color.color_success)
             )
             holder.btnDistressCall.setImageResource(R.mipmap.ic_vigilantes_patrolling)
             AppModeController.selectedDistressCall = position
         } else {
-            holder.itemView.setBackgroundColor(android.R.attr.selectableItemBackground)
+            holder.itemView.setBackgroundResource(android.R.color.transparent)
             holder.btnDistressCall.setImageResource(R.mipmap.ic_launcher_round)
         }
 

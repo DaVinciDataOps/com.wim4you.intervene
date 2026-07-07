@@ -4,9 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground"
     tools:context=".ui.home.HomeFragment">
-
-    <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline_h"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -27,11 +26,12 @@
         android:layout_margin="16dp"
         android:text="@string/btn_panic"
         android:textSize="40sp"
+        android:textStyle="bold"
         android:textColor="@color/white"
-        android:background="@mipmap/ic_launcher_round"
-        app:backgroundTint="@null"
+        app:backgroundTint="@color/color_distress"
         app:cornerRadius="100dp"
-        app:strokeWidth="8dp"
+        app:elevation="8dp"
+        app:strokeWidth="4dp"
         app:strokeColor="@color/white"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -94,12 +94,14 @@
             </LinearLayout>
 
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/destinationInputLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:hint="@string/route_destination_hint">
 
-                <com.google.android.material.textfield.TextInputEditText
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
                     android:id="@+id/destinationInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+    <!-- Keeps the overflow (three-dot) icon visible on the toolbar -->
     <item
-        android:id="@+id/action_build_number"
-        android:title="@string/app_build_number"
-        android:enabled="false"
-        app:showAsAction="never" />
-    <item android:id="@+id/action_settings"
-        android:title="@string/action_settings"
-        android:orderInCategory="100"
+        android:id="@+id/action_overflow_placeholder"
+        android:title=""
+        android:visible="false"
         app:showAsAction="never" />
 </menu>

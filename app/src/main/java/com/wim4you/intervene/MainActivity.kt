@@ -6,11 +6,13 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.view.Menu
+import android.view.MenuItem
 import android.view.WindowManager
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -21,6 +23,7 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.switchmaterial.SwitchMaterial
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.ActivityMainBinding
 import com.wim4you.intervene.location.LocationTrackerService
@@ -196,7 +199,82 @@ class MainActivity : AppCompatActivity() {
         menuInflater.inflate(R.menu.main, menu)
         menu.findItem(R.id.action_build_number)?.title =
             getString(R.string.menu_version, getString(R.string.app_build_number))
+        setupThemeSwitches(menu)
         return true
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
+        setupThemeSwitches(menu)
+        return super.onPrepareOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_dark_mode, R.id.action_follow_system -> true
+            R.id.action_settings -> true
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun setupThemeSwitches(menu: Menu) {
+        bindThemeSwitch(
+            menuItem = menu.findItem(R.id.action_dark_mode),
+            label = getString(R.string.switch_dark_mode),
+            isChecked = ThemePreferences.isDarkModeActive(this),
+        ) { isChecked ->
+            val newMode = if (isChecked) {
+                ThemePreferences.Mode.DARK
+            } else {
+                ThemePreferences.Mode.LIGHT
+            }
+            if (ThemePreferences.getMode(this) != newMode) {
+                ThemePreferences.setMode(this, newMode)
+                recreate()
+            }
+        }
+
+        bindThemeSwitch(
+            menuItem = menu.findItem(R.id.action_follow_system),
+            label = getString(R.string.follow_system_theme),
+            isChecked = ThemePreferences.getMode(this) == ThemePreferences.Mode.SYSTEM,
+        ) { isChecked ->
+            val newMode = if (isChecked) {
+                ThemePreferences.Mode.SYSTEM
+            } else if (ThemePreferences.isDarkModeActive(this)) {
+                ThemePreferences.Mode.DARK
+            } else {
+                ThemePreferences.Mode.LIGHT
+            }
+            if (ThemePreferences.getMode(this) != newMode) {
+                ThemePreferences.setMode(this, newMode)
+                recreate()
+            }
+        }
+    }
+
+    private fun bindThemeSwitch(
+        menuItem: MenuItem?,
+        label: String,
+        isChecked: Boolean,
+        onChecked: (Boolean) -> Unit,
+    ) {
+        if (menuItem == null) return
+
+        MenuItemCompat.setShowAsAction(menuItem, MenuItemCompat.SHOW_AS_ACTION_NEVER)
+        if (menuItem.actionView == null) {
+            MenuItemCompat.setActionView(menuItem, R.layout.menu_action_switch)
+        }
+
+        menuItem.setOnMenuItemClickListener { true }
+
+        val switch = menuItem.actionView?.findViewById<SwitchMaterial>(R.id.menu_switch) ?: return
+        switch.text = label
+        switch.jumpDrawablesToCurrentState()
+        switch.setOnCheckedChangeListener(null)
+        switch.isChecked = isChecked
+        switch.setOnCheckedChangeListener { _, checked ->
+            onChecked(checked)
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {

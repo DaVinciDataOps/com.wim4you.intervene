@@ -7,6 +7,7 @@ class InterVeneApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        ThemePreferences.applySavedTheme(this)
         DatabaseProvider.getDatabase(this)
     }
 }

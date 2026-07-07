@@ -50,7 +50,8 @@
     <string name="register_label_name">Name</string>
     <string name="button_fab_image_messages">Messages</string>
     <string name="btn_item_vigilante">Vigilante</string>
-    <string name="switch_dark_mode">Dark Mode</string>
+    <string name="switch_dark_mode">Dark mode</string>
+    <string name="follow_system_theme">Follow system theme</string>
 
     <string name="route_destination_hint">Destination address</string>
     <string name="route_destination_optional">Destination (optional)</string>
@@ -66,6 +67,7 @@
     <string name="route_no_results">No walking route found to that destination</string>
     <string name="route_fetch_failed">Could not fetch route</string>
     <string name="route_directions_http_error">Directions request failed (HTTP %1$d)</string>
+    <string name="route_destination_last_used">Last used: %1$s</string>
 
 
     <string-array name="gender_options">

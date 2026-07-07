@@ -1,16 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
+    <!-- Neutrals -->
+    <color name="background">#F5F7FA</color>
+    <color name="surface">#F8F9FC</color>
+    <color name="text_primary">#1C2526</color>
+    <color name="text_secondary">#455A64</color>
+
+    <!-- Core semantic colors (shared meaning across modes) -->
+    <color name="color_tracking">#1565C0</color>
+    <color name="color_tracking_variant">#0D47A1</color>
+    <color name="color_tracking_bright">#1E88E5</color>
+    <color name="color_distress">#D32F2F</color>
+    <color name="color_success">#2E7D32</color>
+    <color name="color_warning">#F57C00</color>
+    <color name="color_vigilante">#00796B</color>
+
+    <!-- Theme mapping -->
+    <color name="color_primary">@color/color_tracking</color>
+    <color name="color_primary_variant">@color/color_tracking_variant</color>
+    <color name="color_on_primary">#FFFFFF</color>
+    <color name="color_secondary">@color/color_vigilante</color>
+    <color name="color_secondary_variant">#00695C</color>
+    <color name="color_on_secondary">#FFFFFF</color>
+    <color name="color_error">@color/color_distress</color>
+    <color name="color_on_surface">@color/text_primary</color>
+    <color name="color_on_background">@color/text_primary</color>
+    <color name="route_polyline">@color/color_tracking_bright</color>
+
+    <!-- Legacy aliases kept for compatibility -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-
-    <color name="background_light">#FFFFFF</color>  <!-- Main background -->
-    <color name="surface_light">#FFFFFF</color>    <!-- Cards, lists -->
-    <color name="on_surface_light">#000000</color> <!-- Text on surfaces -->
-    <color name="on_background_light">#000000</color> <!-- Text on background -->
-    <color name="error_light">#F44336</color>     <!-- Red for alerts -->
 </resources>

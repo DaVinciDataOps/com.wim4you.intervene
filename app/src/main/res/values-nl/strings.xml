@@ -50,7 +50,8 @@
     <string name="register_label_name">Naam</string>
     <string name="button_fab_image_messages">Berichten</string>
     <string name="btn_item_vigilante">Vigilante</string>
-    <string name="switch_dark_mode">Dark Mode</string>
+    <string name="switch_dark_mode">Donkere modus</string>
+    <string name="follow_system_theme">Volg systeemthema</string>
 
     <string name="route_destination_hint">Bestemmingsadres</string>
     <string name="route_destination_optional">Bestemming (optioneel)</string>
@@ -66,6 +67,7 @@
     <string name="route_no_results">Geen wandelroute gevonden naar die bestemming</string>
     <string name="route_fetch_failed">Kon route niet ophalen</string>
     <string name="route_directions_http_error">Routeverzoek mislukt (HTTP %1$d)</string>
+    <string name="route_destination_last_used">Laatst gebruikt: %1$s</string>
 
     <string-array name="gender_options">
         <item>Man</item>

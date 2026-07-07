@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Neutrals -->
+    <color name="background">#0A0F1C</color>
+    <color name="surface">#1C2526</color>
+    <color name="text_primary">#E0E7FF</color>
+    <color name="text_secondary">#90A4AE</color>
+
+    <!-- Core semantic colors -->
+    <color name="color_tracking">#42A5F5</color>
+    <color name="color_tracking_variant">#1565C0</color>
+    <color name="color_tracking_bright">#42A5F5</color>
+    <color name="color_distress">#FF5252</color>
+    <color name="color_success">#66DE7B</color>
+    <color name="color_warning">#FFAB40</color>
+    <color name="color_vigilante">#26A69A</color>
+
+    <!-- Theme mapping -->
+    <color name="color_primary">@color/color_tracking</color>
+    <color name="color_primary_variant">@color/color_tracking_variant</color>
+    <color name="color_on_primary">#0A0F1C</color>
+    <color name="color_secondary">@color/color_vigilante</color>
+    <color name="color_secondary_variant">#00796B</color>
+    <color name="color_on_secondary">#FFFFFF</color>
+    <color name="color_error">@color/color_distress</color>
+    <color name="color_on_surface">@color/text_primary</color>
+    <color name="color_on_background">@color/text_primary</color>
+    <color name="route_polyline">@color/color_tracking_bright</color>
+
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

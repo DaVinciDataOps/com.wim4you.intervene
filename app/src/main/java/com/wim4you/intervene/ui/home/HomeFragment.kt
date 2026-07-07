@@ -29,6 +29,7 @@ import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 
 import androidx.core.content.ContextCompat
+import androidx.core.widget.doAfterTextChanged
 
 import androidx.fragment.app.Fragment
 
@@ -52,6 +53,8 @@ import com.google.android.gms.maps.model.LatLng
 
 import com.google.android.gms.maps.model.LatLngBounds
 
+import com.google.android.gms.maps.model.MapStyleOptions
+
 import com.google.android.gms.maps.model.Marker
 
 import com.google.android.gms.maps.model.MarkerOptions
@@ -63,6 +66,7 @@ import com.google.android.gms.maps.model.PolylineOptions
 import com.wim4you.intervene.AppModeController
 
 import com.wim4you.intervene.R
+import com.wim4you.intervene.ThemePreferences
 
 import com.wim4you.intervene.dao.DatabaseProvider
 
@@ -78,6 +82,7 @@ import com.wim4you.intervene.helpers.TimestampConverter
 
 import com.wim4you.intervene.location.LocationUtils
 
+import com.wim4you.intervene.repository.DestinationHistoryRepository
 import com.wim4you.intervene.repository.PersonDataRepository
 
 import com.wim4you.intervene.route.RouteRepository
@@ -97,15 +102,12 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
 
     private val viewModel: HomeViewModel by viewModels {
-
+        val database = DatabaseProvider.getDatabase(requireContext())
         HomeViewModelFactory(
-
-            PersonDataRepository(DatabaseProvider.getDatabase(requireContext()).personDataDao()),
-
+            PersonDataRepository(database.personDataDao()),
             RouteRepository(requireContext().applicationContext),
-
+            DestinationHistoryRepository(database.destinationHistoryDao()),
         )
-
     }
 
     private val mapDataViewModel: MapDataViewModel by activityViewModels()
@@ -129,6 +131,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     private var routePolyline: Polyline? = null
     private var destinationMarker: Marker? = null
     private var isDestinationPanelOpen = false
+    private lateinit var destinationSuggestionAdapter: DestinationSuggestionAdapter
 
 
 
@@ -215,22 +218,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         binding.showRouteButton.setOnClickListener { requestRoute() }
         binding.addDestinationButton.setOnClickListener { openDestinationPanel() }
         binding.closeDestinationButton.setOnClickListener { closeDestinationPanel() }
-
-        binding.destinationInput.setOnEditorActionListener { _, actionId, _ ->
-
-            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-
-                requestRoute()
-
-                true
-
-            } else {
-
-                false
-
-            }
-
-        }
+        setupDestinationInput()
 
 
 
@@ -293,6 +281,13 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
         }
 
+        viewModel.destinationSuggestions.observe(viewLifecycleOwner) { suggestions ->
+            destinationSuggestionAdapter.submitSuggestions(suggestions)
+            if (binding.destinationInput.hasFocus() && suggestions.isNotEmpty()) {
+                binding.destinationInput.showDropDown()
+            }
+        }
+
     }
 
 
@@ -320,7 +315,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
         mMap = googleMap
 
-
+        applyMapStyle()
 
         if (ContextCompat.checkSelfPermission(
 
@@ -360,6 +355,15 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
+    private fun applyMapStyle() {
+        if (!ThemePreferences.isDarkModeActive(requireContext())) return
+        MapStyleOptions.loadRawResourceStyle(requireContext(), R.raw.map_style_dark)
+            .takeIf { it != null }
+            ?.let { style ->
+                mMap.setMapStyle(style)
+            }
+    }
+
     private fun restoreRouteOnMap() {
         val currentRoute = viewModel.routeState.value
         if (currentRoute is RouteState.Success && mMapInitialized) {
@@ -391,11 +395,47 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             binding.routeSummary.text = currentRoute.summary
         }
         updateGuidedTripUi()
+        viewModel.loadDestinationSuggestions(binding.destinationInput.text?.toString().orEmpty())
+        binding.destinationInput.post {
+            binding.destinationInput.requestFocus()
+            binding.destinationInput.showDropDown()
+        }
     }
 
     private fun closeDestinationPanel() {
         isDestinationPanelOpen = false
         updateGuidedTripUi()
+    }
+
+    private fun setupDestinationInput() {
+        destinationSuggestionAdapter = DestinationSuggestionAdapter(requireContext())
+        binding.destinationInput.setAdapter(destinationSuggestionAdapter)
+        binding.destinationInput.threshold = 0
+
+        binding.destinationInput.doAfterTextChanged { editable ->
+            viewModel.loadDestinationSuggestions(editable?.toString().orEmpty())
+        }
+
+        binding.destinationInput.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                viewModel.loadDestinationSuggestions(binding.destinationInput.text?.toString().orEmpty())
+            }
+        }
+
+        binding.destinationInput.setOnItemClickListener { _, _, position, _ ->
+            val suggestion = destinationSuggestionAdapter.getItem(position) ?: return@setOnItemClickListener
+            binding.destinationInput.setText(suggestion.address)
+            binding.destinationInput.setSelection(suggestion.address.length)
+        }
+
+        binding.destinationInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                requestRoute()
+                true
+            } else {
+                false
+            }
+        }
     }
 
 
@@ -444,7 +484,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
                 .addAll(state.points)
 
-                .color(ContextCompat.getColor(requireContext(), R.color.purple_500))
+                .color(ContextCompat.getColor(requireContext(), R.color.route_polyline))
 
                 .width(12f)
 
