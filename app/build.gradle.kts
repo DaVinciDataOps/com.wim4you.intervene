@@ -25,6 +25,7 @@ android {
         versionCode = 6
         versionName = "1.6"
         manifestPlaceholders.put("google_maps_api_key", apiKey)
+        buildConfigField("String", "GOOGLE_MAPS_API_KEY", "\"$apiKey\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
@@ -57,6 +58,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 

@@ -51,6 +51,14 @@
     <string name="btn_item_vigilante">Vigilante</string>
     <string name="switch_dark_mode">Dark Mode</string>
 
+    <string name="route_destination_hint">Destination address</string>
+    <string name="route_show">Show route</string>
+    <string name="route_clear">Clear route</string>
+    <string name="route_destination_marker">Destination</string>
+    <string name="route_loading">Finding route…</string>
+    <string name="route_enter_destination">Enter a destination address</string>
+    <string name="route_location_unavailable">Could not determine your current location</string>
+
 
     <string-array name="gender_options">
         <item>Male</item>
