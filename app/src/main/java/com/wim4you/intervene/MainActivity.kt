@@ -5,14 +5,18 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
+import android.view.Gravity
 import android.view.Menu
-import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
+import android.widget.PopupWindow
 import android.view.WindowManager
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.MenuItemCompat
+import androidx.appcompat.widget.ActionMenuView
+import androidx.appcompat.widget.Toolbar
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -41,6 +45,7 @@ class MainActivity : AppCompatActivity() {
 
     private val mapDataViewModel: MapDataViewModel by viewModels()
     private lateinit var mapLocationReceiver: MapLocationReceiver
+    private var overflowPopup: PopupWindow? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +55,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setSupportActionBar(binding.appBarMain.toolbar)
+        setupCustomOverflowMenu(binding.appBarMain.toolbar)
 
         binding.appBarMain.fab.setOnClickListener { view ->
             val snackbar = Snackbar.make(view, AppModeController.snackBarMessage, Snackbar.LENGTH_LONG)
@@ -127,6 +133,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        overflowPopup?.dismiss()
+        overflowPopup = null
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mapLocationReceiver)
         super.onDestroy()
     }
