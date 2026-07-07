@@ -205,31 +205,47 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main, menu)
-        menu.findItem(R.id.action_build_number)?.title =
-            getString(R.string.menu_version, getString(R.string.app_build_number))
-        setupThemeSwitches(menu)
         return true
     }
 
-    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        setupThemeSwitches(menu)
-        return super.onPrepareOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_dark_mode, R.id.action_follow_system -> true
-            R.id.action_settings -> true
-            else -> super.onOptionsItemSelected(item)
+    private fun setupCustomOverflowMenu(toolbar: Toolbar) {
+        toolbar.post {
+            val overflowButton = findOverflowMenuButton(toolbar) ?: return@post
+            overflowButton.setOnClickListener { anchor ->
+                showOverflowPopup(anchor)
+            }
         }
     }
 
-    private fun setupThemeSwitches(menu: Menu) {
-        bindThemeSwitch(
-            menuItem = menu.findItem(R.id.action_dark_mode),
-            label = getString(R.string.switch_dark_mode),
-            isChecked = ThemePreferences.isDarkModeActive(this),
-        ) { isChecked ->
+    private fun findOverflowMenuButton(toolbar: Toolbar): View? {
+        for (i in 0 until toolbar.childCount) {
+            val child = toolbar.getChildAt(i)
+            if (child is ActionMenuView) {
+                for (j in 0 until child.childCount) {
+                    val menuChild = child.getChildAt(j)
+                    if (menuChild.javaClass.simpleName.contains("OverflowMenuButton", ignoreCase = true)) {
+                        return menuChild
+                    }
+                }
+            }
+        }
+        return null
+    }
+
+    private fun showOverflowPopup(anchor: View) {
+        overflowPopup?.dismiss()
+
+        val popupView = layoutInflater.inflate(R.layout.popup_overflow_menu, null)
+        val versionText = popupView.findViewById<TextView>(R.id.menu_version)
+        val darkSwitch = popupView.findViewById<SwitchMaterial>(R.id.switch_dark_mode)
+        val systemSwitch = popupView.findViewById<SwitchMaterial>(R.id.switch_follow_system)
+        val settingsItem = popupView.findViewById<TextView>(R.id.menu_settings)
+
+        versionText.text = getString(R.string.menu_version, getString(R.string.app_build_number))
+
+        darkSwitch.setOnCheckedChangeListener(null)
+        darkSwitch.isChecked = ThemePreferences.isDarkModeActive(this)
+        darkSwitch.setOnCheckedChangeListener { _, isChecked ->
             val newMode = if (isChecked) {
                 ThemePreferences.Mode.DARK
             } else {
@@ -237,15 +253,14 @@ class MainActivity : AppCompatActivity() {
             }
             if (ThemePreferences.getMode(this) != newMode) {
                 ThemePreferences.setMode(this, newMode)
+                overflowPopup?.dismiss()
                 recreate()
             }
         }
 
-        bindThemeSwitch(
-            menuItem = menu.findItem(R.id.action_follow_system),
-            label = getString(R.string.follow_system_theme),
-            isChecked = ThemePreferences.getMode(this) == ThemePreferences.Mode.SYSTEM,
-        ) { isChecked ->
+        systemSwitch.setOnCheckedChangeListener(null)
+        systemSwitch.isChecked = ThemePreferences.getMode(this) == ThemePreferences.Mode.SYSTEM
+        systemSwitch.setOnCheckedChangeListener { _, isChecked ->
             val newMode = if (isChecked) {
                 ThemePreferences.Mode.SYSTEM
             } else if (ThemePreferences.isDarkModeActive(this)) {
@@ -255,34 +270,32 @@ class MainActivity : AppCompatActivity() {
             }
             if (ThemePreferences.getMode(this) != newMode) {
                 ThemePreferences.setMode(this, newMode)
+                overflowPopup?.dismiss()
                 recreate()
             }
         }
-    }
 
-    private fun bindThemeSwitch(
-        menuItem: MenuItem?,
-        label: String,
-        isChecked: Boolean,
-        onChecked: (Boolean) -> Unit,
-    ) {
-        if (menuItem == null) return
-
-        MenuItemCompat.setShowAsAction(menuItem, MenuItemCompat.SHOW_AS_ACTION_NEVER)
-        if (menuItem.actionView == null) {
-            MenuItemCompat.setActionView(menuItem, R.layout.menu_action_switch)
+        settingsItem.setOnClickListener {
+            overflowPopup?.dismiss()
         }
 
-        menuItem.setOnMenuItemClickListener { true }
+        popupView.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+        )
 
-        val switch = menuItem.actionView?.findViewById<SwitchMaterial>(R.id.menu_switch) ?: return
-        switch.text = label
-        switch.jumpDrawablesToCurrentState()
-        switch.setOnCheckedChangeListener(null)
-        switch.isChecked = isChecked
-        switch.setOnCheckedChangeListener { _, checked ->
-            onChecked(checked)
-        }
+        val popup = PopupWindow(
+            popupView,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            true,
+        )
+        popup.isOutsideTouchable = true
+        popup.elevation = resources.getDimension(R.dimen.cardview_default_elevation)
+
+        val xOffset = anchor.width - popupView.measuredWidth
+        popup.showAsDropDown(anchor, xOffset, 0, Gravity.END)
+        overflowPopup = popup
     }
 
     override fun onSupportNavigateUp(): Boolean {
