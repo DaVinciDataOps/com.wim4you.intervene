@@ -105,6 +105,8 @@ object LocationUtils {
                 Log.e("MapError", "Failed to get location: ${e.message}")
                 callback(null)
             }
+        } else {
+            callback(null)
         }
     }
 

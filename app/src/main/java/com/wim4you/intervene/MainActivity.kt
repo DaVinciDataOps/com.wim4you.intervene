@@ -13,6 +13,7 @@ import android.widget.PopupWindow
 import android.view.WindowManager
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.ActionMenuView
@@ -48,6 +49,31 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mapLocationReceiver: MapLocationReceiver
     private var overflowPopup: PopupWindow? = null
     private var reopenOverflowPopup = false
+    private val locationPermissionListeners = mutableSetOf<OnLocationPermissionGrantedListener>()
+
+    private val foregroundLocationLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { results ->
+        if (PermissionsUtils.hasForegroundLocationPermission(this) &&
+            PermissionsUtils.hasForegroundServiceLocationPermission(this)
+        ) {
+            onForegroundLocationGranted()
+        }
+    }
+
+    private val backgroundLocationLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { _ ->
+        // Background location is optional; foreground tracking already works.
+    }
+
+    fun addLocationPermissionListener(listener: OnLocationPermissionGrantedListener) {
+        locationPermissionListeners.add(listener)
+    }
+
+    fun removeLocationPermissionListener(listener: OnLocationPermissionGrantedListener) {
+        locationPermissionListeners.remove(listener)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,10 +115,11 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
-        if (PermissionsUtils.areLocationPermissionsGranted(this)) {
+        if (PermissionsUtils.hasForegroundLocationPermission(this)) {
             startLocationTrackerService(this)
+            requestBackgroundLocationIfNeeded()
         } else {
-            PermissionsUtils.requestPermissions(this)
+            promptForForegroundLocation()
         }
 
         mapLocationReceiver = MapLocationReceiver(mapDataViewModel)
@@ -131,8 +158,6 @@ class MainActivity : AppCompatActivity() {
                 drawerLayout.closeDrawers()
             }
         }
-
-        PermissionsUtils.requestPermissions(this)
 
         FirebaseUtils.onConnect(this) { db ->
             FirebaseUtils.getVigilantes(this, db, AppModeController.GEO_QUERY_RADIUS_KM)
@@ -213,6 +238,51 @@ class MainActivity : AppCompatActivity() {
         } else {
             activity.startService(intent)
         }
+    }
+
+    private fun promptForForegroundLocation() {
+        showForegroundLocationRationaleDialog()
+    }
+
+    private fun showForegroundLocationRationaleDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.location_permission_title)
+            .setMessage(R.string.location_permission_rationale)
+            .setPositiveButton(R.string.location_permission_allow) { _, _ ->
+                requestForegroundLocation()
+            }
+            .setNegativeButton(R.string.location_permission_not_now, null)
+            .show()
+    }
+
+    private fun requestForegroundLocation() {
+        foregroundLocationLauncher.launch(PermissionsUtils.foregroundLocationPermissions())
+    }
+
+    private fun onForegroundLocationGranted() {
+        startLocationTrackerService(this)
+        locationPermissionListeners.forEach { it.onForegroundLocationGranted() }
+        requestBackgroundLocationIfNeeded()
+    }
+
+    private fun requestBackgroundLocationIfNeeded() {
+        if (!PermissionsUtils.needsBackgroundLocationPermission(this)) return
+        showBackgroundLocationRationaleDialog()
+    }
+
+    private fun showBackgroundLocationRationaleDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.location_permission_background_title)
+            .setMessage(R.string.location_permission_background_rationale)
+            .setPositiveButton(R.string.location_permission_allow) { _, _ ->
+                requestBackgroundLocation()
+            }
+            .setNegativeButton(R.string.location_permission_not_now, null)
+            .show()
+    }
+
+    private fun requestBackgroundLocation() {
+        backgroundLocationLauncher.launch(PermissionsUtils.backgroundLocationPermissions())
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

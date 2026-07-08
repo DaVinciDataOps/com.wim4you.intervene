@@ -65,6 +65,8 @@ import com.google.android.gms.maps.model.PolylineOptions
 
 import com.wim4you.intervene.AppModeController
 
+import com.wim4you.intervene.MainActivity
+import com.wim4you.intervene.OnLocationPermissionGrantedListener
 import com.wim4you.intervene.R
 import com.wim4you.intervene.ThemePreferences
 
@@ -91,7 +93,7 @@ import com.wim4you.intervene.ui.map.MapDataViewModel
 
 
 
-class HomeFragment : Fragment(), OnMapReadyCallback {
+class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGrantedListener {
 
 
 
@@ -131,6 +133,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
     private var routePolyline: Polyline? = null
     private var destinationMarker: Marker? = null
     private var isDestinationPanelOpen = false
+    private var hasCenteredOnUser = false
     private lateinit var destinationSuggestionAdapter: DestinationSuggestionAdapter
 
 
@@ -220,7 +223,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
         binding.closeDestinationButton.setOnClickListener { closeDestinationPanel() }
         setupDestinationInput()
 
-
+        (requireActivity() as MainActivity).addLocationPermissionListener(this)
 
         viewModel.distressStatus.observe(viewLifecycleOwner) { status ->
 
@@ -302,9 +305,15 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
             restoreRouteOnMap()
         }
         updateGuidedTripUi()
+        centerMapOnUserIfNeeded()
+    }
+
+    override fun onForegroundLocationGranted() {
+        centerMapOnUserIfNeeded()
     }
 
     override fun onDestroyView() {
+        (activity as? MainActivity)?.removeLocationPermissionListener(this)
         super.onDestroyView()
         _binding = null
     }
@@ -317,41 +326,32 @@ class HomeFragment : Fragment(), OnMapReadyCallback {
 
         applyMapStyle()
 
-        if (ContextCompat.checkSelfPermission(
-
-                requireContext(),
-
-                Manifest.permission.ACCESS_FINE_LOCATION
-
-            ) == PackageManager.PERMISSION_GRANTED
-
-        ) {
-
-            mMap.isMyLocationEnabled = true
-
-
-
-            LocationUtils.getLocation(requireContext()) { currentLatLng ->
-
-                currentLatLng?.let {
-
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15f))
-
-                }
-
-            }
-
-        }
-
-
-
         mMapInitialized = true
-
-
+        centerMapOnUserIfNeeded()
 
         val currentRoute = viewModel.routeState.value
         if (currentRoute is RouteState.Success) {
             drawRoute(currentRoute)
+        }
+    }
+
+    private fun hasLocationPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.ACCESS_FINE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun centerMapOnUserIfNeeded() {
+        if (!mMapInitialized || hasCenteredOnUser || !hasLocationPermission()) return
+
+        mMap.isMyLocationEnabled = true
+
+        LocationUtils.getLocation(requireContext()) { currentLatLng ->
+            currentLatLng?.let {
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(it, 15f))
+                hasCenteredOnUser = true
+            }
         }
     }
 
