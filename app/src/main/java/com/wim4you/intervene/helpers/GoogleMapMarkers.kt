@@ -19,7 +19,7 @@ object GoogleMapMarkers {
                 .scale(90, 90, false)
             myPatrolMarker = BitmapFactory.decodeResource(context.resources, R.drawable.png_my_patrol_marker)
                 .scale(90, 90, false)
-            distressMarker = drawableToBitmap(context, R.drawable.ic_assistance, 90)
+            distressMarker = drawableToBitmap(context, R.drawable.ic_distress_person, 90)
         }
 
         private fun drawableToBitmap(context: Context, drawableRes: Int, size: Int): Bitmap {
