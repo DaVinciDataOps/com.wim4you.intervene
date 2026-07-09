@@ -14,6 +14,18 @@
 -keep class androidx.room.** { *; }
 -dontwarn androidx.room.**
 
+# Hilt / Dagger
+-keep class dagger.hilt.** { *; }
+-keep class javax.inject.** { *; }
+-keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
+
+# OkHttp
+-dontwarn okhttp3.**
+-dontwarn okio.**
+
+# Parcelable models used by map location updates
+-keep class com.wim4you.intervene.fbdata.** { *; }
+
 # Add project specific ProGuard rules here.
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.

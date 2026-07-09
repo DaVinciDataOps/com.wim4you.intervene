@@ -19,7 +19,6 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.model.LatLng
-import com.google.firebase.firestore.GeoPoint
 import com.wim4you.intervene.LocationUpdateWorker
 import java.util.concurrent.TimeUnit
 
@@ -108,18 +107,5 @@ object LocationUtils {
         } else {
             callback(null)
         }
-    }
-
-    fun getBoundingBox(currentLocation: GeoPoint, radiusInKm: Double): Pair<GeoPoint, GeoPoint> {
-        val earthRadius = 6371.0 // Earth's radius in km
-        val latChange = (radiusInKm / earthRadius) * (180.0 / Math.PI)
-        val lonChange = (radiusInKm / earthRadius) * (180.0 / Math.PI) / Math.cos(Math.toRadians(currentLocation.latitude))
-
-        val minLat = currentLocation.latitude - latChange
-        val maxLat = currentLocation.latitude + latChange
-        val minLon = currentLocation.longitude - lonChange
-        val maxLon = currentLocation.longitude + lonChange
-
-        return Pair(GeoPoint(minLat, minLon), GeoPoint(maxLat, maxLon))
     }
 }

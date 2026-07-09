@@ -1,17 +1,15 @@
 package com.wim4you.intervene.route
 
 import android.content.Context
-import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.os.Build
 import com.google.android.gms.maps.model.LatLng
+import com.wim4you.intervene.BuildConfig
 import com.wim4you.intervene.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.Locale
 import kotlin.coroutines.resume
 
@@ -22,11 +20,13 @@ data class RouteResult(
     val durationText: String,
 )
 
-class RouteRepository(private val context: Context) {
+class RouteRepository(
+    private val context: Context,
+    private val directionsApiClient: DirectionsApiClient,
+) {
 
-    private val directionsApiKey: String by lazy {
-        context.getString(R.string.google_directions_api_key)
-    }
+    private val directionsApiKey: String
+        get() = BuildConfig.GOOGLE_DIRECTIONS_API_KEY
 
     suspend fun geocodeAddress(address: String): LatLng? = withContext(Dispatchers.IO) {
         if (address.isBlank()) return@withContext null
@@ -37,7 +37,7 @@ class RouteRepository(private val context: Context) {
                     override fun onGeocode(addresses: MutableList<android.location.Address>) {
                         val location = addresses.firstOrNull()
                         continuation.resume(
-                            location?.let { LatLng(it.latitude, it.longitude) }
+                            location?.let { LatLng(it.latitude, it.longitude) },
                         )
                     }
 
@@ -58,30 +58,21 @@ class RouteRepository(private val context: Context) {
         withContext(Dispatchers.IO) {
             val originParam = "${origin.latitude},${origin.longitude}"
             val destParam = "${destination.latitude},${destination.longitude}"
-            val urlString = "https://maps.googleapis.com/maps/api/directions/json" +
-                "?origin=$originParam&destination=$destParam&mode=walking&key=$directionsApiKey"
-
-            val connection = (URL(urlString).openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = 15_000
-                readTimeout = 15_000
-            }
 
             try {
-                val responseCode = connection.responseCode
-                val body = if (responseCode == HttpURLConnection.HTTP_OK) {
-                    connection.inputStream.bufferedReader().readText()
-                } else {
-                    connection.errorStream?.bufferedReader()?.readText().orEmpty()
-                }
+                val response = directionsApiClient.getDirections(
+                    origin = originParam,
+                    destination = destParam,
+                    apiKey = directionsApiKey,
+                )
 
-                if (responseCode != HttpURLConnection.HTTP_OK) {
+                if (response.code != 200) {
                     return@withContext Result.failure(
-                        Exception(context.getString(R.string.route_directions_http_error, responseCode))
+                        Exception(context.getString(R.string.route_directions_http_error, response.code)),
                     )
                 }
 
-                val json = JSONObject(body)
+                val json = JSONObject(response.body)
                 val status = json.getString("status")
                 if (status != "OK") {
                     val apiMessage = json.optString("error_message", status)
@@ -100,12 +91,10 @@ class RouteRepository(private val context: Context) {
                         destination = destination,
                         distanceText = distanceText,
                         durationText = durationText,
-                    )
+                    ),
                 )
             } catch (e: Exception) {
                 Result.failure(e)
-            } finally {
-                connection.disconnect()
             }
         }
 

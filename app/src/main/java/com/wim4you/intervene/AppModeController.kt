@@ -6,12 +6,10 @@ import android.os.Build
 import android.util.Log
 import com.google.firebase.Firebase
 import com.google.firebase.database.database
-import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.distress.DistressService
 import com.wim4you.intervene.distress.DistressSoundService
 import com.wim4you.intervene.location.PatrolService
-import com.wim4you.intervene.repository.PersonDataRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -25,6 +23,10 @@ object AppModeController {
     const val LOCATION_DATA_EXPIRY_MS = 30 * 60 * 1000L
     const val LOCATION_UPDATE_INTERVAL_MS = 15_000L
     private const val TAG = "AppModeController"
+    private const val PREFS_NAME = "app_mode_state"
+    private const val KEY_IS_PATROLLING = "is_patrolling"
+    private const val KEY_IS_GUIDED_TRIP = "is_guided_trip"
+    private const val KEY_IS_DISTRESS_ACTIVE = "is_distress_active"
 
     var isPatrolling: Boolean = false
         private set
@@ -38,38 +40,67 @@ object AppModeController {
     var selectedDistressCall: Int = -1
     var vigilante: VigilanteData? = null
     var snackBarMessage: String = ""
+    private var appContext: Context? = null
+
+    fun initialize(context: Context) {
+        appContext = context.applicationContext
+        val prefs = appContext!!.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        isPatrolling = prefs.getBoolean(KEY_IS_PATROLLING, false)
+        isGuidedTrip = prefs.getBoolean(KEY_IS_GUIDED_TRIP, false)
+        isDistressActive = prefs.getBoolean(KEY_IS_DISTRESS_ACTIVE, false)
+    }
+
+    fun reportBackgroundFailure(message: String) {
+        snackBarMessage = message
+    }
+
+    private fun persistState() {
+        val context = appContext ?: return
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_IS_PATROLLING, isPatrolling)
+            .putBoolean(KEY_IS_GUIDED_TRIP, isGuidedTrip)
+            .putBoolean(KEY_IS_DISTRESS_ACTIVE, isDistressActive)
+            .apply()
+    }
 
     fun startGuidedTrip(): Boolean {
         if (isPatrolling) return false
         isGuidedTrip = true
+        persistState()
         return true
     }
 
     suspend fun stopGuidedTrip(context: Context) {
         isGuidedTrip = false
+        persistState()
         deactivateDistress(context)
     }
 
     fun startPatrol(context: Context): Boolean {
         if (isGuidedTrip) return false
         isPatrolling = true
+        persistState()
         startPatrolService(context)
         return true
     }
 
     fun stopPatrol(context: Context) {
         isPatrolling = false
+        persistState()
         stopPatrolService(context)
     }
 
     fun activateDistress(context: Context) {
         isDistressActive = true
+        persistState()
         startDistressService(context)
         DistressSoundService.start(context)
     }
 
     suspend fun deactivateDistress(context: Context) {
         isDistressActive = false
+        persistState()
         DistressSoundService.stop(context)
         stopDistressService(context)
         clearDistressInFirebase(context)
@@ -77,11 +108,13 @@ object AppModeController {
 
     private suspend fun clearDistressInFirebase(context: Context) {
         withContext(Dispatchers.IO) {
-            val personStore = PersonDataRepository(
-                DatabaseProvider.getDatabase(context).personDataDao()
-            )
-            val personData = personStore.fetch() ?: return@withContext
-            Firebase.database.getReference("distress").child(personData.id)
+            val firebaseUid = try {
+                FirebaseAuthManager.ensureSignedIn()
+            } catch (exception: Exception) {
+                Log.e(TAG, "Failed to authenticate before clearing distress", exception)
+                return@withContext
+            }
+            Firebase.database.getReference("distress").child(firebaseUid)
                 .updateChildren(mapOf("active" to false))
                 .addOnSuccessListener {
                     Log.i(TAG, "Distress marked inactive in Firebase")

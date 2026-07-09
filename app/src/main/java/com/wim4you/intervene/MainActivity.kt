@@ -2,7 +2,6 @@ package com.wim4you.intervene
 
 import android.app.Activity
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
@@ -20,7 +19,6 @@ import androidx.appcompat.widget.ActionMenuView
 import androidx.appcompat.widget.Toolbar
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
@@ -30,26 +28,26 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.switchmaterial.SwitchMaterial
-import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.databinding.ActivityMainBinding
 import com.wim4you.intervene.location.LocationTrackerService
-import com.wim4you.intervene.location.MapLocationReceiver
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
-import com.wim4you.intervene.ui.map.MapDataViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
-    private lateinit var personStore: PersonDataRepository
-    private lateinit var vigilanteStore: VigilanteDataRepository
 
-    private val mapDataViewModel: MapDataViewModel by viewModels()
-    private lateinit var mapLocationReceiver: MapLocationReceiver
+    @Inject lateinit var personStore: PersonDataRepository
+    @Inject lateinit var vigilanteStore: VigilanteDataRepository
+
     private var overflowPopup: PopupWindow? = null
     private var reopenOverflowPopup = false
     private val locationPermissionListeners = mutableSetOf<OnLocationPermissionGrantedListener>()
+    private val prefs by lazy { getSharedPreferences(PREFS_NAME, MODE_PRIVATE) }
 
     private val foregroundLocationLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -78,8 +76,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         reopenOverflowPopup = savedInstanceState?.getBoolean(KEY_REOPEN_OVERFLOW, false) ?: false
-        personStore = PersonDataRepository(DatabaseProvider.getDatabase(this).personDataDao())
-        vigilanteStore = VigilanteDataRepository(DatabaseProvider.getDatabase(this).vigilanteDataDao())
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -122,13 +118,6 @@ class MainActivity : AppCompatActivity() {
             promptForForegroundLocation()
         }
 
-        mapLocationReceiver = MapLocationReceiver(mapDataViewModel)
-        val filter = IntentFilter().apply {
-            addAction(LocationTrackerService.ACTION_PATROL_UPDATE)
-            addAction(LocationTrackerService.ACTION_DISTRESS_UPDATE)
-        }
-        LocalBroadcastManager.getInstance(this).registerReceiver(mapLocationReceiver, filter)
-
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.nav_startstop_guided_trip -> {
@@ -158,10 +147,6 @@ class MainActivity : AppCompatActivity() {
                 drawerLayout.closeDrawers()
             }
         }
-
-        FirebaseUtils.onConnect(this) { db ->
-            FirebaseUtils.getVigilantes(this, db, AppModeController.GEO_QUERY_RADIUS_KM)
-        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -172,7 +157,6 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         overflowPopup?.dismiss()
         overflowPopup = null
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mapLocationReceiver)
         super.onDestroy()
     }
 
@@ -267,6 +251,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun requestBackgroundLocationIfNeeded() {
         if (!PermissionsUtils.needsBackgroundLocationPermission(this)) return
+        // Theme changes recreate the Activity, so without persistence we would keep re-showing
+        // the background-location rationale. We only ask once per app install / data set.
+        if (prefs.getBoolean(KEY_BACKGROUND_RATIONALE_SHOWN, false)) return
+        prefs.edit().putBoolean(KEY_BACKGROUND_RATIONALE_SHOWN, true).apply()
         showBackgroundLocationRationaleDialog()
     }
 
@@ -419,6 +407,8 @@ class MainActivity : AppCompatActivity() {
 
     private companion object {
         const val KEY_REOPEN_OVERFLOW = "reopen_overflow_popup"
+        private const val PREFS_NAME = "intervene_prefs"
+        private const val KEY_BACKGROUND_RATIONALE_SHOWN = "background_location_rationale_shown"
     }
 
     override fun onSupportNavigateUp(): Boolean {

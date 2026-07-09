@@ -21,7 +21,9 @@ import com.google.android.gms.location.LocationServices
 import com.google.firebase.database.FirebaseDatabase
 import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.Constants
+import com.wim4you.intervene.FirebaseAuthManager
 import com.wim4you.intervene.R
+import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.data.AddressData
 import com.wim4you.intervene.data.PersonData
@@ -77,19 +79,29 @@ class DistressService : Service() {
 
         if (AppModeController.isDistressActive) {
             coroutineScope.launch {
-                var personData = personStore.fetch();
-                if(personData == null) {
-                  stopSelf()
-                }
-                else {
-                  startDistressUpdates(personData, true,AppModeController.isDistressActive)
+                val personData = personStore.fetch()
+                if (personData == null) {
+                    stopSelf()
+                } else {
+                    val firebaseUid = try {
+                        FirebaseAuthManager.ensureSignedIn()
+                    } catch (exception: Exception) {
+                        Log.e("DistressService", "Failed to authenticate before distress updates")
+                        AppModeController.reportBackgroundFailure("Distress could not start: authentication failed.")
+                        stopSelf()
+                        return@launch
+                    }
+                    startDistressUpdates(personData, firebaseUid)
                 }
             }
         }
         return START_STICKY
     }
 
-    private fun startDistressUpdates(personData: PersonData, init:Boolean, active: Boolean) {
+    private fun startDistressUpdates(
+        personData: PersonData,
+        firebaseUid: String,
+    ) {
         if (ContextCompat.checkSelfPermission(
                 attributedContext,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -103,9 +115,9 @@ class DistressService : Service() {
         distressJob?.cancel()
         distressJob = coroutineScope.launch {
             var location = LocationProvider.getLastLocation()
-            location?.let{
+            location?.let {
                 val geoLocation = GeoLocation(location.latitude, location.longitude)
-                sendDistressToHistory(personData, geoLocation)
+                sendDistressToHistory(personData, firebaseUid, geoLocation)
             }
 
             while (isActive && AppModeController.isDistressActive) {
@@ -113,18 +125,25 @@ class DistressService : Service() {
                     location = LocationProvider.getLastLocation()
                     location?.let {
                         val geoLocation = GeoLocation(it.latitude, it.longitude)
-                        sendStartDistressToFirebase(personData, false, geoLocation)
+                        sendStartDistressToFirebase(personData, firebaseUid, false, geoLocation)
                     }
                     delay(15_000)
                 }
                 catch (e: Exception) {
                     Log.e("DistressService", "Error getting location: ${e.message}")
+                    AppModeController.reportBackgroundFailure("Distress update failed; retrying automatically.")
+                    delay(5_000)
                 }
             }
         }
     }
 
-    private fun sendStartDistressToFirebase(personData: PersonData, init:Boolean, geoLocation: GeoLocation) {
+    private fun sendStartDistressToFirebase(
+        personData: PersonData,
+        firebaseUid: String,
+        init: Boolean,
+        geoLocation: GeoLocation,
+    ) {
         val address = getAddress(geoLocation)
         val distressDataMap = DataMappings.toDistressDataMap(personData, geoLocation, address, init)
 
@@ -132,21 +151,26 @@ class DistressService : Service() {
             distressDataMap["startTime"] = System.currentTimeMillis()
         }
 
-        database.child("distress").child(personData.id.toString()).
+        database.child("distress").child(firebaseUid).
         updateChildren(distressDataMap)
             .addOnSuccessListener {
-                Log.i("Firebase", "Success saving patrol:")
+                SecureLog.i("DistressService", "Distress location updated")
             }
             .addOnFailureListener { exception ->
-                Log.e("Firebase", "Error saving patrol:")
+                SecureLog.e("DistressService", "Failed to update distress location", exception)
+                AppModeController.reportBackgroundFailure("Distress location sync failed; retrying.")
             }
     }
 
-    private fun sendDistressToHistory(personData: PersonData, geoLocation: GeoLocation ){
+    private fun sendDistressToHistory(
+        personData: PersonData,
+        firebaseUid: String,
+        geoLocation: GeoLocation,
+    ) {
         val address = getAddress(geoLocation)
         val distressDataMap = DataMappings.toDistressDataMap(personData, geoLocation, address)
         val personDataMap = mapOf(
-            "id" to personData.id,
+            "id" to firebaseUid,
             "alias" to personData.alias,
             "gender" to personData.gender,
             "age" to personData.age
@@ -158,26 +182,28 @@ class DistressService : Service() {
             "time" to System.currentTimeMillis()
         )
 
-        val id = "${personData.id}_${System.currentTimeMillis()}"
+        val id = "${firebaseUid}_${System.currentTimeMillis()}"
 
         database.child("distress_history").child(id).
         setValue(historyMap)
             .addOnSuccessListener {
-                Log.i("Firebase", "Success saving distress history:")
+                SecureLog.i("DistressService", "Distress history saved")
             }
             .addOnFailureListener { exception ->
-                Log.e("Firebase", "Error saving distress history:")
+                SecureLog.e("DistressService", "Failed to save distress history", exception)
+                AppModeController.reportBackgroundFailure("Distress history sync failed.")
             }
     }
 
-    private fun sendStopDistressToFirebase(id:String) {
-        database.child("distress").child(id)
+    private fun sendStopDistressToFirebase(firebaseUid: String) {
+        database.child("distress").child(firebaseUid)
             .updateChildren(mapOf("active" to false))
             .addOnSuccessListener {
-                Log.i("Firebase", "Success saving distress:")
+                SecureLog.i("DistressService", "Distress marked inactive")
             }
             .addOnFailureListener { exception ->
-                Log.e("Firebase", "Error saving distress:")
+                SecureLog.e("DistressService", "Failed to mark distress inactive", exception)
+                AppModeController.reportBackgroundFailure("Could not mark distress as stopped in cloud.")
             }
     }
 
@@ -214,13 +240,14 @@ class DistressService : Service() {
 
         if (!AppModeController.isDistressActive) {
             serviceScope.launch {
-                val personData = personStore.fetch();
-                if(personData == null) {
-                    stopSelf()
+                val firebaseUid = try {
+                    FirebaseAuthManager.ensureSignedIn()
+                } catch (exception: Exception) {
+                    Log.e("DistressService", "Failed to authenticate before stopping distress")
+                    AppModeController.reportBackgroundFailure("Could not authenticate to stop distress cleanly.")
+                    return@launch
                 }
-                else {
-                    sendStopDistressToFirebase(personData.id )
-                }
+                sendStopDistressToFirebase(firebaseUid)
             }
         }
 

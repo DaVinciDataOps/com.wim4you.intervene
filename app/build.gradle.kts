@@ -8,12 +8,18 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.hilt.android)
     id("kotlin-parcelize")
 }
 
 android {
     val localProperties = Properties().apply {
         load(project.rootProject.file("local.properties").inputStream())
+    }
+    val keystorePropertiesFile = rootProject.file("keystore.properties")
+    val keystoreProperties = Properties()
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(keystorePropertiesFile.inputStream())
     }
     val apiKey = localProperties.getProperty("GOOGLE_MAPS_API_KEY")
         ?: throw IllegalArgumentException("GOOGLE_MAPS_API_KEY not found in local.properties")
@@ -31,21 +37,32 @@ android {
         versionName = "1.6"
         manifestPlaceholders.put("google_maps_api_key", apiKey)
         resValue("string", "app_build_number", buildNumber)
-        resValue("string", "google_directions_api_key", directionsApiKey)
+        buildConfigField("String", "GOOGLE_DIRECTIONS_API_KEY", "\"$directionsApiKey\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
-        create("release") {
-            keyAlias = "intervene"
-            keyPassword = "Strawberry"
-            storeFile = file("C:/Users/frank.de.pijper/AndroidStudioProjects/keystore/com.wim4you.intervene.keystore/InterVeneKey.jks")
-            storePassword = "Strawberry"
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                    ?: throw IllegalArgumentException("keyAlias missing in keystore.properties")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                    ?: throw IllegalArgumentException("keyPassword missing in keystore.properties")
+                storeFile = file(
+                    keystoreProperties.getProperty("storeFile")
+                        ?: throw IllegalArgumentException("storeFile missing in keystore.properties")
+                )
+                storePassword = keystoreProperties.getProperty("storePassword")
+                    ?: throw IllegalArgumentException("storePassword missing in keystore.properties")
+            }
         }
     }
     buildTypes {
         release {
-            //signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -65,6 +82,7 @@ android {
     buildFeatures {
         viewBinding = true
         resValues = true
+        buildConfig = true
     }
 }
 
@@ -74,6 +92,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.lifecycle.livedata.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
@@ -81,14 +100,19 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
-    implementation(libs.firebase.firestore)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.hilt.android)
+    implementation(libs.hilt.navigation.fragment)
+    implementation(libs.okhttp)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.firebase.database)
     implementation(libs.geofire.android)
     implementation(libs.firebase.messaging)
+    implementation(libs.firebase.appcheck.playintegrity)
+    debugImplementation(libs.firebase.appcheck.debug)
     ksp(libs.androidx.room.compiler)
+    ksp(libs.hilt.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -18,7 +18,9 @@ import com.google.android.gms.location.LocationServices
 import com.google.firebase.database.FirebaseDatabase
 import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.Constants
+import com.wim4you.intervene.FirebaseAuthManager
 import com.wim4you.intervene.R
+import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.fbdata.PatrolLocationData
@@ -66,20 +68,27 @@ class PatrolService : Service() {
 
         if (AppModeController.isPatrolling) {
             coroutineScope.launch {
-                AppModeController.vigilante = vigilanteStore.fetch();
-                var vigilanteData = AppModeController.vigilante
-                if(vigilanteData  == null) {
-                  stopSelf()
-                }
-                else {
-                  startLocationUpdates(vigilanteData)
+                AppModeController.vigilante = vigilanteStore.fetch()
+                val vigilanteData = AppModeController.vigilante
+                if (vigilanteData == null) {
+                    stopSelf()
+                } else {
+                    val firebaseUid = try {
+                        FirebaseAuthManager.ensureSignedIn()
+                    } catch (exception: Exception) {
+                        Log.e("PatrolService", "Failed to authenticate before patrol updates")
+                        AppModeController.reportBackgroundFailure("Patrol could not start: authentication failed.")
+                        stopSelf()
+                        return@launch
+                    }
+                    startLocationUpdates(vigilanteData, firebaseUid)
                 }
             }
         }
         return START_STICKY
     }
 
-    private fun startLocationUpdates(vigilanteData: VigilanteData) {
+    private fun startLocationUpdates(vigilanteData: VigilanteData, firebaseUid: String) {
         if (ContextCompat.checkSelfPermission(
                 attributedContext,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -106,18 +115,24 @@ class PatrolService : Service() {
                             isActive = AppModeController.isPatrolling,
                             fcmToken = null // Replace with actual FCM token if needed
                         )
-                        sendToFirebase(patrolLocationData,geoLocation)
+                        sendToFirebase(patrolLocationData, firebaseUid, geoLocation)
                     }
                     delay(15_000)
                 }
                 catch (e: Exception) {
-
+                    Log.e("PatrolService", "Error getting patrol location: ${e.message}", e)
+                    AppModeController.reportBackgroundFailure("Patrol update failed; retrying automatically.")
+                    delay(5_000)
                 }
             }
         }
     }
 
-    private fun sendToFirebase(patrolLocationData: PatrolLocationData, geoLocation: GeoLocation) {
+    private fun sendToFirebase(
+        patrolLocationData: PatrolLocationData,
+        firebaseUid: String,
+        geoLocation: GeoLocation,
+    ) {
         patrolLocationData.id = patrolLocationData.vigilanteId
         patrolLocationData.l = listOf(geoLocation.latitude, geoLocation.longitude)
         patrolLocationData.g = GeoFireUtils.getGeoHashForLocation(geoLocation)
@@ -132,24 +147,26 @@ class PatrolService : Service() {
             "fcmToken" to patrolLocationData.fcmToken
         )
 
-        database.child("patrols").child(patrolLocationData.id.toString()).
+        database.child("patrols").child(firebaseUid).
         updateChildren(patrolDataMap)
             .addOnSuccessListener {
-                Log.i("Firebase", "Success saving patrol:")
+                SecureLog.i("PatrolService", "Patrol location updated")
             }
             .addOnFailureListener { exception ->
-                Log.e("Firebase", "Error saving patrol:")
+                SecureLog.e("PatrolService", "Failed to update patrol location", exception)
+                AppModeController.reportBackgroundFailure("Patrol location sync failed; retrying.")
             }
     }
 
-    private fun sendToFirebase(id:String, active: Boolean) {
-        database.child("patrols").child(id)
+    private fun sendToFirebase(firebaseUid: String, active: Boolean) {
+        database.child("patrols").child(firebaseUid)
             .updateChildren(mapOf("active" to active))
             .addOnSuccessListener {
-                Log.i("Firebase", "Success saving patrol:")
+                SecureLog.i("PatrolService", "Patrol marked inactive")
             }
             .addOnFailureListener { exception ->
-                Log.e("Firebase", "Error saving patrol:")
+                SecureLog.e("PatrolService", "Failed to mark patrol inactive", exception)
+                AppModeController.reportBackgroundFailure("Could not mark patrol as stopped in cloud.")
             }
    }
 
@@ -166,13 +183,14 @@ class PatrolService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceScope.launch {
-            val vigilanteData = vigilanteStore.fetch();
-            if(vigilanteData == null) {
-                stopSelf()
+            val firebaseUid = try {
+                FirebaseAuthManager.ensureSignedIn()
+            } catch (exception: Exception) {
+                Log.e("PatrolService", "Failed to authenticate before stopping patrol")
+                AppModeController.reportBackgroundFailure("Could not authenticate to stop patrol cleanly.")
+                return@launch
             }
-            else {
-                sendToFirebase(vigilanteData.id, false)
-            }
+            sendToFirebase(firebaseUid, false)
         }
         patrolJob?.cancel()
         coroutineScope.cancel()

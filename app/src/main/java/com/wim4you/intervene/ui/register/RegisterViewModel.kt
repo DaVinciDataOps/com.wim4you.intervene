@@ -1,29 +1,33 @@
 package com.wim4you.intervene.ui.register
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wim4you.intervene.data.PersonData
 import com.wim4you.intervene.repository.PersonDataRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class RegisterViewModel(private val repository: PersonDataRepository) : ViewModel() {
-    private val _recentPerson = MutableLiveData<PersonData?>()
-    val recentPerson: LiveData<PersonData?> get() = _recentPerson
+@HiltViewModel
+class RegisterViewModel @Inject constructor(
+    private val repository: PersonDataRepository,
+) : ViewModel() {
+
+    private val _recentPerson = MutableStateFlow<PersonData?>(null)
+    val recentPerson: StateFlow<PersonData?> = _recentPerson.asStateFlow()
 
     fun fetchPersonData() {
         viewModelScope.launch {
-            val person = repository.fetch()
-            _recentPerson.postValue(person)
+            _recentPerson.value = repository.fetch()
         }
     }
 
-    fun savePersonData(personData: PersonData)
-        {
+    fun savePersonData(personData: PersonData) {
         viewModelScope.launch {
             repository.upsertPersonData(personData)
         }
     }
-
 }

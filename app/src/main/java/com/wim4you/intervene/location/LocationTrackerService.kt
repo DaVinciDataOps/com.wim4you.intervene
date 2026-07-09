@@ -14,7 +14,6 @@ import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.firebase.geofire.GeoFire
 import com.firebase.geofire.GeoFireUtils
 import com.firebase.geofire.GeoLocation
@@ -26,18 +25,30 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.getValue
 import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.Constants
+import com.wim4you.intervene.FirebaseAuthManager
 import com.wim4you.intervene.R
+import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.fbdata.PatrolLocationData
+import com.wim4you.intervene.repository.MapLocationRepository
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class LocationTrackerService : Service() {
+    @Inject lateinit var mapLocationRepository: MapLocationRepository
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
     private lateinit var geoFirePatrols: GeoFire
@@ -53,6 +64,7 @@ class LocationTrackerService : Service() {
     private var lastDistressQueryCenter: GeoLocation? = null
     private var patrolListenersAttached = false
     private var distressListenersAttached = false
+    private var isFirebaseReady = false
 
     companion object {
         const val ACTION_PATROL_UPDATE = "com.wim4you.intervene.LOCATION_UPDATE"
@@ -128,7 +140,15 @@ class LocationTrackerService : Service() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(attributedContext)
         patrolLocationDataList.clear()
         distressLocationDataList.clear()
-        setupFirebase()
+        serviceScope.launch {
+            try {
+                FirebaseAuthManager.ensureSignedIn()
+                setupFirebase()
+                isFirebaseReady = true
+            } catch (exception: Exception) {
+                Log.e("LocationTrackerService", "Failed to authenticate before geo queries", exception)
+            }
+        }
         createNotificationChannel()
     }
 
@@ -143,7 +163,7 @@ class LocationTrackerService : Service() {
         val database = FirebaseDatabase.getInstance()
         geoFirePatrols = GeoFire(database.getReference("patrols"))
         geoFireDistress = GeoFire(database.getReference("distress"))
-        Log.d("LocationTrackerService", "Firebase auth: ${FirebaseAuth.getInstance().currentUser?.uid ?: "null"}")
+        SecureLog.d("LocationTrackerService", "Firebase geo queries initialized")
     }
 
     private fun createNotificationChannel() {
@@ -202,6 +222,7 @@ class LocationTrackerService : Service() {
     }
 
     private fun ensurePatrolQuery(location: GeoLocation) {
+        if (!isFirebaseReady) return
         if (patrolListenersAttached && !shouldRecenterQuery(lastPatrolQueryCenter, location)) {
             return
         }
@@ -217,6 +238,7 @@ class LocationTrackerService : Service() {
     }
 
     private fun ensureDistressQuery(location: GeoLocation) {
+        if (!isFirebaseReady) return
         if (distressListenersAttached && !shouldRecenterQuery(lastDistressQueryCenter, location)) {
             return
         }
@@ -266,17 +288,11 @@ class LocationTrackerService : Service() {
     }
 
     private fun broadcastPatrolUpdate(patrolLocationDataList: List<PatrolLocationData>) {
-        val intent = Intent(ACTION_PATROL_UPDATE).apply {
-            putParcelableArrayListExtra(EXTRA_PATROL_DATA, ArrayList(patrolLocationDataList))
-        }
-        LocalBroadcastManager.getInstance(attributedContext).sendBroadcast(intent)
+        mapLocationRepository.updatePatrolLocations(patrolLocationDataList)
     }
 
     private fun broadcastDistressUpdate(distressLocationDataList: List<DistressLocationData>) {
-        val intent = Intent(ACTION_DISTRESS_UPDATE).apply {
-            putParcelableArrayListExtra(EXTRA_DISTRESS_DATA, ArrayList(distressLocationDataList))
-        }
-        LocalBroadcastManager.getInstance(attributedContext).sendBroadcast(intent)
+        mapLocationRepository.updateDistressLocations(distressLocationDataList)
     }
 
     override fun onDestroy() {

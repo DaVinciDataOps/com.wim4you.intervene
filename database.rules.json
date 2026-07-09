@@ -1,0 +1,24 @@
+{
+  "rules": {
+    "distress": {
+      ".read": "auth != null",
+      ".indexOn": ["g"],
+      "$uid": {
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "patrols": {
+      ".read": "auth != null",
+      ".indexOn": ["g"],
+      "$uid": {
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "distress_history": {
+      ".read": "auth != null",
+      "$entryId": {
+        ".write": "auth != null && newData.child('personData').child('id').val() == auth.uid"
+      }
+    }
+  }
+}

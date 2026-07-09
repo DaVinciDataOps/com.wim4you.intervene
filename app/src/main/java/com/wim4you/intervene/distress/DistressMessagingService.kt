@@ -19,6 +19,7 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.wim4you.intervene.MainActivity
 import com.wim4you.intervene.R
+import com.wim4you.intervene.SecureLog
 
 class DistressMessagingService: FirebaseMessagingService() {
     private val TAG = "DistressMessagingService"
@@ -38,17 +39,14 @@ class DistressMessagingService: FirebaseMessagingService() {
 
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        Log.d(TAG, "From: ${remoteMessage.from}")
+        SecureLog.d(TAG, "From: ${remoteMessage.from}")
 
-        // Handle data payload if present (e.g., custom distress details)
         remoteMessage.data.isNotEmpty().let {
-            Log.d(TAG, "Message data payload: ${remoteMessage.data}")
-            // Process custom data here, e.g., show custom UI or trigger app logic
+            SecureLog.d(TAG, "Message data payload: ${remoteMessage.data}")
         }
 
-        // Handle notification payload (if sent with notification)
         remoteMessage.notification?.let {
-            Log.d(TAG, "Message Notification Body: ${it.body}")
+            SecureLog.d(TAG, "Message Notification Body: ${it.body}")
             showNotification(it.title ?: "Distress Message", it.body ?: "Distress message received")
         }
 
@@ -59,8 +57,7 @@ class DistressMessagingService: FirebaseMessagingService() {
     }
 
     override fun onNewToken(token: String) {
-        Log.d(TAG, "Refreshed token: $token")
-        // Send token to your server if needed for other purposes
+        SecureLog.d(TAG, "FCM token refreshed")
     }
 
     private fun showNotification(title:String, message: String) {

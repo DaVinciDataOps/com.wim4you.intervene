@@ -6,24 +6,29 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.wim4you.intervene.AppModeController
-import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.databinding.FragmentVigilantesBinding
-import com.wim4you.intervene.repository.VigilanteDataRepository
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.util.UUID
 
+@AndroidEntryPoint
 class VigilantesFragment : Fragment() {
     private var _binding: FragmentVigilantesBinding? = null
     private val binding get() = _binding!!
-    private lateinit var viewModel: VigilantesViewModel
+    private val viewModel: VigilantesViewModel by viewModels()
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
     ): View {
-        // Inflate the layout using view binding
         _binding = FragmentVigilantesBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -31,32 +36,29 @@ class VigilantesFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Initialize the ViewModel
-        val repository =
-            VigilanteDataRepository(DatabaseProvider.getDatabase(requireContext()).vigilanteDataDao())
-        viewModel = ViewModelProvider(this, VigilantesViewModelFactory(repository))
-            .get(VigilantesViewModel::class.java)
-
-        viewModel.recentData.observe(viewLifecycleOwner) { person ->
-            person?.let {
-                binding.groupNameInputEditText.setText(it.name)
-                binding.groupSizeInputEditText.setText(it.groupSize.toString())
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.recentData.collectLatest { person ->
+                    person?.let {
+                        binding.groupNameInputEditText.setText(it.name)
+                        binding.groupSizeInputEditText.setText(it.groupSize.toString())
+                    }
+                }
             }
         }
+
         viewModel.fetchData()
 
-        // Set up save button click listener
         binding.saveButton.setOnClickListener {
             val groupName = binding.groupNameInputEditText.text.toString().trim()
             val groupSize = binding.groupSizeInputEditText.text.toString().trim()
 
-            // Basic validation
-            if (groupName.isEmpty() || groupSize.isEmpty() ) {
+            if (groupName.isEmpty() || groupSize.isEmpty()) {
                 Toast.makeText(requireContext(), "Please fill all required fields", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            var vigilanteData = VigilanteData(
+            val vigilanteData = VigilanteData(
                 id = viewModel.recentData.value?.id ?: UUID.randomUUID().toString(),
                 name = groupName,
                 groupSize = groupSize.toIntOrNull() ?: 0,
@@ -64,21 +66,16 @@ class VigilantesFragment : Fragment() {
                 groupOwnerId = "",
                 isCertifiedVigilante = false,
                 isActive = true,
-                ownerId = ""
-                )
-            // Call ViewModel to save data
+                ownerId = "",
+            )
             viewModel.saveData(vigilanteData)
             AppModeController.vigilante = vigilanteData
-            // Show success message
             Toast.makeText(requireContext(), "Data saved successfully", Toast.LENGTH_SHORT).show()
-
-            // Optionally clear the form
-            // clearForm()
         }
     }
 
     override fun onDestroyView() {
-            super.onDestroyView()
-            _binding = null
-        }
+        super.onDestroyView()
+        _binding = null
+    }
 }

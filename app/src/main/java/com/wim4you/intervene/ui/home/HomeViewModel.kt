@@ -1,8 +1,6 @@
 package com.wim4you.intervene.ui.home
 
 import android.app.Activity
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
@@ -11,22 +9,28 @@ import com.wim4you.intervene.repository.DestinationHistoryRepository
 import com.wim4you.intervene.repository.DestinationSuggestion
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.route.RouteRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class HomeViewModel(
+@HiltViewModel
+class HomeViewModel @Inject constructor(
     private val personDataRepository: PersonDataRepository,
     private val routeRepository: RouteRepository,
     private val destinationHistoryRepository: DestinationHistoryRepository,
 ) : ViewModel() {
 
-    private val _distressMessage = MutableLiveData<String>()
-    val distressStatus: LiveData<String> = _distressMessage
+    private val _distressMessage = MutableStateFlow<String?>(null)
+    val distressStatus: StateFlow<String?> = _distressMessage.asStateFlow()
 
-    private val _routeState = MutableLiveData<RouteState>(RouteState.Idle)
-    val routeState: LiveData<RouteState> = _routeState
+    private val _routeState = MutableStateFlow<RouteState>(RouteState.Idle)
+    val routeState: StateFlow<RouteState> = _routeState.asStateFlow()
 
-    private val _destinationSuggestions = MutableLiveData<List<DestinationSuggestion>>(emptyList())
-    val destinationSuggestions: LiveData<List<DestinationSuggestion>> = _destinationSuggestions
+    private val _destinationSuggestions = MutableStateFlow<List<DestinationSuggestion>>(emptyList())
+    val destinationSuggestions: StateFlow<List<DestinationSuggestion>> = _destinationSuggestions.asStateFlow()
 
     private var panicButtonPressCount = 0
     private val panicButtonPressWindowMs = 5000L
@@ -46,7 +50,7 @@ class HomeViewModel(
             val requiredPresses = 3
             if (panicButtonPressCount < requiredPresses) {
                 if (panicButtonPressCount == 1) {
-                    _distressMessage.postValue("Press $requiredPresses times to activate distress")
+                    _distressMessage.value = "Press $requiredPresses times to activate distress"
                 }
                 return@launch
             }
@@ -55,12 +59,12 @@ class HomeViewModel(
 
             val personData = personDataRepository.fetch()
             if (personData == null || !AppModeController.isGuidedTrip) {
-                _distressMessage.postValue("Failed to get person data")
+                _distressMessage.value = "Failed to get person data"
                 return@launch
             }
 
             AppModeController.activateDistress(activity)
-            _distressMessage.postValue("Sending distress notification...")
+            _distressMessage.value = "Sending distress notification..."
         }
     }
 
@@ -88,7 +92,7 @@ class HomeViewModel(
                 }
                 .onFailure { error ->
                     _routeState.value = RouteState.Error(
-                        error.message ?: "Could not fetch route"
+                        error.message ?: "Could not fetch route",
                     )
                 }
         }

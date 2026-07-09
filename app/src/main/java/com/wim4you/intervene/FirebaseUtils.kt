@@ -1,20 +1,47 @@
 package com.wim4you.intervene
 
 import android.content.Context
+import android.util.Log
 import com.google.firebase.FirebaseApp
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.appcheck.FirebaseAppCheck
+import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 object FirebaseUtils {
 
-    fun onConnect(context: Context, callback:(FirebaseFirestore) -> Unit){
+    private const val TAG = "FirebaseUtils"
+    private val initScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    fun initialize(context: Context) {
         FirebaseApp.initializeApp(context)
-        val auth = FirebaseAuth.getInstance()
-        val db = FirebaseFirestore.getInstance()
-        callback(db)
+        installAppCheck()
+        initScope.launch {
+            try {
+                FirebaseAuthManager.ensureSignedIn()
+            } catch (exception: Exception) {
+                Log.e(TAG, "Anonymous sign-in failed during initialization", exception)
+            }
+        }
     }
 
-    fun getVigilantes(context: Context, db:FirebaseFirestore, radius: Double){
+    suspend fun ensureReady(): String {
+        return FirebaseAuthManager.ensureSignedIn()
+    }
 
+    private fun installAppCheck() {
+        val firebaseAppCheck = FirebaseAppCheck.getInstance()
+        if (BuildConfig.DEBUG) {
+            firebaseAppCheck.installAppCheckProviderFactory(
+                DebugAppCheckProviderFactory.getInstance(),
+            )
+        } else {
+            firebaseAppCheck.installAppCheckProviderFactory(
+                PlayIntegrityAppCheckProviderFactory.getInstance(),
+            )
+        }
     }
 }
