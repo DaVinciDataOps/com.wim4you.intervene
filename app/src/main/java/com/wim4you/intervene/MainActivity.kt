@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.Menu
 import android.view.View
@@ -218,39 +219,47 @@ class MainActivity : AppCompatActivity() {
                 return
             }
             if (!AppModeController.startPatrol(this)) return
-            publishAndPushPatrol(vigilante)
+            registerPatrolInFirebase(vigilante)
             updateScreenKeepOn(true)
         }
         refreshDrawerMenu(navView)
         navController.navigate(R.id.nav_home)
     }
 
-    private fun publishAndPushPatrol(vigilante: VigilanteData) {
-        LocationUtils.resolveLocation(this) { latLng ->
-            if (latLng == null) return@resolveLocation
+    private suspend fun registerPatrolInFirebase(vigilante: VigilanteData) {
+        if (!PermissionsUtils.hasForegroundLocationPermission(this)) {
+            Toast.makeText(this, R.string.status_no_location_permission, Toast.LENGTH_LONG).show()
+            return
+        }
+        try {
+            val latLng = LocationUtils.resolveLocationSuspend(this)
+            if (latLng == null) {
+                Toast.makeText(this, R.string.patrol_location_required, Toast.LENGTH_LONG).show()
+                AppModeController.reportBackgroundFailure(getString(R.string.patrol_location_required))
+                return
+            }
             mapLocationRepository.setOwnPatrol(
                 vigilante = vigilante,
                 latitude = latLng.latitude,
                 longitude = latLng.longitude,
             )
-            lifecycleScope.launch {
-                try {
-                    PatrolFirebaseWriter.pushPatrol(
-                        vigilante = vigilante,
-                        latitude = latLng.latitude,
-                        longitude = latLng.longitude,
-                    )
-                } catch (exception: Exception) {
-                    AppModeController.reportBackgroundFailure("Patrol could not be registered in cloud.")
-                }
-            }
+            PatrolFirebaseWriter.pushPatrol(
+                vigilante = vigilante,
+                latitude = latLng.latitude,
+                longitude = latLng.longitude,
+            )
+            Log.i(TAG, "Patrol registered in Firebase for vigilante ${vigilante.id}")
+        } catch (exception: Exception) {
+            Log.e(TAG, "Patrol Firebase registration failed", exception)
+            Toast.makeText(this, R.string.patrol_sync_failed, Toast.LENGTH_LONG).show()
+            AppModeController.reportBackgroundFailure(getString(R.string.patrol_sync_failed))
         }
     }
 
     private suspend fun restorePatrolMarkerIfNeeded() {
         val vigilante = AppModeController.vigilante ?: vigilanteStore.fetch() ?: return
         AppModeController.vigilante = vigilante
-        publishAndPushPatrol(vigilante)
+        registerPatrolInFirebase(vigilante)
     }
 
     private suspend fun restoreDistressMarkerIfNeeded() {
@@ -515,6 +524,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private companion object {
+        const val TAG = "MainActivity"
         const val KEY_REOPEN_OVERFLOW = "reopen_overflow_popup"
         private const val PREFS_NAME = "intervene_prefs"
         private const val KEY_BACKGROUND_RATIONALE_SHOWN = "background_location_rationale_shown"

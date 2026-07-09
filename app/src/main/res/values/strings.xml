@@ -36,6 +36,8 @@
     <string name="nav_stop_patrolling">Stop patrolling</string>
     <string name="register_before_guided_trip">Register your profile before starting a guided trip</string>
     <string name="register_vigilante_before_patrol">Register as a vigilante before patrolling</string>
+    <string name="patrol_location_required">Could not get your location. Patrol was started locally but is not visible to others yet.</string>
+    <string name="patrol_sync_failed">Could not register patrol in Firebase. Check internet, anonymous sign-in, and App Check debug token.</string>
     <string name="nav_cancel_distress_call">Cancel distress call</string>
     <string name="nav_distress_list">Pick distress call</string>
     <string name="tag_patrol_service">Patrol Service</string>

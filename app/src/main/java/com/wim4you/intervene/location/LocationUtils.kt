@@ -22,6 +22,8 @@ import com.google.android.gms.maps.model.LatLng
 import com.wim4you.intervene.LocationUpdateWorker
 import com.wim4you.intervene.R
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 object LocationUtils {
     private const val LOCATION_PERMISSION_REQUEST_CODE = 100
@@ -70,16 +72,39 @@ object LocationUtils {
     }
 
     /**
-     * Requests a fresh location, falling back to the last known position when GPS is slow or unavailable.
+     * Uses the last known location when available, otherwise requests a fresh GPS fix.
      */
     fun resolveLocation(context: Context, callback: (LatLng?) -> Unit) {
-        setLocation(context) { latLng ->
+        getLastKnownLocation(context) { latLng ->
             if (latLng != null) {
                 callback(latLng)
             } else {
-                getLocation(context, callback)
+                setLocation(context, callback)
             }
         }
+    }
+
+    suspend fun resolveLocationSuspend(context: Context): LatLng? = suspendCoroutine { continuation ->
+        resolveLocation(context) { latLng -> continuation.resume(latLng) }
+    }
+
+    private fun getLastKnownLocation(context: Context, callback: (LatLng?) -> Unit) {
+        val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            callback(null)
+            return
+        }
+        fusedLocationClient.lastLocation
+            .addOnSuccessListener { location ->
+                callback(location?.let { LatLng(it.latitude, it.longitude) })
+            }
+            .addOnFailureListener {
+                callback(null)
+            }
     }
 
     fun setLocation(context: Context, callback: (LatLng?) -> Unit){

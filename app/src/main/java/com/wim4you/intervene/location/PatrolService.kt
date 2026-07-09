@@ -19,6 +19,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.Constants
 import com.wim4you.intervene.FirebaseAuthManager
+import com.wim4you.intervene.FirebaseUtils
 import com.wim4you.intervene.R
 import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.dao.DatabaseProvider
@@ -76,7 +77,7 @@ class PatrolService : Service() {
                     stopSelf()
                 } else {
                     val firebaseUid = try {
-                        FirebaseAuthManager.ensureSignedIn()
+                        FirebaseUtils.ensureReady()
                     } catch (exception: Exception) {
                         Log.e("PatrolService", "Failed to authenticate before patrol updates")
                         AppModeController.reportBackgroundFailure("Patrol could not start: authentication failed.")
@@ -196,15 +197,17 @@ class PatrolService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        serviceScope.launch {
-            val firebaseUid = try {
-                FirebaseAuthManager.ensureSignedIn()
-            } catch (exception: Exception) {
-                Log.e("PatrolService", "Failed to authenticate before stopping patrol")
-                AppModeController.reportBackgroundFailure("Could not authenticate to stop patrol cleanly.")
-                return@launch
+        if (!AppModeController.isPatrolling) {
+            serviceScope.launch {
+                val firebaseUid = try {
+                    FirebaseAuthManager.ensureSignedIn()
+                } catch (exception: Exception) {
+                    Log.e("PatrolService", "Failed to authenticate before stopping patrol")
+                    AppModeController.reportBackgroundFailure("Could not authenticate to stop patrol cleanly.")
+                    return@launch
+                }
+                sendToFirebase(firebaseUid, false)
             }
-            sendToFirebase(firebaseUid, false)
         }
         patrolJob?.cancel()
         coroutineScope.cancel()

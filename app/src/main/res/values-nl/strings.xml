@@ -36,6 +36,8 @@
     <string name="nav_stop_patrolling">Patrouilleren stoppen</string>
     <string name="register_before_guided_trip">Registreer je profiel voordat je een begeleide reis start</string>
     <string name="register_vigilante_before_patrol">Registreer als vigilante voordat je gaat patrouilleren</string>
+    <string name="patrol_location_required">Kon je locatie niet bepalen. Patrouille is lokaal gestart maar nog niet zichtbaar voor anderen.</string>
+    <string name="patrol_sync_failed">Kon patrouille niet registreren in Firebase. Controleer internet, anonieme aanmelding en App Check debug-token.</string>
     <string name="nav_cancel_distress_call">Noodoproep annuleren</string>
     <string name="nav_distress_list">Selecteer noodoproep</string>
     <string name="tag_patrol_service">Patrol Service</string>
