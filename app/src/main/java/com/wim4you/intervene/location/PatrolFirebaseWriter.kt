@@ -2,8 +2,8 @@ package com.wim4you.intervene.location
 
 import com.firebase.geofire.GeoFireUtils
 import com.firebase.geofire.GeoLocation
-import com.google.firebase.database.FirebaseDatabase
 import android.util.Log
+import com.wim4you.intervene.FirebaseDatabaseProvider
 import com.wim4you.intervene.FirebaseUtils
 import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.data.VigilanteData
@@ -31,8 +31,7 @@ object PatrolFirebaseWriter {
             "active" to true,
             "fcmToken" to null,
         )
-        FirebaseDatabase.getInstance()
-            .reference
+        FirebaseDatabaseProvider.reference()
             .child("patrols")
             .child(firebaseUid)
             .updateChildren(patrolDataMap)

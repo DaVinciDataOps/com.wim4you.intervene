@@ -251,8 +251,14 @@ class MainActivity : AppCompatActivity() {
             Log.i(TAG, "Patrol registered in Firebase for vigilante ${vigilante.id}")
         } catch (exception: Exception) {
             Log.e(TAG, "Patrol Firebase registration failed", exception)
-            Toast.makeText(this, R.string.patrol_sync_failed, Toast.LENGTH_LONG).show()
-            AppModeController.reportBackgroundFailure(getString(R.string.patrol_sync_failed))
+            val messageRes = when (FirebaseAuthManager.authFailureKey(exception)) {
+                "auth_not_configured" -> R.string.chat_error_auth_not_configured
+                "auth_anonymous_disabled" -> R.string.chat_error_auth_anonymous_disabled
+                "auth_network" -> R.string.chat_error_auth_network
+                else -> R.string.patrol_sync_failed
+            }
+            Toast.makeText(this, messageRes, Toast.LENGTH_LONG).show()
+            AppModeController.reportBackgroundFailure(getString(messageRes))
         }
     }
 

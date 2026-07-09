@@ -2,10 +2,11 @@ package com.wim4you.intervene.security
 
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
 import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.FirebaseAuthManager
+import com.wim4you.intervene.FirebaseDatabaseProvider
 import com.wim4you.intervene.SecureLog
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -22,7 +23,7 @@ object FirebaseDataRetention {
     suspend fun reconcileOwnEntries() {
         try {
             val uid = FirebaseAuthManager.ensureSignedIn()
-            val database = FirebaseDatabase.getInstance().reference
+            val database = FirebaseDatabaseProvider.reference()
             val now = System.currentTimeMillis()
             val expiryCutoff = now - AppModeController.LOCATION_DATA_EXPIRY_MS
 
@@ -38,12 +39,17 @@ object FirebaseDataRetention {
                 deactivateIfExpired(database, "distress", uid, expiryCutoff)
             }
         } catch (exception: Exception) {
-            SecureLog.e(TAG, "Failed to reconcile Firebase entries", exception)
+            val failureKey = FirebaseAuthManager.authFailureKey(exception)
+            if (failureKey == "auth_not_configured") {
+                SecureLog.w(TAG, "Reconciliation skipped: Firebase Auth not configured in console.")
+            } else {
+                SecureLog.e(TAG, "Failed to reconcile Firebase entries: ${exception.message}")
+            }
         }
     }
 
     private suspend fun deactivateIfExpired(
-        database: com.google.firebase.database.DatabaseReference,
+        database: DatabaseReference,
         path: String,
         uid: String,
         expiryCutoff: Long,
@@ -59,7 +65,7 @@ object FirebaseDataRetention {
     }
 
     private suspend fun markInactive(
-        database: com.google.firebase.database.DatabaseReference,
+        database: DatabaseReference,
         path: String,
         uid: String,
     ) {
@@ -67,12 +73,10 @@ object FirebaseDataRetention {
         if (path == "patrols" && AppModeController.isPatrolling) return
         val snapshot = database.child(path).child(uid).getOnce()
         if (!snapshot.exists()) return
-        if (path == "distress" && AppModeController.isDistressActive) return
-        if (path == "patrols" && AppModeController.isPatrolling) return
         database.child(path).child(uid).child("active").setValueOnce(false)
     }
 
-    private suspend fun com.google.firebase.database.DatabaseReference.getOnce(): DataSnapshot =
+    private suspend fun DatabaseReference.getOnce(): DataSnapshot =
         suspendCancellableCoroutine { continuation ->
             addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
@@ -85,7 +89,7 @@ object FirebaseDataRetention {
             })
         }
 
-    private suspend fun com.google.firebase.database.DatabaseReference.setValueOnce(value: Any?) {
+    private suspend fun DatabaseReference.setValueOnce(value: Any?) {
         suspendCancellableCoroutine { continuation ->
             setValue(value)
                 .addOnSuccessListener { continuation.resume(Unit) }

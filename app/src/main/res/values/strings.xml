@@ -153,6 +153,7 @@
     <string name="chat_error_location">Could not determine your location for nearby chat</string>
     <string name="chat_error_auth">Could not sign in to chat. Check your internet connection and that Anonymous sign-in is enabled in Firebase.</string>
     <string name="chat_error_auth_anonymous_disabled">Anonymous sign-in is disabled. Enable it in Firebase Console → Authentication → Sign-in method → Anonymous.</string>
+    <string name="chat_error_auth_not_configured">Firebase Authentication is not set up. Open Firebase Console → Authentication → Get started, then enable Anonymous sign-in.</string>
     <string name="chat_error_auth_network">No internet connection. Chat sign-in requires network access.</string>
     <string name="chat_error_auth_rate_limited">Too many sign-in attempts. Wait a moment and try again.</string>
     <string name="chat_error_profile">Could not load your profile for chat</string>

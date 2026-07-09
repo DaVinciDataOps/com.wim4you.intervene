@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
+import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
@@ -27,6 +28,7 @@ import kotlin.coroutines.suspendCoroutine
 
 object LocationUtils {
     private const val LOCATION_PERMISSION_REQUEST_CODE = 100
+    private const val LOCATION_REQUEST_TIMEOUT_MS = 12_000L
 
     fun scheduleLocationUpdates(context: Context) {
         val locationWorkRequest = PeriodicWorkRequestBuilder<LocationUpdateWorker>(

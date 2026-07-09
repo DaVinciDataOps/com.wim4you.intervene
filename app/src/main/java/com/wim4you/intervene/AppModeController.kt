@@ -4,8 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
-import com.google.firebase.Firebase
-import com.google.firebase.database.database
 import com.wim4you.intervene.data.PersonData
 import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.distress.DistressMessagingManager
@@ -119,7 +117,7 @@ object AppModeController {
                 Log.e(TAG, "Failed to authenticate before clearing distress", exception)
                 return@withContext
             }
-            Firebase.database.getReference("distress").child(firebaseUid)
+            FirebaseDatabaseProvider.reference().child("distress").child(firebaseUid)
                 .updateChildren(mapOf("active" to false))
                 .addOnSuccessListener {
                     Log.i(TAG, "Distress marked inactive in Firebase")

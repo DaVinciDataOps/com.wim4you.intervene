@@ -21,6 +21,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.Constants
 import com.wim4you.intervene.FirebaseAuthManager
+import com.wim4you.intervene.FirebaseDatabaseProvider
 import com.wim4you.intervene.R
 import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.dao.DatabaseProvider
@@ -44,7 +45,7 @@ class DistressService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val channelId = Constants.DISTRESS_SERVICE_CHANNEL_ID
     private val notificationId = Constants.DISTRESS_SERVICE_NOTIFICATION_ID
-    private val database = FirebaseDatabase.getInstance().reference
+    private val database = FirebaseDatabaseProvider.reference()
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var distressJob: Job? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -86,8 +87,14 @@ class DistressService : Service() {
                     val firebaseUid = try {
                         FirebaseAuthManager.ensureSignedIn()
                     } catch (exception: Exception) {
-                        Log.e("DistressService", "Failed to authenticate before distress updates")
-                        AppModeController.reportBackgroundFailure("Distress could not start: authentication failed.")
+                        Log.e("DistressService", "Failed to authenticate before distress updates", exception)
+                        val message = when (FirebaseAuthManager.authFailureKey(exception)) {
+                            "auth_not_configured" -> getString(R.string.chat_error_auth_not_configured)
+                            "auth_anonymous_disabled" -> getString(R.string.chat_error_auth_anonymous_disabled)
+                            "auth_network" -> getString(R.string.chat_error_auth_network)
+                            else -> "Distress could not start: authentication failed."
+                        }
+                        AppModeController.reportBackgroundFailure(message)
                         stopSelf()
                         return@launch
                     }

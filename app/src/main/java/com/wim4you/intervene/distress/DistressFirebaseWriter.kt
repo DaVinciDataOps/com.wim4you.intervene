@@ -1,8 +1,8 @@
 package com.wim4you.intervene.distress
 
 import com.firebase.geofire.GeoLocation
-import com.google.firebase.database.FirebaseDatabase
 import com.wim4you.intervene.FirebaseAuthManager
+import com.wim4you.intervene.FirebaseDatabaseProvider
 import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.data.AddressData
 import com.wim4you.intervene.data.PersonData
@@ -34,8 +34,7 @@ object DistressFirebaseWriter {
         if (init) {
             distressDataMap["startTime"] = System.currentTimeMillis()
         }
-        FirebaseDatabase.getInstance()
-            .reference
+        FirebaseDatabaseProvider.reference()
             .child("distress")
             .child(firebaseUid)
             .updateChildren(distressDataMap)

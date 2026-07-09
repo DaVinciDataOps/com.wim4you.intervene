@@ -153,6 +153,7 @@
     <string name="chat_error_location">Kon je locatie niet bepalen voor chat in de buurt</string>
     <string name="chat_error_auth">Kon niet aanmelden voor chat. Controleer je internetverbinding en of anonieme aanmelding is ingeschakeld in Firebase.</string>
     <string name="chat_error_auth_anonymous_disabled">Anonieme aanmelding is uitgeschakeld. Schakel dit in via Firebase Console → Authentication → Sign-in method → Anonymous.</string>
+    <string name="chat_error_auth_not_configured">Firebase Authentication is niet ingesteld. Ga naar Firebase Console → Authentication → Aan de slag, en schakel daarna Anonymous in.</string>
     <string name="chat_error_auth_network">Geen internetverbinding. Chat-aanmelding vereist netwerktoegang.</string>
     <string name="chat_error_auth_rate_limited">Te veel aanmeldpogingen. Wacht even en probeer opnieuw.</string>
     <string name="chat_error_profile">Kon je profiel niet laden voor chat</string>
