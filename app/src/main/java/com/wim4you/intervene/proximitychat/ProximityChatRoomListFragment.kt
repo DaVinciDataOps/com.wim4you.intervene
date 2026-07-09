@@ -1,6 +1,5 @@
 package com.wim4you.intervene.proximitychat
 
-import android.location.Location
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -104,31 +103,33 @@ class ProximityChatRoomListFragment : Fragment() {
     }
 
     private fun requestLocationAndStart() {
-        LocationUtils.getLocation(requireContext()) { latLng ->
-            if (latLng == null) {
-                viewModel.start(null)
-                return@getLocation
-            }
-            val location = Location("proximity_chat").apply {
-                latitude = latLng.latitude
-                longitude = latLng.longitude
-            }
-            viewModel.start(location)
-        }
+        requestLocation { location -> viewModel.start(location) }
     }
 
     private fun requestLocationAndRefresh() {
-        LocationUtils.getLocation(requireContext()) { latLng ->
-            if (latLng == null) {
+        binding.swipeRefresh.isRefreshing = true
+        requestLocation { location ->
+            if (location == null) {
                 binding.swipeRefresh.isRefreshing = false
                 Toast.makeText(requireContext(), R.string.error_location_failed, Toast.LENGTH_SHORT).show()
-                return@getLocation
-            }
-            val location = Location("proximity_chat").apply {
-                latitude = latLng.latitude
-                longitude = latLng.longitude
             }
             viewModel.refreshLocation(location)
+            binding.swipeRefresh.isRefreshing = false
+        }
+    }
+
+    private fun requestLocation(onLocation: (android.location.Location?) -> Unit) {
+        LocationUtils.setLocation(requireContext()) { latLng ->
+            if (latLng == null) {
+                onLocation(null)
+                return@setLocation
+            }
+            onLocation(
+                android.location.Location("proximity_chat").apply {
+                    latitude = latLng.latitude
+                    longitude = latLng.longitude
+                },
+            )
         }
     }
 
@@ -172,10 +173,12 @@ class ProximityChatRoomListFragment : Fragment() {
         val messageRes = when (key) {
             "location_unavailable" -> R.string.chat_error_location
             "auth_failed" -> R.string.chat_error_auth
+            "profile_failed" -> R.string.chat_error_profile
+            "presence_failed" -> R.string.chat_error_presence
             "room_failed" -> R.string.chat_error_room
             else -> R.string.chat_error_generic
         }
-        Toast.makeText(requireContext(), messageRes, Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), messageRes, Toast.LENGTH_LONG).show()
         viewModel.clearError()
     }
 

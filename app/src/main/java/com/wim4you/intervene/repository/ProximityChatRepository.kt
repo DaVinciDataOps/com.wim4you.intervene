@@ -10,7 +10,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import com.wim4you.intervene.FirebaseAuthManager
+import com.wim4you.intervene.FirebaseUtils
 import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.fbdata.ChatMessageData
 import com.wim4you.intervene.fbdata.ChatParticipantData
@@ -351,7 +351,7 @@ class ProximityChatRepository @Inject constructor() {
             ?: roomId
     }
 
-    suspend fun ensureAuthenticated(): String = FirebaseAuthManager.ensureSignedIn()
+    suspend fun ensureAuthenticated(): String = FirebaseUtils.ensureReady()
 
     private suspend fun linkUserToRoom(uid: String, roomId: String, timestamp: Long) {
         database.child(ProximityChatConstants.USER_ROOMS_PATH)

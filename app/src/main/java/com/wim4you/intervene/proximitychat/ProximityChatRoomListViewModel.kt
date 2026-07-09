@@ -47,40 +47,65 @@ class ProximityChatRoomListViewModel @Inject constructor(
     private var lastLongitude: Double? = null
 
     fun start(location: Location?) {
-        if (location == null) {
-            _uiState.update { it.copy(isLoading = false, errorMessage = "location_unavailable") }
-            return
-        }
-        lastLatitude = location.latitude
-        lastLongitude = location.longitude
+        lastLatitude = location?.latitude
+        lastLongitude = location?.longitude
         viewModelScope.launch {
-            try {
-                val uid = chatRepository.ensureAuthenticated()
-                val alias = resolveAlias()
-                _uiState.update { it.copy(myUid = uid, myAlias = alias, isLoading = false, errorMessage = null) }
-                startPresenceUpdates(uid, alias)
-                observeNearby(uid, location.latitude, location.longitude)
-                observeRooms(uid)
+            val uid = try {
+                chatRepository.ensureAuthenticated()
             } catch (exception: Exception) {
-                SecureLog.e(TAG, "Failed to start proximity chat", exception)
+                SecureLog.e(TAG, "Failed to authenticate for proximity chat", exception)
                 _uiState.update { it.copy(isLoading = false, errorMessage = "auth_failed") }
+                return@launch
             }
+
+            val alias = try {
+                resolveAlias()
+            } catch (exception: Exception) {
+                SecureLog.e(TAG, "Failed to resolve chat alias", exception)
+                _uiState.update { it.copy(isLoading = false, errorMessage = "profile_failed") }
+                return@launch
+            }
+
+            _uiState.update {
+                it.copy(myUid = uid, myAlias = alias, isLoading = false, errorMessage = null)
+            }
+            observeRooms(uid)
+
+            if (location == null) {
+                _uiState.update { it.copy(errorMessage = "location_unavailable") }
+                return@launch
+            }
+
+            startPresenceUpdates(uid, alias)
+            observeNearby(uid, location.latitude, location.longitude)
         }
     }
 
     fun refreshLocation(location: Location?) {
-        if (location == null) return
+        if (location == null) {
+            _uiState.update { it.copy(errorMessage = "location_unavailable") }
+            return
+        }
         lastLatitude = location.latitude
         lastLongitude = location.longitude
         val state = _uiState.value
-        val uid = state.myUid ?: return
+        val uid = state.myUid
+        if (uid == null) {
+            start(location)
+            return
+        }
+        _uiState.update { it.copy(errorMessage = null) }
         nearbyJob?.cancel()
         observeNearby(uid, location.latitude, location.longitude)
+        if (presenceJob?.isActive != true) {
+            startPresenceUpdates(uid, state.myAlias)
+        }
         viewModelScope.launch {
             try {
                 chatRepository.updatePresence(uid, state.myAlias, location.latitude, location.longitude)
             } catch (exception: Exception) {
                 SecureLog.e(TAG, "Failed to refresh chat presence", exception)
+                _uiState.update { it.copy(errorMessage = "presence_failed") }
             }
         }
     }

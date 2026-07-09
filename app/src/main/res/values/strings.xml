@@ -149,7 +149,9 @@
     <string name="chat_speech_badge">🎤</string>
     <string name="chat_mic_permission_required">Microphone permission is required for speech messages</string>
     <string name="chat_error_location">Could not determine your location for nearby chat</string>
-    <string name="chat_error_auth">Could not sign in to chat</string>
+    <string name="chat_error_auth">Could not sign in to chat. Check your internet connection and that Anonymous sign-in is enabled in Firebase.</string>
+    <string name="chat_error_profile">Could not load your profile for chat</string>
+    <string name="chat_error_presence">Could not publish your location for nearby chat</string>
     <string name="chat_error_room">Could not open chat</string>
     <string name="chat_error_load">Could not load chat messages</string>
     <string name="chat_error_send">Could not send message</string>
