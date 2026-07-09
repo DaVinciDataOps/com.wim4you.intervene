@@ -1,6 +1,7 @@
 package com.wim4you.intervene.ui.home
 
 import com.google.android.gms.maps.model.LatLng
+import com.wim4you.intervene.ui.common.UiMessage
 
 sealed class RouteState {
     data object Idle : RouteState()
@@ -11,5 +12,5 @@ sealed class RouteState {
         val summary: String,
     ) : RouteState()
 
-    data class Error(val message: String) : RouteState()
+    data class Error(val message: UiMessage) : RouteState()
 }

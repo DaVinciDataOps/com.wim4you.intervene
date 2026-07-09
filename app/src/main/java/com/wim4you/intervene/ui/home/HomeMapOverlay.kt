@@ -34,6 +34,7 @@ class HomeMapOverlay(
     private val distressMarkers = mutableMapOf<String, Marker>()
     private var routePolyline: Polyline? = null
     private var destinationMarker: Marker? = null
+    private var highlightedDistressId: String? = null
 
     fun applyMapStyle() {
         if (!ThemePreferences.isDarkModeActive(context)) return
@@ -82,7 +83,7 @@ class HomeMapOverlay(
                     map.addMarker(
                         MarkerOptions()
                             .position(latLng)
-                            .title(patrolData.name ?: "Patrol")
+                            .title(patrolData.name ?: context.getString(R.string.map_marker_patrol))
                             .icon(getPatrolIcon(patrolData.vigilanteId)),
                     )?.let { patrolMarkers[markerId] = it }
                 } else {
@@ -92,7 +93,11 @@ class HomeMapOverlay(
         }
     }
 
-    fun updateDistressMarkers(distressDataList: List<DistressLocationData>): Boolean {
+    fun updateDistressMarkers(
+        distressDataList: List<DistressLocationData>,
+        selectedDistressId: String? = highlightedDistressId,
+    ): Boolean {
+        highlightedDistressId = selectedDistressId
         val currentIds = distressDataList.mapNotNull { it.personId ?: it.id }.toSet()
         var hasNewMarkers = false
 
@@ -112,18 +117,33 @@ class HomeMapOverlay(
                             .position(latLng)
                             .title("${distressData.alias} !HELP!")
                             .snippet(getDistressSnippet(distressData))
-                            .icon(BitmapDescriptorFactory.fromBitmap(distressMarkerBitmap)),
+                            .icon(BitmapDescriptorFactory.fromBitmap(distressMarkerBitmap))
+                            .zIndex(if (markerId == selectedDistressId) 2f else 1f),
                     )?.let {
                         distressMarkers[markerId] = it
                         hasNewMarkers = true
+                        if (markerId == selectedDistressId) {
+                            it.showInfoWindow()
+                        }
                     }
                 } else {
                     marker.position = latLng
                     marker.snippet = getDistressSnippet(distressData)
+                    marker.zIndex = if (markerId == selectedDistressId) 2f else 1f
+                    if (markerId == selectedDistressId) {
+                        marker.showInfoWindow()
+                    }
                 }
             }
         }
         return hasNewMarkers
+    }
+
+    fun focusOnDistress(distressId: String, latitude: Double, longitude: Double) {
+        highlightedDistressId = distressId
+        val latLng = LatLng(latitude, longitude)
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16f))
+        distressMarkers[distressId]?.showInfoWindow()
     }
 
     private fun getPatrolIcon(vigilanteId: String?): BitmapDescriptor {
@@ -139,6 +159,6 @@ class HomeMapOverlay(
         val currentTimestamp = System.currentTimeMillis()
         val lap = TimestampConverter.lapSeconds(distressData.startTime, currentTimestamp).toString()
         val start = TimestampConverter.toTime(distressData.startTime)
-        return "time:$start [lap:${lap} sec]"
+        return context.getString(R.string.map_distress_snippet, start, lap)
     }
 }

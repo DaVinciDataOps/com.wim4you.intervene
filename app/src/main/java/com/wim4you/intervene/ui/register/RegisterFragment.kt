@@ -68,7 +68,7 @@ class RegisterFragment : Fragment() {
             if (name.isEmpty() || alias.isEmpty() || gender.isEmpty() || age.isEmpty() ||
                 phoneNumber.isEmpty() || safeWord.isEmpty()
             ) {
-                Toast.makeText(requireContext(), "Please fill all required fields", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), R.string.form_fill_required_fields, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -83,7 +83,7 @@ class RegisterFragment : Fragment() {
                 eMail = email,
             )
             viewModel.savePersonData(personData)
-            Toast.makeText(requireContext(), "Data saved successfully", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), R.string.form_data_saved, Toast.LENGTH_SHORT).show()
         }
     }
 

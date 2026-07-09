@@ -3,12 +3,14 @@ package com.wim4you.intervene.ui.home
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -21,12 +23,14 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.wim4you.intervene.AppModeController
+import com.wim4you.intervene.AppPreferences
 import com.wim4you.intervene.MainActivity
 import com.wim4you.intervene.OnLocationPermissionGrantedListener
 import com.wim4you.intervene.R
 import com.wim4you.intervene.databinding.FragmentHomeBinding
 import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.helpers.GoogleMapMarkers
+import com.wim4you.intervene.helpers.NetworkUtils
 import com.wim4you.intervene.helpers.TimestampConverter
 import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.ui.map.MapDataViewModel
@@ -85,11 +89,13 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
             restoreRouteOnMap()
         }
         updateGuidedTripUi()
+        updateStatusBanner()
         centerMapOnUserIfNeeded()
     }
 
     override fun onForegroundLocationGranted() {
         centerMapOnUserIfNeeded()
+        updateStatusBanner()
     }
 
     override fun onDestroyView() {
@@ -115,10 +121,13 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
     }
 
     private fun setupClickListeners() {
-        binding.panicButton.setOnClickListener {
-            if (hasLocationPermission()) {
-                viewModel.onPanicButtonClicked(requireActivity())
+        binding.panicButton.setOnClickListener { button ->
+            button.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+            if (!hasLocationPermission()) {
+                Toast.makeText(requireContext(), R.string.error_no_location_permission, Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
+            viewModel.onPanicButtonClicked(requireActivity())
         }
         binding.showRouteButton.setOnClickListener { requestRoute() }
         binding.addDestinationButton.setOnClickListener { openDestinationPanel() }
@@ -129,9 +138,21 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.distressStatus.collectLatest { status ->
-                        status?.let {
-                            Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
+                    viewModel.distressMessage.collectLatest { message ->
+                        message?.let {
+                            Toast.makeText(requireContext(), it.resolve(requireContext()), Toast.LENGTH_SHORT).show()
+                            viewModel.clearDistressMessage()
+                        }
+                    }
+                }
+                launch {
+                    viewModel.panicButtonState.collectLatest { state ->
+                        binding.panicProgressText.isVisible = state.isActive
+                        if (state.isActive) {
+                            binding.panicProgressText.text = getString(
+                                R.string.panic_press_more,
+                                state.pressesRemaining,
+                            )
                         }
                     }
                 }
@@ -162,10 +183,31 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
                 }
                 launch {
                     mapDataViewModel.distressLocations.collectLatest { distressDataList ->
-                        val hasNewMarkers = mapOverlay?.updateDistressMarkers(distressDataList) == true
+                        val selectedId = mapDataViewModel.selectedDistressId.value
+                        val hasNewMarkers = mapOverlay?.updateDistressMarkers(distressDataList, selectedId) == true
                         populateSnackBar(distressDataList)
-                        if (AppModeController.isPatrolling && hasNewMarkers) {
+                        if (
+                            AppModeController.isPatrolling &&
+                            hasNewMarkers &&
+                            AppPreferences.isPatrolAlertSoundEnabled(requireContext())
+                        ) {
                             PatrolAlertSoundPlayer.play(requireContext())
+                        }
+                    }
+                }
+                launch {
+                    mapDataViewModel.selectedDistressId.collectLatest { selectedId ->
+                        if (selectedId == null) return@collectLatest
+                        val distress = mapDataViewModel.distressLocations.value
+                            .firstOrNull { (it.id ?: it.personId) == selectedId }
+                        val lat = distress?.latitude
+                        val lng = distress?.longitude
+                        if (lat != null && lng != null && mMapInitialized) {
+                            mapOverlay?.focusOnDistress(selectedId, lat, lng)
+                            mapOverlay?.updateDistressMarkers(
+                                mapDataViewModel.distressLocations.value,
+                                selectedId,
+                            )
                         }
                     }
                 }
@@ -200,9 +242,24 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
             is RouteState.Error -> {
                 binding.showRouteButton.isEnabled = true
                 binding.routeSummary.visibility = View.GONE
-                Toast.makeText(requireContext(), state.message, Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    requireContext(),
+                    state.message.resolve(requireContext()),
+                    Toast.LENGTH_LONG,
+                ).show()
             }
         }
+    }
+
+    private fun updateStatusBanner() {
+        val context = requireContext()
+        val message = when {
+            !NetworkUtils.isOnline(context) -> getString(R.string.status_offline)
+            !hasLocationPermission() -> getString(R.string.status_no_location_permission)
+            else -> null
+        }
+        binding.statusBanner.isVisible = message != null
+        binding.statusBannerText.text = message
     }
 
     private fun hasLocationPermission(): Boolean {
@@ -235,6 +292,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
     private fun updateGuidedTripUi() {
         val isGuidedTrip = AppModeController.isGuidedTrip
         binding.panicButton.visibility = if (isGuidedTrip) View.VISIBLE else View.GONE
+        binding.panicProgressText.isVisible = isGuidedTrip && viewModel.panicButtonState.value.isActive
 
         if (!isGuidedTrip) {
             binding.routeCard.visibility = View.GONE
@@ -309,16 +367,25 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
                 Toast.makeText(requireContext(), R.string.route_location_unavailable, Toast.LENGTH_SHORT).show()
                 return@setLocation
             }
-            viewModel.planRoute(destination, origin)
+            viewModel.planRoute(
+                destination,
+                origin,
+                NetworkUtils.isOnline(requireContext()),
+            )
         }
     }
 
     private fun populateSnackBar(list: List<DistressLocationData>) {
         AppModeController.snackBarMessage = if (list.isEmpty()) {
-            "No Distress calls"
+            getString(R.string.snackbar_no_distress_calls)
         } else {
             list.take(5).joinToString("\n------------\n") { call ->
-                "${call.alias}: ${call.address ?: "Unknown address"} at ${TimestampConverter.toTime(call.startTime)}"
+                getString(
+                    R.string.snackbar_distress_entry,
+                    call.alias.orEmpty(),
+                    call.address ?: getString(R.string.distress_address_unknown),
+                    TimestampConverter.toTime(call.startTime),
+                )
             }
         }
     }

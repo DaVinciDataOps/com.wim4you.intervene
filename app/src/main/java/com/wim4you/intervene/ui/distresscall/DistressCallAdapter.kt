@@ -9,27 +9,29 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.R
-import com.wim4you.intervene.data.DistressCallData
+import com.wim4you.intervene.helpers.DistanceUtils
+import com.wim4you.intervene.helpers.ElapsedTimeFormatter
 
 class DistressCallAdapter(
-    private val onItemClick: (DistressCallData) -> Unit
-) : ListAdapter<DistressCallData, DistressCallAdapter.ViewHolder>(DistressCallDiffCallback()) {
-
-    private var selectedPosition = AppModeController.selectedDistressCall
+    private val isVerified: (String) -> Boolean,
+    private val isIntervening: (String) -> Boolean,
+    private val onItemClick: (DistressCallItem) -> Unit,
+    private val onRespondClick: (DistressCallItem) -> Unit,
+) : ListAdapter<DistressCallItem, DistressCallAdapter.ViewHolder>(DistressCallDiffCallback()) {
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvAlias: TextView = itemView.findViewById(R.id.tvAlias)
         val tvAddress: TextView = itemView.findViewById(R.id.tvAddress)
+        val tvMeta: TextView = itemView.findViewById(R.id.tvMeta)
         val btnDistressCall: ImageButton = itemView.findViewById(R.id.ibDistress)
     }
 
-    class DistressCallDiffCallback : DiffUtil.ItemCallback<DistressCallData>() {
-        override fun areItemsTheSame(oldItem: DistressCallData, newItem: DistressCallData): Boolean =
-            oldItem.id == newItem.id && oldItem.id != null
+    class DistressCallDiffCallback : DiffUtil.ItemCallback<DistressCallItem>() {
+        override fun areItemsTheSame(oldItem: DistressCallItem, newItem: DistressCallItem): Boolean =
+            oldItem.call.id == newItem.call.id && oldItem.call.id != null
 
-        override fun areContentsTheSame(oldItem: DistressCallData, newItem: DistressCallData): Boolean =
+        override fun areContentsTheSame(oldItem: DistressCallItem, newItem: DistressCallItem): Boolean =
             oldItem == newItem
     }
 
@@ -40,42 +42,52 @@ class DistressCallAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
-        holder.tvAlias.text = item.alias
-        holder.tvAddress.text = item.address
+        val call = item.call
+        val distressId = call.id
+        val verified = distressId != null && isVerified(distressId)
+        val intervening = distressId != null && isIntervening(distressId)
+        val context = holder.itemView.context
+
+        holder.tvAlias.text = call.alias
+        holder.tvAddress.text = if (verified) {
+            call.address ?: context.getString(R.string.distress_address_unknown)
+        } else {
+            context.getString(R.string.distress_address_hidden)
+        }
+
+        val distanceLabel = item.distanceMeters?.let { DistanceUtils.formatDistanceMeters(it) }
+            ?: context.getString(R.string.distress_distance_unknown)
+        val elapsedLabel = context.getString(
+            R.string.distress_elapsed_ago,
+            ElapsedTimeFormatter.formatElapsedSeconds(item.elapsedSeconds),
+        )
+        holder.tvMeta.text = context.getString(R.string.distress_meta_format, distanceLabel, elapsedLabel)
+
         holder.itemView.setOnClickListener { onItemClick(item) }
 
-        if (position == selectedPosition) {
-            holder.itemView.setBackgroundColor(
-                ContextCompat.getColor(holder.itemView.context, R.color.color_success)
-            )
-            holder.btnDistressCall.setImageResource(R.mipmap.ic_vigilantes_patrolling)
-            AppModeController.selectedDistressCall = position
-        } else {
-            holder.itemView.setBackgroundResource(android.R.color.transparent)
-            holder.btnDistressCall.setImageResource(R.mipmap.ic_launcher_round)
-        }
-
-        holder.btnDistressCall.setOnClickListener {
-            val currentPosition = holder.bindingAdapterPosition
-            if (currentPosition != RecyclerView.NO_POSITION) {
-                if (currentPosition == selectedPosition) {
-                    selectedPosition = -1
-                    AppModeController.selectedDistressCall = -1
-                    notifyItemChanged(currentPosition)
-                } else {
-                    val oldPosition = selectedPosition
-                    selectedPosition = currentPosition
-                    AppModeController.selectedDistressCall = currentPosition
-                    if (oldPosition != -1) {
-                        notifyItemChanged(oldPosition)
-                    }
-                    notifyItemChanged(currentPosition)
-                }
+        when {
+            intervening -> {
+                holder.itemView.setBackgroundColor(
+                    ContextCompat.getColor(context, R.color.color_success),
+                )
+                holder.btnDistressCall.setImageResource(R.mipmap.ic_vigilantes_patrolling)
+            }
+            verified -> {
+                holder.itemView.setBackgroundColor(
+                    ContextCompat.getColor(context, R.color.color_warning),
+                )
+                holder.btnDistressCall.setImageResource(R.mipmap.ic_launcher_round)
+            }
+            else -> {
+                holder.itemView.setBackgroundResource(android.R.color.transparent)
+                holder.btnDistressCall.setImageResource(R.mipmap.ic_launcher_round)
             }
         }
+
+        holder.btnDistressCall.setOnClickListener { onRespondClick(item) }
     }
 
-    fun updateDistressCalls(newList: List<DistressCallData>) {
+    fun updateItems(newList: List<DistressCallItem>) {
         submitList(newList)
     }
 }

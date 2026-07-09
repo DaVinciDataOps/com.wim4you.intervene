@@ -26,6 +26,8 @@ data class DistressLocationData (
     var fcmToken: String? = null,
     @PropertyName("active")
     var isActive: Boolean? = false,
+    @PropertyName("safeWordHash")
+    var safeWordHash: String? = null,
     @PropertyName("city")
     val city: String? = null,
     @PropertyName("country")

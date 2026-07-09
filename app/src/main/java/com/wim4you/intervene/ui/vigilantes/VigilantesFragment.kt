@@ -11,6 +11,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.wim4you.intervene.AppModeController
+import com.wim4you.intervene.R
 import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.databinding.FragmentVigilantesBinding
 import dagger.hilt.android.AndroidEntryPoint
@@ -54,7 +55,7 @@ class VigilantesFragment : Fragment() {
             val groupSize = binding.groupSizeInputEditText.text.toString().trim()
 
             if (groupName.isEmpty() || groupSize.isEmpty()) {
-                Toast.makeText(requireContext(), "Please fill all required fields", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), R.string.form_fill_required_fields, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -70,7 +71,7 @@ class VigilantesFragment : Fragment() {
             )
             viewModel.saveData(vigilanteData)
             AppModeController.vigilante = vigilanteData
-            Toast.makeText(requireContext(), "Data saved successfully", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), R.string.form_data_saved, Toast.LENGTH_SHORT).show()
         }
     }
 

@@ -4,6 +4,7 @@ import com.firebase.geofire.GeoFireUtils
 import com.firebase.geofire.GeoLocation
 import com.wim4you.intervene.data.AddressData
 import com.wim4you.intervene.data.PersonData
+import com.wim4you.intervene.helpers.SafeWordHasher
 
 object DataMappings {
     fun toDistressDataMap(
@@ -27,6 +28,7 @@ object DataMappings {
 
         if (init) {
             distressDataMap["startTime"] = System.currentTimeMillis()
+            distressDataMap["safeWordHash"] = SafeWordHasher.hash(personData.safeWord)
         }
 
         return distressDataMap

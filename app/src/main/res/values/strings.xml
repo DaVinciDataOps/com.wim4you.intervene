@@ -77,6 +77,47 @@
     <string name="route_directions_http_error">Directions request failed (HTTP %1$d)</string>
     <string name="route_destination_last_used">Last used: %1$s</string>
 
+    <string name="safe_word_dialog_title">Enter safe word</string>
+    <string name="safe_word_dialog_message">Enter the safe word for %1$s to view their location and respond.</string>
+    <string name="safe_word_cancel_title">Confirm distress cancellation</string>
+    <string name="safe_word_cancel_message">Enter your safe word to cancel the distress call.</string>
+    <string name="safe_word_confirm">Confirm</string>
+    <string name="safe_word_required">Safe word is required</string>
+    <string name="safe_word_incorrect">Incorrect safe word</string>
+    <string name="patrol_required_to_intervene">Start patrolling before responding to a distress call</string>
+    <string name="intervention_registered">You are responding to %1$s</string>
+    <string name="intervention_failed">Could not register your response. Please try again.</string>
+    <string name="distress_address_hidden">Address hidden — enter safe word to view</string>
+    <string name="distress_address_unknown">Unknown address</string>
+
+    <string name="panic_press_remaining">Press %1$d times to activate distress</string>
+    <string name="panic_press_more">Press %1$d more time(s)</string>
+    <string name="panic_person_data_missing">Register your profile before activating distress</string>
+    <string name="panic_sending_distress">Sending distress notification…</string>
+    <string name="error_no_network_distress">No internet connection — distress may not reach others</string>
+    <string name="error_no_network_route">No internet connection — cannot plan route</string>
+    <string name="error_no_location_permission">Location permission is required</string>
+    <string name="error_location_failed">Could not get your location</string>
+    <string name="status_offline">No internet connection</string>
+    <string name="status_no_location_permission">Location permission required for map and distress features</string>
+    <string name="route_destination_not_found">Could not find that destination</string>
+    <string name="snackbar_no_distress_calls">No distress calls nearby</string>
+    <string name="snackbar_distress_entry">%1$s: %2$s at %3$s</string>
+    <string name="map_marker_patrol">Patrol</string>
+    <string name="map_distress_snippet">Started %1$s (%2$s sec ago)</string>
+    <string name="form_fill_required_fields">Please fill all required fields</string>
+    <string name="form_data_saved">Data saved successfully</string>
+    <string name="distress_list_empty">No active distress calls nearby</string>
+    <string name="distress_respond">Respond to distress call</string>
+    <string name="distress_distance_unknown">Distance unknown</string>
+    <string name="distress_elapsed_ago">%1$s ago</string>
+    <string name="distress_meta_format">%1$s · %2$s</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_patrol_alert_sound">Play sound for new distress calls while patrolling</string>
+    <string name="settings_about">About</string>
+    <string name="settings_privacy_summary">Your phone number, email, and safe word are stored only on this device. During distress, only a hashed safe word and your alias are shared with responders.</string>
+
 
     <string-array name="gender_options">
         <item>Male</item>

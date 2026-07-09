@@ -77,6 +77,48 @@
     <string name="route_directions_http_error">Routeverzoek mislukt (HTTP %1$d)</string>
     <string name="route_destination_last_used">Laatst gebruikt: %1$s</string>
 
+    <string name="safe_word_dialog_title">Voer veilig woord in</string>
+    <string name="safe_word_dialog_message">Voer het veilig woord in voor %1$s om de locatie te bekijken en te reageren.</string>
+    <string name="safe_word_cancel_title">Noodoproep annuleren bevestigen</string>
+    <string name="safe_word_cancel_message">Voer je veilig woord in om de noodoproep te annuleren.</string>
+    <string name="safe_word_confirm">Bevestigen</string>
+    <string name="safe_word_required">Veilig woord is verplicht</string>
+    <string name="safe_word_incorrect">Onjuist veilig woord</string>
+    <string name="patrol_required_to_intervene">Start met patrouilleren voordat je op een noodoproep reageert</string>
+    <string name="intervention_registered">Je reageert op %1$s</string>
+    <string name="intervention_failed">Kon je reactie niet registreren. Probeer het opnieuw.</string>
+    <string name="distress_address_hidden">Adres verborgen — voer veilig woord in om te bekijken</string>
+    <string name="distress_address_unknown">Onbekend adres</string>
+
+    <string name="panic_press_remaining">Druk %1$d keer om noodmodus te activeren</string>
+    <string name="panic_press_more">Nog %1$d keer indrukken</string>
+    <string name="panic_person_data_missing">Registreer je profiel voordat je noodmodus activeert</string>
+    <string name="panic_sending_distress">Noodmelding verzenden…</string>
+    <string name="error_no_network_distress">Geen internetverbinding — noodmelding bereikt mogelijk anderen niet</string>
+    <string name="error_no_network_route">Geen internetverbinding — route kan niet worden gepland</string>
+    <string name="error_no_location_permission">Locatietoestemming is vereist</string>
+    <string name="error_location_failed">Kon je locatie niet ophalen</string>
+    <string name="status_offline">Geen internetverbinding</string>
+    <string name="status_no_location_permission">Locatietoestemming vereist voor kaart- en noodfuncties</string>
+    <string name="route_destination_not_found">Kon die bestemming niet vinden</string>
+    <string name="snackbar_no_distress_calls">Geen noodoproepen in de buurt</string>
+    <string name="snackbar_distress_entry">%1$s: %2$s om %3$s</string>
+    <string name="map_marker_patrol">Patrouille</string>
+    <string name="map_distress_snippet">Gestart %1$s (%2$s sec geleden)</string>
+    <string name="form_fill_required_fields">Vul alle verplichte velden in</string>
+    <string name="form_data_saved">Gegevens opgeslagen</string>
+    <string name="distress_list_empty">Geen actieve noodoproepen in de buurt</string>
+    <string name="distress_respond">Reageren op noodoproep</string>
+    <string name="distress_distance_unknown">Afstand onbekend</string>
+    <string name="distress_elapsed_ago">%1$s geleden</string>
+    <string name="distress_meta_format">%1$s · %2$s</string>
+    <string name="settings_appearance">Weergave</string>
+    <string name="settings_notifications">Meldingen</string>
+    <string name="settings_patrol_alert_sound">Geluid afspelen bij nieuwe noodoproepen tijdens patrouille</string>
+    <string name="settings_about">Over</string>
+    <string name="settings_privacy_summary">Je telefoonnummer, e-mail en veilig woord worden alleen op dit apparaat opgeslagen. Tijdens een noodmelding worden alleen een gehasht veilig woord en je alias gedeeld met hulpverleners.</string>
+
+
     <string-array name="gender_options">
         <item>Man</item>
         <item>Vrouw</item>

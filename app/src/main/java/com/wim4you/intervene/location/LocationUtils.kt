@@ -20,6 +20,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.model.LatLng
 import com.wim4you.intervene.LocationUpdateWorker
+import com.wim4you.intervene.R
 import java.util.concurrent.TimeUnit
 
 object LocationUtils {
@@ -53,7 +54,7 @@ object LocationUtils {
                     } ?: callback(null)
                 }.addOnFailureListener { e ->
                     Log.e("MapError", "Failed to get location: ${e.message}")
-                    Toast.makeText(context, "Failed getting your location!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, R.string.error_location_failed, Toast.LENGTH_SHORT).show()
                     callback(null)
                 }
         } else {

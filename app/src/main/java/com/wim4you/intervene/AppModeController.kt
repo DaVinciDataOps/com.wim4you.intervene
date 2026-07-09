@@ -8,8 +8,10 @@ import com.google.firebase.Firebase
 import com.google.firebase.database.database
 import com.wim4you.intervene.data.PersonData
 import com.wim4you.intervene.data.VigilanteData
+import com.wim4you.intervene.distress.DistressMessagingManager
 import com.wim4you.intervene.distress.DistressService
 import com.wim4you.intervene.distress.DistressSoundService
+import com.wim4you.intervene.helpers.ServiceUtils
 import com.wim4you.intervene.location.PatrolService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -38,7 +40,6 @@ object AppModeController {
     var isDistressActive: Boolean = false
         private set
 
-    var selectedDistressCall: Int = -1
     var vigilante: VigilanteData? = null
     var person: PersonData? = null
     var snackBarMessage: String = ""
@@ -84,6 +85,7 @@ object AppModeController {
         isPatrolling = true
         persistState()
         startPatrolService(context)
+        DistressMessagingManager.subscribeToTopic(context.applicationContext)
         return true
     }
 
@@ -91,6 +93,7 @@ object AppModeController {
         isPatrolling = false
         persistState()
         stopPatrolService(context)
+        DistressMessagingManager.unsubscribeFromTopic(context.applicationContext)
     }
 
     fun activateDistress(context: Context) {
@@ -152,6 +155,31 @@ object AppModeController {
             context.startForegroundService(intent)
         } else {
             context.startService(intent)
+        }
+    }
+
+    /**
+     * Restarts foreground services that should be running based on persisted mode flags.
+     * Call after the app process was killed while patrol or distress mode was active.
+     */
+    fun reconcileServices(context: Context) {
+        val appContext = context.applicationContext
+        if (isPatrolling) {
+            DistressMessagingManager.subscribeToTopic(appContext)
+            if (!ServiceUtils.isServiceRunning(appContext, PatrolService::class.java)) {
+                Log.i(TAG, "Restarting PatrolService after process recovery")
+                startPatrolService(appContext)
+            }
+        }
+        if (isDistressActive) {
+            if (!ServiceUtils.isServiceRunning(appContext, DistressService::class.java)) {
+                Log.i(TAG, "Restarting DistressService after process recovery")
+                startDistressService(appContext)
+            }
+            if (!ServiceUtils.isServiceRunning(appContext, DistressSoundService::class.java)) {
+                Log.i(TAG, "Restarting DistressSoundService after process recovery")
+                DistressSoundService.start(appContext)
+            }
         }
     }
 }

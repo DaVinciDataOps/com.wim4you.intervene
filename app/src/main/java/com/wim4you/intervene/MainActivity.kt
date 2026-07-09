@@ -36,6 +36,7 @@ import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.repository.MapLocationRepository
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
+import com.wim4you.intervene.ui.distresscall.SafeWordDialog
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -116,11 +117,17 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
+        AppModeController.reconcileServices(this)
+
         if (PermissionsUtils.hasForegroundLocationPermission(this)) {
             startLocationTrackerService(this)
             requestBackgroundLocationIfNeeded()
         } else {
             promptForForegroundLocation()
+        }
+
+        if (AppModeController.isPatrolling || AppModeController.isGuidedTrip || AppModeController.isDistressActive) {
+            updateScreenKeepOn(true)
         }
 
         if (AppModeController.isPatrolling) {
@@ -146,11 +153,7 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_stop_distress -> {
-                    lifecycleScope.launch {
-                        AppModeController.deactivateDistress(this@MainActivity)
-                        mapLocationRepository.clearOwnDistress()
-                        navController.navigate(R.id.nav_home)
-                    }
+                    confirmCancelDistress(navController)
                     true
                 }
                 else -> {
@@ -298,8 +301,34 @@ class MainActivity : AppCompatActivity() {
 
     private fun onForegroundLocationGranted() {
         startLocationTrackerService(this)
+        AppModeController.reconcileServices(this)
         locationPermissionListeners.forEach { it.onForegroundLocationGranted() }
         requestBackgroundLocationIfNeeded()
+    }
+
+    private fun confirmCancelDistress(navController: androidx.navigation.NavController) {
+        SafeWordDialog.show(
+            context = this,
+            title = getString(R.string.safe_word_cancel_title),
+            message = getString(R.string.safe_word_cancel_message),
+        ) { safeWord ->
+            lifecycleScope.launch {
+                val person = AppModeController.person ?: personStore.fetch()
+                if (person == null) {
+                    Toast.makeText(this@MainActivity, R.string.safe_word_incorrect, Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                if (person.safeWord.trim() != safeWord.trim()) {
+                    Toast.makeText(this@MainActivity, R.string.safe_word_incorrect, Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                AppModeController.deactivateDistress(this@MainActivity)
+                mapLocationRepository.clearOwnDistress()
+                updateScreenKeepOn(false)
+                refreshDrawerMenu(binding.navView)
+                navController.navigate(R.id.nav_home)
+            }
+        }
     }
 
     private fun requestBackgroundLocationIfNeeded() {
@@ -379,7 +408,8 @@ class MainActivity : AppCompatActivity() {
         bindOverflowSwitchListeners(darkSwitch, systemSwitch)
 
         settingsItem.setOnClickListener {
-            // Settings placeholder — popup stays open until user taps outside
+            overflowPopup?.dismiss()
+            findNavController(R.id.nav_host_fragment_content_main).navigate(R.id.nav_settings)
         }
 
         aboutItem.setOnClickListener {

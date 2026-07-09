@@ -6,18 +6,6 @@
     android:layout_height="match_parent"
     android:background="?android:attr/colorBackground"
     tools:context=".ui.home.HomeFragment">
-        android:id="@+id/guideline_h"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.02" />
-
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline_v"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.00" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/panicButton"
@@ -36,21 +24,56 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/panicProgressText" />
+
+    <TextView
+        android:id="@+id/panicProgressText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:textAppearance="?attr/textAppearanceBody2"
+        android:textColor="?android:attr/textColorSecondary"
+        android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/googleMap"
-        />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/panicButton"
+        tools:text="Press 2 more times"
+        tools:visibility="visible" />
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/googleMap"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/panicButton"
-        app:layout_constraintVertical_bias="1.0" />
+        app:layout_constraintTop_toBottomOf="@id/panicProgressText" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/statusBanner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="@color/color_warning"
+        app:cardElevation="4dp"
+        app:layout_constraintEnd_toEndOf="@id/googleMap"
+        app:layout_constraintStart_toStartOf="@id/googleMap"
+        app:layout_constraintTop_toTopOf="@id/googleMap"
+        tools:visibility="visible">
+
+        <TextView
+            android:id="@+id/statusBannerText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:textAppearance="?attr/textAppearanceBody2"
+            android:textColor="@color/white"
+            tools:text="No internet connection" />
+    </com.google.android.material.card.MaterialCardView>
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/routeCard"
@@ -61,7 +84,8 @@
         app:cardElevation="6dp"
         app:layout_constraintEnd_toEndOf="@id/googleMap"
         app:layout_constraintStart_toStartOf="@id/googleMap"
-        app:layout_constraintTop_toTopOf="@id/googleMap">
+        app:layout_constraintTop_toBottomOf="@id/statusBanner"
+        app:layout_constraintVertical_bias="0">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -142,6 +166,6 @@
         android:text="@string/route_add_destination"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="@id/googleMap"
-        app:layout_constraintTop_toTopOf="@id/googleMap" />
+        app:layout_constraintTop_toBottomOf="@id/statusBanner" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

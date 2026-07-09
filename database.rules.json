@@ -19,6 +19,14 @@
       "$entryId": {
         ".write": "auth != null && newData.child('personData').child('id').val() == auth.uid"
       }
+    },
+    "intervening": {
+      ".read": "auth != null",
+      "$distressId": {
+        "$vigilanteUid": {
+          ".write": "auth != null && auth.uid == $vigilanteUid"
+        }
+      }
     }
   }
 }
