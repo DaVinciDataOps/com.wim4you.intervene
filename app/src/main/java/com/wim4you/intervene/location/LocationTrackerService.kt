@@ -204,6 +204,16 @@ class LocationTrackerService : Service() {
                             )
                         }
                     }
+                    if (AppModeController.isDistressActive) {
+                        val person = AppModeController.person
+                        if (person != null) {
+                            mapLocationRepository.ensureOwnDistress(
+                                person,
+                                location.latitude,
+                                location.longitude,
+                            )
+                        }
+                    }
                     ensurePatrolQuery(userLocation)
                     ensureDistressQuery(userLocation)
                 }
@@ -286,7 +296,7 @@ class LocationTrackerService : Service() {
             return
         }
         distressLocationData?.let { distress ->
-            distress.id = distress.personId
+            distress.id = dataSnapshot.key
             distress.l = listOf(location.latitude, location.longitude)
             val index = distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
             if (index == -1) {

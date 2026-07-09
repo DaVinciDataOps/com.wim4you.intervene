@@ -37,6 +37,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 import java.util.Locale
 
 class DistressService : Service() {
@@ -114,18 +116,20 @@ class DistressService : Service() {
 
         distressJob?.cancel()
         distressJob = coroutineScope.launch {
-            var location = LocationProvider.getLastLocation()
-            location?.let {
-                val geoLocation = GeoLocation(location.latitude, location.longitude)
-                sendDistressToHistory(personData, firebaseUid, geoLocation)
-            }
-
+            var initialDistressSent = false
             while (isActive && AppModeController.isDistressActive) {
                 try {
-                    location = LocationProvider.getLastLocation()
+                    val location = LocationProvider.getLastLocation()
+                        ?: getLastKnownLocationFallback()
                     location?.let {
                         val geoLocation = GeoLocation(it.latitude, it.longitude)
-                        sendStartDistressToFirebase(personData, firebaseUid, false, geoLocation)
+                        if (!initialDistressSent) {
+                            sendDistressToHistory(personData, firebaseUid, geoLocation)
+                            sendStartDistressToFirebase(personData, firebaseUid, true, geoLocation)
+                            initialDistressSent = true
+                        } else {
+                            sendStartDistressToFirebase(personData, firebaseUid, false, geoLocation)
+                        }
                     }
                     delay(15_000)
                 }
@@ -137,6 +141,13 @@ class DistressService : Service() {
             }
         }
     }
+
+    private suspend fun getLastKnownLocationFallback(): android.location.Location? =
+        suspendCancellableCoroutine { continuation ->
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location -> continuation.resume(location) }
+                .addOnFailureListener { continuation.resume(null) }
+        }
 
     private fun sendStartDistressToFirebase(
         personData: PersonData,

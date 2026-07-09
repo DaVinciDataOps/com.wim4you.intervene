@@ -1,6 +1,7 @@
 package com.wim4you.intervene.repository
 
 import com.wim4you.intervene.data.DistressCallData
+import com.wim4you.intervene.data.PersonData
 import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.fbdata.PatrolLocationData
@@ -18,6 +19,8 @@ class MapLocationRepository @Inject constructor() {
     private val _distressCalls = MutableStateFlow<List<DistressCallData>>(emptyList())
     private var remotePatrols: List<PatrolLocationData> = emptyList()
     private var ownPatrol: PatrolLocationData? = null
+    private var remoteDistress: List<DistressLocationData> = emptyList()
+    private var ownDistress: DistressLocationData? = null
 
     val patrolLocations: StateFlow<List<PatrolLocationData>> = _patrolLocations.asStateFlow()
     val distressLocations: StateFlow<List<DistressLocationData>> = _distressLocations.asStateFlow()
@@ -72,8 +75,56 @@ class MapLocationRepository @Inject constructor() {
     }
 
     fun updateDistressLocations(locations: List<DistressLocationData>) {
-        _distressLocations.value = locations
-        _distressCalls.value = locations.map { it.toDistressCallData() }
+        remoteDistress = locations
+        publishMergedDistress()
+    }
+
+    fun setOwnDistress(person: PersonData, latitude: Double, longitude: Double) {
+        val startTime = System.currentTimeMillis()
+        ownDistress = DistressLocationData(
+            id = person.id,
+            personId = person.id,
+            alias = person.alias,
+            address = null,
+            l = listOf(latitude, longitude),
+            startTime = startTime,
+            time = startTime,
+            isActive = true,
+        )
+        publishMergedDistress()
+    }
+
+    fun updateOwnDistressLocation(latitude: Double, longitude: Double) {
+        val current = ownDistress ?: return
+        ownDistress = current.copy(
+            l = listOf(latitude, longitude),
+            time = System.currentTimeMillis(),
+        )
+        publishMergedDistress()
+    }
+
+    fun ensureOwnDistress(person: PersonData, latitude: Double, longitude: Double) {
+        if (ownDistress == null) {
+            setOwnDistress(person, latitude, longitude)
+        } else {
+            updateOwnDistressLocation(latitude, longitude)
+        }
+    }
+
+    fun clearOwnDistress() {
+        ownDistress = null
+        publishMergedDistress()
+    }
+
+    private fun publishMergedDistress() {
+        val own = ownDistress
+        val merged = if (own == null) {
+            remoteDistress
+        } else {
+            remoteDistress.filter { it.personId != own.personId } + own
+        }
+        _distressLocations.value = merged
+        _distressCalls.value = merged.map { it.toDistressCallData() }
     }
 
     private fun DistressLocationData.toDistressCallData() = DistressCallData(

@@ -29,6 +29,7 @@ import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.wim4you.intervene.databinding.ActivityMainBinding
+import com.wim4you.intervene.data.PersonData
 import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.location.LocationTrackerService
 import com.wim4you.intervene.location.LocationUtils
@@ -126,6 +127,10 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch { restorePatrolMarkerIfNeeded() }
         }
 
+        if (AppModeController.isDistressActive) {
+            lifecycleScope.launch { restoreDistressMarkerIfNeeded() }
+        }
+
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.nav_startstop_guided_trip -> {
@@ -143,6 +148,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_stop_distress -> {
                     lifecycleScope.launch {
                         AppModeController.deactivateDistress(this@MainActivity)
+                        mapLocationRepository.clearOwnDistress()
                         navController.navigate(R.id.nav_home)
                     }
                     true
@@ -171,6 +177,7 @@ class MainActivity : AppCompatActivity() {
     private suspend fun toggleGuidedTrip(navView: NavigationView, navController: androidx.navigation.NavController) {
         if (AppModeController.isGuidedTrip) {
             AppModeController.stopGuidedTrip(this)
+            mapLocationRepository.clearOwnDistress()
             updateScreenKeepOn(false)
         } else {
             val person = personStore.fetch()
@@ -223,6 +230,24 @@ class MainActivity : AppCompatActivity() {
         val vigilante = AppModeController.vigilante ?: vigilanteStore.fetch() ?: return
         AppModeController.vigilante = vigilante
         publishOwnPatrolMarker(vigilante)
+    }
+
+    private suspend fun restoreDistressMarkerIfNeeded() {
+        val person = AppModeController.person ?: personStore.fetch() ?: return
+        AppModeController.person = person
+        publishOwnDistressMarker(person)
+    }
+
+    private fun publishOwnDistressMarker(person: PersonData) {
+        LocationUtils.setLocation(this) { latLng ->
+            if (latLng != null) {
+                mapLocationRepository.setOwnDistress(
+                    person = person,
+                    latitude = latLng.latitude,
+                    longitude = latLng.longitude,
+                )
+            }
+        }
     }
 
     private fun refreshDrawerMenu(navView: NavigationView) {

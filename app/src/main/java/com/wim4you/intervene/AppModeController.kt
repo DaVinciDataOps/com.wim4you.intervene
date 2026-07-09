@@ -6,6 +6,7 @@ import android.os.Build
 import android.util.Log
 import com.google.firebase.Firebase
 import com.google.firebase.database.database
+import com.wim4you.intervene.data.PersonData
 import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.distress.DistressService
 import com.wim4you.intervene.distress.DistressSoundService
@@ -39,6 +40,7 @@ object AppModeController {
 
     var selectedDistressCall: Int = -1
     var vigilante: VigilanteData? = null
+    var person: PersonData? = null
     var snackBarMessage: String = ""
     private var appContext: Context? = null
 

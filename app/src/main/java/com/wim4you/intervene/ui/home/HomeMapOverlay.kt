@@ -93,7 +93,7 @@ class HomeMapOverlay(
     }
 
     fun updateDistressMarkers(distressDataList: List<DistressLocationData>): Boolean {
-        val currentIds = distressDataList.mapNotNull { it.id }.toSet()
+        val currentIds = distressDataList.mapNotNull { it.personId ?: it.id }.toSet()
         var hasNewMarkers = false
 
         distressMarkers.keys.filter { it !in currentIds }.forEach { id ->
@@ -104,7 +104,7 @@ class HomeMapOverlay(
         distressDataList.forEach { distressData ->
             distressData.l?.let { loc ->
                 val latLng = LatLng(loc[0], loc[1])
-                val markerId = distressData.id ?: return@let
+                val markerId = distressData.personId ?: distressData.id ?: return@let
                 val marker = distressMarkers[markerId]
                 if (marker == null) {
                     map.addMarker(

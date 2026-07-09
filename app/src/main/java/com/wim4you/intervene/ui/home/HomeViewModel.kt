@@ -5,8 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
 import com.wim4you.intervene.AppModeController
+import com.wim4you.intervene.location.LocationUtils
+import com.wim4you.intervene.data.PersonData
 import com.wim4you.intervene.repository.DestinationHistoryRepository
 import com.wim4you.intervene.repository.DestinationSuggestion
+import com.wim4you.intervene.repository.MapLocationRepository
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.route.RouteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,6 +24,7 @@ class HomeViewModel @Inject constructor(
     private val personDataRepository: PersonDataRepository,
     private val routeRepository: RouteRepository,
     private val destinationHistoryRepository: DestinationHistoryRepository,
+    private val mapLocationRepository: MapLocationRepository,
 ) : ViewModel() {
 
     private val _distressMessage = MutableStateFlow<String?>(null)
@@ -63,8 +67,22 @@ class HomeViewModel @Inject constructor(
                 return@launch
             }
 
+            AppModeController.person = personData
             AppModeController.activateDistress(activity)
+            publishOwnDistressMarker(activity, personData)
             _distressMessage.value = "Sending distress notification..."
+        }
+    }
+
+    private fun publishOwnDistressMarker(activity: Activity, personData: PersonData) {
+        LocationUtils.setLocation(activity) { latLng ->
+            if (latLng != null) {
+                mapLocationRepository.setOwnDistress(
+                    person = personData,
+                    latitude = latLng.latitude,
+                    longitude = latLng.longitude,
+                )
+            }
         }
     }
 
