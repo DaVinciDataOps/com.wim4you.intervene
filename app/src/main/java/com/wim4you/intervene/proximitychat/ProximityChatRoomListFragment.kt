@@ -172,6 +172,9 @@ class ProximityChatRoomListFragment : Fragment() {
     private fun showError(key: String) {
         val messageRes = when (key) {
             "location_unavailable" -> R.string.chat_error_location
+            "auth_anonymous_disabled" -> R.string.chat_error_auth_anonymous_disabled
+            "auth_network" -> R.string.chat_error_auth_network
+            "auth_rate_limited" -> R.string.chat_error_auth_rate_limited
             "auth_failed" -> R.string.chat_error_auth
             "profile_failed" -> R.string.chat_error_profile
             "presence_failed" -> R.string.chat_error_presence

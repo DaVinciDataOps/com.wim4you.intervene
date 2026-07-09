@@ -4,6 +4,7 @@ import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wim4you.intervene.AppModeController
+import com.wim4you.intervene.FirebaseAuthManager
 import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.ProximityChatRepository
@@ -54,7 +55,12 @@ class ProximityChatRoomListViewModel @Inject constructor(
                 chatRepository.ensureAuthenticated()
             } catch (exception: Exception) {
                 SecureLog.e(TAG, "Failed to authenticate for proximity chat", exception)
-                _uiState.update { it.copy(isLoading = false, errorMessage = "auth_failed") }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = FirebaseAuthManager.authFailureKey(exception),
+                    )
+                }
                 return@launch
             }
 

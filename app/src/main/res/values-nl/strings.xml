@@ -150,6 +150,9 @@
     <string name="chat_mic_permission_required">Microfoontoestemming is nodig voor spraakberichten</string>
     <string name="chat_error_location">Kon je locatie niet bepalen voor chat in de buurt</string>
     <string name="chat_error_auth">Kon niet aanmelden voor chat. Controleer je internetverbinding en of anonieme aanmelding is ingeschakeld in Firebase.</string>
+    <string name="chat_error_auth_anonymous_disabled">Anonieme aanmelding is uitgeschakeld. Schakel dit in via Firebase Console → Authentication → Sign-in method → Anonymous.</string>
+    <string name="chat_error_auth_network">Geen internetverbinding. Chat-aanmelding vereist netwerktoegang.</string>
+    <string name="chat_error_auth_rate_limited">Te veel aanmeldpogingen. Wacht even en probeer opnieuw.</string>
     <string name="chat_error_profile">Kon je profiel niet laden voor chat</string>
     <string name="chat_error_presence">Kon je locatie niet publiceren voor chat in de buurt</string>
     <string name="chat_error_room">Kon chat niet openen</string>

@@ -150,6 +150,9 @@
     <string name="chat_mic_permission_required">Microphone permission is required for speech messages</string>
     <string name="chat_error_location">Could not determine your location for nearby chat</string>
     <string name="chat_error_auth">Could not sign in to chat. Check your internet connection and that Anonymous sign-in is enabled in Firebase.</string>
+    <string name="chat_error_auth_anonymous_disabled">Anonymous sign-in is disabled. Enable it in Firebase Console → Authentication → Sign-in method → Anonymous.</string>
+    <string name="chat_error_auth_network">No internet connection. Chat sign-in requires network access.</string>
+    <string name="chat_error_auth_rate_limited">Too many sign-in attempts. Wait a moment and try again.</string>
     <string name="chat_error_profile">Could not load your profile for chat</string>
     <string name="chat_error_presence">Could not publish your location for nearby chat</string>
     <string name="chat_error_room">Could not open chat</string>

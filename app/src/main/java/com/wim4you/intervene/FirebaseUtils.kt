@@ -10,6 +10,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 object FirebaseUtils {
 
@@ -21,6 +23,7 @@ object FirebaseUtils {
         installAppCheck()
         initScope.launch {
             try {
+                awaitAppCheckToken()
                 FirebaseAuthManager.ensureSignedIn()
             } catch (exception: Exception) {
                 Log.e(TAG, "Anonymous sign-in failed during initialization", exception)
@@ -29,7 +32,27 @@ object FirebaseUtils {
     }
 
     suspend fun ensureReady(): String {
+        awaitAppCheckToken()
         return FirebaseAuthManager.ensureSignedIn()
+    }
+
+    private suspend fun awaitAppCheckToken() {
+        suspendCancellableCoroutine { continuation ->
+            FirebaseAppCheck.getInstance()
+                .getAppCheckToken(false)
+                .addOnSuccessListener {
+                    SecureLog.d(TAG, "App Check token ready")
+                    continuation.resume(Unit)
+                }
+                .addOnFailureListener { error ->
+                    SecureLog.e(
+                        TAG,
+                        "App Check token failed. In debug builds, register the debug token from Logcat in Firebase Console → App Check.",
+                        error,
+                    )
+                    continuation.resume(Unit)
+                }
+        }
     }
 
     private fun installAppCheck() {
