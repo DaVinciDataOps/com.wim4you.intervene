@@ -35,4 +35,16 @@
         android:label="@string/action_settings"
         tools:layout="@layout/fragment_settings" />
 
+    <fragment
+        android:id="@+id/nav_proximity_chat"
+        android:name="com.wim4you.intervene.proximitychat.ProximityChatRoomListFragment"
+        android:label="@string/menu_proximity_chat"
+        tools:layout="@layout/fragment_proximity_chat_rooms" />
+
+    <fragment
+        android:id="@+id/nav_proximity_chat_conversation"
+        android:name="com.wim4you.intervene.proximitychat.ProximityChatConversationFragment"
+        android:label="@string/menu_proximity_chat"
+        tools:layout="@layout/fragment_proximity_chat_conversation" />
+
 </navigation>

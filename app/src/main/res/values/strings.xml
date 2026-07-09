@@ -121,6 +121,40 @@
     <string name="settings_anonymous_auth_notice">This app uses anonymous sign-in. Reinstalling the app creates a new identity and cannot restore your previous account.</string>
     <string name="settings_api_key_notice">Restrict your Google Maps and Directions API keys in Google Cloud Console to this app\'s package name and signing certificate.</string>
 
+    <string name="menu_proximity_chat">Nearby Chat</string>
+    <string name="chat_proximity_radius">People within %1$.0f km</string>
+    <string name="chat_active_chats">Active chats</string>
+    <string name="chat_nearby_people">Nearby people</string>
+    <string name="chat_nearby_hint">Tap to start a 1-on-1 chat. Long-press to select multiple people for a group chat.</string>
+    <string name="chat_no_active_chats">No active chats yet</string>
+    <string name="chat_no_nearby_users">No one nearby is available for chat right now</string>
+    <string name="chat_distance_unknown">Distance unknown</string>
+    <string name="chat_selected_count">%1$d selected</string>
+    <string name="chat_clear_selection">Clear</string>
+    <string name="chat_create_group">Create group</string>
+    <string name="chat_create_group_title">Create group chat</string>
+    <string name="chat_create_group_confirm">Create</string>
+    <string name="chat_group_name_hint">Group name</string>
+    <string name="chat_default_group_name">Nearby group</string>
+    <string name="chat_direct_label">Direct</string>
+    <string name="chat_group_label">Group · %1$d people</string>
+    <string name="chat_room_meta">%1$s · %2$s</string>
+    <string name="chat_message_hint">Type a message</string>
+    <string name="chat_send_message">Send message</string>
+    <string name="chat_speak_message">Speak message</string>
+    <string name="chat_play_message">Play message aloud</string>
+    <string name="chat_read_aloud">Read new messages aloud</string>
+    <string name="chat_listening">Listening…</string>
+    <string name="chat_you">You</string>
+    <string name="chat_speech_badge">🎤</string>
+    <string name="chat_mic_permission_required">Microphone permission is required for speech messages</string>
+    <string name="chat_error_location">Could not determine your location for nearby chat</string>
+    <string name="chat_error_auth">Could not sign in to chat</string>
+    <string name="chat_error_room">Could not open chat</string>
+    <string name="chat_error_load">Could not load chat messages</string>
+    <string name="chat_error_send">Could not send message</string>
+    <string name="chat_error_generic">Something went wrong with chat</string>
+
 
     <string-array name="gender_options">
         <item>Male</item>
