@@ -4,14 +4,16 @@
       ".read": "auth != null",
       ".indexOn": ["g"],
       "$uid": {
-        ".write": "auth != null && auth.uid == $uid"
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.child('active').val() == false || (newData.child('active').val() == true && newData.child('l').exists() && newData.child('g').exists() && newData.child('alias').isString())"
       }
     },
     "patrols": {
       ".read": "auth != null",
       ".indexOn": ["g"],
       "$uid": {
-        ".write": "auth != null && auth.uid == $uid"
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.child('active').val() == false || (newData.child('active').val() == true && newData.child('l').exists() && newData.child('g').exists())"
       }
     },
     "distress_history": {
@@ -24,7 +26,8 @@
       ".read": "auth != null",
       "$distressId": {
         "$vigilanteUid": {
-          ".write": "auth != null && auth.uid == $vigilanteUid"
+          ".write": "auth != null && auth.uid == $vigilanteUid",
+          ".validate": "newData.child('personId').val() == $distressId && newData.child('timestamp').isNumber()"
         }
       }
     }

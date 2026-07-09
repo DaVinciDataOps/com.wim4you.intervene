@@ -79,5 +79,33 @@
       android:text="@string/settings_privacy_summary"
       android:textAppearance="?attr/textAppearanceBody2" />
 
+    <View
+      android:layout_width="match_parent"
+      android:layout_height="1dp"
+      android:layout_marginVertical="16dp"
+      android:background="?android:attr/listDivider" />
+
+    <TextView
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:text="@string/settings_security"
+      android:textAppearance="?attr/textAppearanceSubtitle1"
+      android:textStyle="bold" />
+
+    <TextView
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="8dp"
+      android:text="@string/settings_anonymous_auth_notice"
+      android:textAppearance="?attr/textAppearanceBody2" />
+
+    <TextView
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="12dp"
+      android:text="@string/settings_api_key_notice"
+      android:textAppearance="?attr/textAppearanceBody2"
+      android:textColor="?android:attr/textColorSecondary" />
+
   </LinearLayout>
 </ScrollView>

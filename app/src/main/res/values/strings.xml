@@ -116,7 +116,10 @@
     <string name="settings_notifications">Notifications</string>
     <string name="settings_patrol_alert_sound">Play sound for new distress calls while patrolling</string>
     <string name="settings_about">About</string>
-    <string name="settings_privacy_summary">Your phone number, email, and safe word are stored only on this device. During distress, only a hashed safe word and your alias are shared with responders.</string>
+    <string name="settings_privacy_summary">Your phone number, email, and safe word are encrypted on this device. During distress, only a hashed safe word and your alias are shared with responders.</string>
+    <string name="settings_security">Security</string>
+    <string name="settings_anonymous_auth_notice">This app uses anonymous sign-in. Reinstalling the app creates a new identity and cannot restore your previous account.</string>
+    <string name="settings_api_key_notice">Restrict your Google Maps and Directions API keys in Google Cloud Console to this app\'s package name and signing certificate.</string>
 
 
     <string-array name="gender_options">

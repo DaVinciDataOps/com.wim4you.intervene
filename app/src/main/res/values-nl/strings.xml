@@ -116,7 +116,10 @@
     <string name="settings_notifications">Meldingen</string>
     <string name="settings_patrol_alert_sound">Geluid afspelen bij nieuwe noodoproepen tijdens patrouille</string>
     <string name="settings_about">Over</string>
-    <string name="settings_privacy_summary">Je telefoonnummer, e-mail en veilig woord worden alleen op dit apparaat opgeslagen. Tijdens een noodmelding worden alleen een gehasht veilig woord en je alias gedeeld met hulpverleners.</string>
+    <string name="settings_privacy_summary">Je telefoonnummer, e-mail en veilig woord worden versleuteld op dit apparaat. Tijdens een noodmelding worden alleen een gehasht veilig woord en je alias gedeeld met hulpverleners.</string>
+    <string name="settings_security">Beveiliging</string>
+    <string name="settings_anonymous_auth_notice">Deze app gebruikt anonieme aanmelding. Bij herinstallatie krijg je een nieuwe identiteit en je vorige account kan niet worden hersteld.</string>
+    <string name="settings_api_key_notice">Beperk je Google Maps- en Directions API-sleutels in Google Cloud Console tot de pakketnaam en het ondertekeningscertificaat van deze app.</string>
 
 
     <string-array name="gender_options">

@@ -1,5 +1,7 @@
 package com.wim4you.intervene.route
 
+import android.net.Uri
+import com.wim4you.intervene.security.ApiKeyGuard
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.concurrent.TimeUnit
@@ -21,12 +23,24 @@ class DirectionsApiClient(
         destination: String,
         apiKey: String,
     ): HttpResponse {
-        val url = "https://maps.googleapis.com/maps/api/directions/json" +
-            "?origin=$origin&destination=$destination&mode=walking&key=$apiKey"
+        val encodedOrigin = Uri.encode(origin)
+        val encodedDestination = Uri.encode(destination)
+        val url = buildString {
+            append("https://maps.googleapis.com/maps/api/directions/json")
+            append("?origin=").append(encodedOrigin)
+            append("&destination=").append(encodedDestination)
+            append("&mode=walking")
+            append("&key=").append(apiKey)
+        }
         val request = Request.Builder().url(url).get().build()
-        client.newCall(request).execute().use { response ->
-            val body = response.body?.string().orEmpty()
-            return HttpResponse(response.code, body)
+        return try {
+            client.newCall(request).execute().use { response ->
+                val body = response.body?.string().orEmpty()
+                HttpResponse(response.code, body)
+            }
+        } catch (exception: Exception) {
+            ApiKeyGuard.logDirectionsFailure("Directions request failed", url, exception)
+            throw exception
         }
     }
 }

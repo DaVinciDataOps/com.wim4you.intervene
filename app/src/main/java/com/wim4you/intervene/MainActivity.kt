@@ -37,6 +37,7 @@ import com.wim4you.intervene.repository.MapLocationRepository
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import com.wim4you.intervene.ui.distresscall.SafeWordDialog
+import com.wim4you.intervene.security.FirebaseDataRetention
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -118,6 +119,7 @@ class MainActivity : AppCompatActivity() {
         navView.setupWithNavController(navController)
 
         AppModeController.reconcileServices(this)
+        lifecycleScope.launch { FirebaseDataRetention.reconcileOwnEntries() }
 
         if (PermissionsUtils.hasForegroundLocationPermission(this)) {
             startLocationTrackerService(this)

@@ -26,6 +26,18 @@
 # Parcelable models used by map location updates
 -keep class com.wim4you.intervene.fbdata.** { *; }
 
+# Keep BuildConfig fields referenced by reflection-free code, but avoid leaking in stack traces
+-keepclassmembers class com.wim4you.intervene.BuildConfig {
+    public static final java.lang.String GOOGLE_DIRECTIONS_API_KEY;
+}
+
+# Strip verbose Android logging in release (errors still go through SecureLog in debug)
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+}
+
 # Add project specific ProGuard rules here.
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
