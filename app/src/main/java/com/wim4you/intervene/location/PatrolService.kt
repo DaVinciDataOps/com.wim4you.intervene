@@ -103,12 +103,13 @@ class PatrolService : Service() {
 
         patrolJob?.cancel()
         patrolJob = coroutineScope.launch {
+            var initialPatrolSent = false
             while (isActive && AppModeController.isPatrolling) {
                 try {
                     val location = LocationProvider.getLastLocation()
                         ?: getLastKnownLocationFallback()
-                    location?.let {
-                        val geoLocation = GeoLocation(it.latitude, it.longitude)
+                    if (location != null) {
+                        val geoLocation = GeoLocation(location.latitude, location.longitude)
 
                         val patrolLocationData = PatrolLocationData(
                             id = vigilanteData.id,
@@ -119,13 +120,16 @@ class PatrolService : Service() {
                             fcmToken = null // Replace with actual FCM token if needed
                         )
                         sendToFirebase(patrolLocationData, firebaseUid, geoLocation)
+                        initialPatrolSent = true
+                        delay(15_000)
+                    } else {
+                        delay(if (initialPatrolSent) 15_000 else 2_000)
                     }
-                    delay(15_000)
                 }
                 catch (e: Exception) {
                     Log.e("PatrolService", "Error getting patrol location: ${e.message}", e)
                     AppModeController.reportBackgroundFailure("Patrol update failed; retrying automatically.")
-                    delay(5_000)
+                    delay(if (initialPatrolSent) 5_000 else 2_000)
                 }
             }
         }

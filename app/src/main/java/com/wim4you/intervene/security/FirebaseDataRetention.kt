@@ -63,6 +63,12 @@ object FirebaseDataRetention {
         path: String,
         uid: String,
     ) {
+        if (path == "distress" && AppModeController.isDistressActive) return
+        if (path == "patrols" && AppModeController.isPatrolling) return
+        val snapshot = database.child(path).child(uid).getOnce()
+        if (!snapshot.exists()) return
+        if (path == "distress" && AppModeController.isDistressActive) return
+        if (path == "patrols" && AppModeController.isPatrolling) return
         database.child(path).child(uid).child("active").setValueOnce(false)
     }
 

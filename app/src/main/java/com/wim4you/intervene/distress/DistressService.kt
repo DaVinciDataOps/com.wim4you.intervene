@@ -12,7 +12,6 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import com.firebase.geofire.GeoFire
 import com.firebase.geofire.GeoLocation
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
@@ -46,7 +45,6 @@ class DistressService : Service() {
     private val channelId = Constants.DISTRESS_SERVICE_CHANNEL_ID
     private val notificationId = Constants.DISTRESS_SERVICE_NOTIFICATION_ID
     private val database = FirebaseDatabase.getInstance().reference
-    private val geoFire = GeoFire(database.child("distress"))
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var distressJob: Job? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -121,8 +119,8 @@ class DistressService : Service() {
                 try {
                     val location = LocationProvider.getLastLocation()
                         ?: getLastKnownLocationFallback()
-                    location?.let {
-                        val geoLocation = GeoLocation(it.latitude, it.longitude)
+                    if (location != null) {
+                        val geoLocation = GeoLocation(location.latitude, location.longitude)
                         if (!initialDistressSent) {
                             sendDistressToHistory(personData, firebaseUid, geoLocation)
                             sendStartDistressToFirebase(personData, firebaseUid, true, geoLocation)
@@ -130,13 +128,15 @@ class DistressService : Service() {
                         } else {
                             sendStartDistressToFirebase(personData, firebaseUid, false, geoLocation)
                         }
+                        delay(15_000)
+                    } else {
+                        delay(if (initialDistressSent) 15_000 else 2_000)
                     }
-                    delay(15_000)
                 }
                 catch (e: Exception) {
                     Log.e("DistressService", "Error getting location: ${e.message}")
                     AppModeController.reportBackgroundFailure("Distress update failed; retrying automatically.")
-                    delay(5_000)
+                    delay(if (initialDistressSent) 5_000 else 2_000)
                 }
             }
         }
@@ -156,14 +156,20 @@ class DistressService : Service() {
         geoLocation: GeoLocation,
     ) {
         val address = getAddress(geoLocation)
-        val distressDataMap = DataMappings.toDistressDataMap(personData, geoLocation, address, init)
+        val distressDataMap = DataMappings.toDistressDataMap(
+            personData,
+            firebaseUid,
+            geoLocation,
+            address,
+            init,
+        )
 
         if (init) {
             distressDataMap["startTime"] = System.currentTimeMillis()
         }
 
-        database.child("distress").child(firebaseUid).
-        updateChildren(distressDataMap)
+        database.child("distress").child(firebaseUid)
+            .updateChildren(distressDataMap)
             .addOnSuccessListener {
                 SecureLog.i("DistressService", "Distress location updated")
             }
@@ -179,7 +185,7 @@ class DistressService : Service() {
         geoLocation: GeoLocation,
     ) {
         val address = getAddress(geoLocation)
-        val distressDataMap = DataMappings.toDistressDataMap(personData, geoLocation, address)
+        val distressDataMap = DataMappings.toDistressDataMap(personData, firebaseUid, geoLocation, address)
         val personDataMap = mapOf(
             "id" to firebaseUid,
             "alias" to personData.alias,

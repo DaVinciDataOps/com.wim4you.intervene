@@ -79,11 +79,12 @@ class MapLocationRepository @Inject constructor() {
         publishMergedDistress()
     }
 
-    fun setOwnDistress(person: PersonData, latitude: Double, longitude: Double) {
+    fun setOwnDistress(person: PersonData, latitude: Double, longitude: Double, firebaseUid: String? = null) {
         val startTime = System.currentTimeMillis()
+        val distressId = firebaseUid ?: person.id
         ownDistress = DistressLocationData(
-            id = person.id,
-            personId = person.id,
+            id = distressId,
+            personId = distressId,
             alias = person.alias,
             address = null,
             l = listOf(latitude, longitude),
@@ -103,9 +104,14 @@ class MapLocationRepository @Inject constructor() {
         publishMergedDistress()
     }
 
-    fun ensureOwnDistress(person: PersonData, latitude: Double, longitude: Double) {
+    fun ensureOwnDistress(
+        person: PersonData,
+        latitude: Double,
+        longitude: Double,
+        firebaseUid: String? = null,
+    ) {
         if (ownDistress == null) {
-            setOwnDistress(person, latitude, longitude)
+            setOwnDistress(person, latitude, longitude, firebaseUid)
         } else {
             updateOwnDistressLocation(latitude, longitude)
         }
@@ -121,7 +127,8 @@ class MapLocationRepository @Inject constructor() {
         val merged = if (own == null) {
             remoteDistress
         } else {
-            remoteDistress.filter { it.personId != own.personId } + own
+            val ownId = own.id ?: own.personId
+            remoteDistress.filter { (it.id ?: it.personId) != ownId } + own
         }
         _distressLocations.value = merged
         _distressCalls.value = merged.map { it.toDistressCallData() }

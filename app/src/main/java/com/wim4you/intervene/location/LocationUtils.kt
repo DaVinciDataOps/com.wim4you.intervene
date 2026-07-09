@@ -69,6 +69,19 @@ object LocationUtils {
         }
     }
 
+    /**
+     * Requests a fresh location, falling back to the last known position when GPS is slow or unavailable.
+     */
+    fun resolveLocation(context: Context, callback: (LatLng?) -> Unit) {
+        setLocation(context) { latLng ->
+            if (latLng != null) {
+                callback(latLng)
+            } else {
+                getLocation(context, callback)
+            }
+        }
+    }
+
     fun setLocation(context: Context, callback: (LatLng?) -> Unit){
         val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
 

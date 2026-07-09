@@ -29,9 +29,9 @@ data class DistressLocationData (
     @PropertyName("safeWordHash")
     var safeWordHash: String? = null,
     @PropertyName("city")
-    val city: String? = null,
+    var city: String? = null,
     @PropertyName("country")
-    val country: String? = null,
+    var country: String? = null,
 ): Parcelable{
     constructor() : this(null, null, null, null, null, null, null)
 

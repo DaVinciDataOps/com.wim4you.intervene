@@ -5,10 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
 import com.wim4you.intervene.AppModeController
+import com.wim4you.intervene.FirebaseAuthManager
 import com.wim4you.intervene.R
 import com.wim4you.intervene.data.PersonData
 import com.wim4you.intervene.helpers.NetworkUtils
 import com.wim4you.intervene.location.LocationUtils
+import com.wim4you.intervene.distress.DistressFirebaseWriter
 import com.wim4you.intervene.repository.DestinationHistoryRepository
 import com.wim4you.intervene.repository.DestinationSuggestion
 import com.wim4you.intervene.repository.MapLocationRepository
@@ -95,25 +97,43 @@ class HomeViewModel @Inject constructor(
 
             AppModeController.person = personData
             AppModeController.activateDistress(activity)
-            publishOwnDistressMarker(activity, personData)
+            publishAndPushDistress(activity, personData)
             _distressMessage.value = UiMessage.Resource(R.string.panic_sending_distress)
+        }
+    }
+
+    private fun publishAndPushDistress(activity: Activity, personData: PersonData) {
+        LocationUtils.resolveLocation(activity) { latLng ->
+            if (latLng == null) return@resolveLocation
+            viewModelScope.launch {
+                val firebaseUid = try {
+                    FirebaseAuthManager.ensureSignedIn()
+                } catch (exception: Exception) {
+                    _distressMessage.value = UiMessage.Resource(R.string.error_no_network_distress)
+                    return@launch
+                }
+                mapLocationRepository.setOwnDistress(
+                    person = personData,
+                    latitude = latLng.latitude,
+                    longitude = latLng.longitude,
+                    firebaseUid = firebaseUid,
+                )
+                try {
+                    DistressFirebaseWriter.pushDistress(
+                        personData = personData,
+                        latitude = latLng.latitude,
+                        longitude = latLng.longitude,
+                        init = true,
+                    )
+                } catch (exception: Exception) {
+                    _distressMessage.value = UiMessage.Resource(R.string.error_no_network_distress)
+                }
+            }
         }
     }
 
     fun clearDistressMessage() {
         _distressMessage.value = null
-    }
-
-    private fun publishOwnDistressMarker(activity: Activity, personData: PersonData) {
-        LocationUtils.setLocation(activity) { latLng ->
-            if (latLng != null) {
-                mapLocationRepository.setOwnDistress(
-                    person = personData,
-                    latitude = latLng.latitude,
-                    longitude = latLng.longitude,
-                )
-            }
-        }
     }
 
     fun planRoute(destinationAddress: String, origin: LatLng, isOnline: Boolean) {

@@ -9,6 +9,7 @@ import com.wim4you.intervene.helpers.SafeWordHasher
 object DataMappings {
     fun toDistressDataMap(
         personData: PersonData,
+        firebaseUid: String,
         geoLocation: GeoLocation,
         address: AddressData,
         init: Boolean = false
@@ -17,7 +18,7 @@ object DataMappings {
             "l" to listOf(geoLocation.latitude, geoLocation.longitude),
             "g" to GeoFireUtils.getGeoHashForLocation(geoLocation),
             "alias" to personData.alias,
-            "personId" to personData.id,
+            "personId" to firebaseUid,
             "time" to System.currentTimeMillis(),
             "active" to true,
             "fcmToken" to null,

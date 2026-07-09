@@ -31,8 +31,10 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import com.wim4you.intervene.databinding.ActivityMainBinding
 import com.wim4you.intervene.data.PersonData
 import com.wim4you.intervene.data.VigilanteData
+import com.wim4you.intervene.helpers.NetworkUtils
 import com.wim4you.intervene.location.LocationTrackerService
 import com.wim4you.intervene.location.LocationUtils
+import com.wim4you.intervene.location.PatrolFirebaseWriter
 import com.wim4you.intervene.repository.MapLocationRepository
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
@@ -211,22 +213,36 @@ class MainActivity : AppCompatActivity() {
                 return
             }
             AppModeController.vigilante = vigilante
+            if (!NetworkUtils.isOnline(this)) {
+                Toast.makeText(this, R.string.error_no_network_distress, Toast.LENGTH_SHORT).show()
+                return
+            }
             if (!AppModeController.startPatrol(this)) return
-            publishOwnPatrolMarker(vigilante)
+            publishAndPushPatrol(vigilante)
             updateScreenKeepOn(true)
         }
         refreshDrawerMenu(navView)
         navController.navigate(R.id.nav_home)
     }
 
-    private fun publishOwnPatrolMarker(vigilante: VigilanteData) {
-        LocationUtils.setLocation(this) { latLng ->
-            if (latLng != null) {
-                mapLocationRepository.setOwnPatrol(
-                    vigilante = vigilante,
-                    latitude = latLng.latitude,
-                    longitude = latLng.longitude,
-                )
+    private fun publishAndPushPatrol(vigilante: VigilanteData) {
+        LocationUtils.resolveLocation(this) { latLng ->
+            if (latLng == null) return@resolveLocation
+            mapLocationRepository.setOwnPatrol(
+                vigilante = vigilante,
+                latitude = latLng.latitude,
+                longitude = latLng.longitude,
+            )
+            lifecycleScope.launch {
+                try {
+                    PatrolFirebaseWriter.pushPatrol(
+                        vigilante = vigilante,
+                        latitude = latLng.latitude,
+                        longitude = latLng.longitude,
+                    )
+                } catch (exception: Exception) {
+                    AppModeController.reportBackgroundFailure("Patrol could not be registered in cloud.")
+                }
             }
         }
     }
@@ -234,7 +250,7 @@ class MainActivity : AppCompatActivity() {
     private suspend fun restorePatrolMarkerIfNeeded() {
         val vigilante = AppModeController.vigilante ?: vigilanteStore.fetch() ?: return
         AppModeController.vigilante = vigilante
-        publishOwnPatrolMarker(vigilante)
+        publishAndPushPatrol(vigilante)
     }
 
     private suspend fun restoreDistressMarkerIfNeeded() {
@@ -244,13 +260,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun publishOwnDistressMarker(person: PersonData) {
-        LocationUtils.setLocation(this) { latLng ->
+        LocationUtils.resolveLocation(this) { latLng ->
             if (latLng != null) {
-                mapLocationRepository.setOwnDistress(
-                    person = person,
-                    latitude = latLng.latitude,
-                    longitude = latLng.longitude,
-                )
+                lifecycleScope.launch {
+                    val firebaseUid = try {
+                        FirebaseAuthManager.ensureSignedIn()
+                    } catch (exception: Exception) {
+                        FirebaseAuthManager.currentUid()
+                    }
+                    mapLocationRepository.setOwnDistress(
+                        person = person,
+                        latitude = latLng.latitude,
+                        longitude = latLng.longitude,
+                        firebaseUid = firebaseUid,
+                    )
+                }
             }
         }
     }
