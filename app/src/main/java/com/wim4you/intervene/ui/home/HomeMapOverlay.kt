@@ -67,7 +67,7 @@ class HomeMapOverlay(
     }
 
     fun updatePatrolMarkers(patrolLocationDataList: List<PatrolLocationData>) {
-        val currentIds = patrolLocationDataList.mapNotNull { it.id }.toSet()
+        val currentIds = patrolLocationDataList.mapNotNull { it.vigilanteId ?: it.id }.toSet()
         patrolMarkers.keys.filter { it !in currentIds }.forEach { id ->
             patrolMarkers[id]?.remove()
             patrolMarkers.remove(id)
@@ -76,7 +76,7 @@ class HomeMapOverlay(
         patrolLocationDataList.forEach { patrolData ->
             patrolData.l?.let { loc ->
                 val latLng = LatLng(loc[0], loc[1])
-                val markerId = patrolData.id ?: return@let
+                val markerId = patrolData.vigilanteId ?: patrolData.id ?: return@let
                 val marker = patrolMarkers[markerId]
                 if (marker == null) {
                     map.addMarker(

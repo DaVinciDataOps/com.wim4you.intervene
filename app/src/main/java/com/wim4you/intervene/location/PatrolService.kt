@@ -34,6 +34,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 class PatrolService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -104,6 +106,7 @@ class PatrolService : Service() {
             while (isActive && AppModeController.isPatrolling) {
                 try {
                     val location = LocationProvider.getLastLocation()
+                        ?: getLastKnownLocationFallback()
                     location?.let {
                         val geoLocation = GeoLocation(it.latitude, it.longitude)
 
@@ -127,6 +130,13 @@ class PatrolService : Service() {
             }
         }
     }
+
+    private suspend fun getLastKnownLocationFallback(): android.location.Location? =
+        suspendCancellableCoroutine { continuation ->
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location -> continuation.resume(location) }
+                .addOnFailureListener { continuation.resume(null) }
+        }
 
     private fun sendToFirebase(
         patrolLocationData: PatrolLocationData,

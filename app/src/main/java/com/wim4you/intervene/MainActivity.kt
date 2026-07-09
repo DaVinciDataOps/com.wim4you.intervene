@@ -29,7 +29,10 @@ import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.wim4you.intervene.databinding.ActivityMainBinding
+import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.location.LocationTrackerService
+import com.wim4you.intervene.location.LocationUtils
+import com.wim4you.intervene.repository.MapLocationRepository
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import dagger.hilt.android.AndroidEntryPoint
@@ -43,6 +46,7 @@ class MainActivity : AppCompatActivity() {
 
     @Inject lateinit var personStore: PersonDataRepository
     @Inject lateinit var vigilanteStore: VigilanteDataRepository
+    @Inject lateinit var mapLocationRepository: MapLocationRepository
 
     private var overflowPopup: PopupWindow? = null
     private var reopenOverflowPopup = false
@@ -118,6 +122,10 @@ class MainActivity : AppCompatActivity() {
             promptForForegroundLocation()
         }
 
+        if (AppModeController.isPatrolling) {
+            lifecycleScope.launch { restorePatrolMarkerIfNeeded() }
+        }
+
         navView.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.nav_startstop_guided_trip -> {
@@ -181,6 +189,7 @@ class MainActivity : AppCompatActivity() {
     private suspend fun togglePatrol(navView: NavigationView, navController: androidx.navigation.NavController) {
         if (AppModeController.isPatrolling) {
             AppModeController.stopPatrol(this)
+            mapLocationRepository.clearOwnPatrol()
             updateScreenKeepOn(false)
         } else {
             val vigilante = vigilanteStore.fetch()
@@ -191,10 +200,29 @@ class MainActivity : AppCompatActivity() {
             }
             AppModeController.vigilante = vigilante
             if (!AppModeController.startPatrol(this)) return
+            publishOwnPatrolMarker(vigilante)
             updateScreenKeepOn(true)
         }
         refreshDrawerMenu(navView)
         navController.navigate(R.id.nav_home)
+    }
+
+    private fun publishOwnPatrolMarker(vigilante: VigilanteData) {
+        LocationUtils.setLocation(this) { latLng ->
+            if (latLng != null) {
+                mapLocationRepository.setOwnPatrol(
+                    vigilante = vigilante,
+                    latitude = latLng.latitude,
+                    longitude = latLng.longitude,
+                )
+            }
+        }
+    }
+
+    private suspend fun restorePatrolMarkerIfNeeded() {
+        val vigilante = AppModeController.vigilante ?: vigilanteStore.fetch() ?: return
+        AppModeController.vigilante = vigilante
+        publishOwnPatrolMarker(vigilante)
     }
 
     private fun refreshDrawerMenu(navView: NavigationView) {

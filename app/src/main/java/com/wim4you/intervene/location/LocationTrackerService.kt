@@ -194,6 +194,16 @@ class LocationTrackerService : Service() {
             override fun onLocationResult(locationResult: LocationResult) {
                 locationResult.lastLocation?.let { location ->
                     val userLocation = GeoLocation(location.latitude, location.longitude)
+                    if (AppModeController.isPatrolling) {
+                        val vigilante = AppModeController.vigilante
+                        if (vigilante != null) {
+                            mapLocationRepository.ensureOwnPatrol(
+                                vigilante,
+                                location.latitude,
+                                location.longitude,
+                            )
+                        }
+                    }
                     ensurePatrolQuery(userLocation)
                     ensureDistressQuery(userLocation)
                 }
@@ -257,7 +267,7 @@ class LocationTrackerService : Service() {
         val patrolLocationData = dataSnapshot.getValue<PatrolLocationData>()
         if (!validData(patrolLocationData)) return
         patrolLocationData?.let { patrol ->
-            patrol.id = patrol.vigilanteId
+            patrol.id = dataSnapshot.key
             patrol.l = listOf(location.latitude, location.longitude)
             val index = patrolLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
             if (index == -1) {
