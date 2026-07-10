@@ -6,6 +6,7 @@ data class NearbyChatUser(
     val distanceMeters: Double?,
     val latitude: Double?,
     val longitude: Double?,
+    val hasUnreadIndicator: Boolean = false,
 )
 
 data class ChatRoomSummary(
@@ -17,6 +18,9 @@ data class ChatRoomSummary(
     val status: String = ProximityChatConstants.ROOM_STATUS_ACTIVE,
     val isIncomingRing: Boolean = false,
     val initiatorAlias: String? = null,
+    val hasUnreadForMe: Boolean = false,
+    val hasUnreadByOthers: Boolean = false,
+    val hasUnreadIndicator: Boolean = false,
 )
 
 data class ChatRoomStatus(

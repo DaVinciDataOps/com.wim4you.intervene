@@ -168,6 +168,7 @@
     <string name="chat_accept">Pick up</string>
     <string name="chat_decline">Decline</string>
     <string name="chat_ringing_label">Ringing</string>
+    <string name="chat_unread_label">Unread messages</string>
     <string name="chat_error_accept">Could not accept chat request</string>
     <string name="chat_error_decline">Could not decline chat request</string>
     <string name="chat_chat_active">Chat is live</string>

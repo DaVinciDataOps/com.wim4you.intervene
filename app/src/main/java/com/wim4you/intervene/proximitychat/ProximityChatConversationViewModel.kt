@@ -82,10 +82,14 @@ class ProximityChatConversationViewModel @Inject constructor(
                                 acceptedCount = status.acceptedCount,
                             )
                         }
+                        if (canSend) {
+                            markConversationRead(_uiState.value.messages, uid)
+                        }
                     }
                 }
                 chatRepository.observeMessages(roomId, uid).collect { messages ->
                     _uiState.update { it.copy(messages = messages) }
+                    markConversationRead(messages, uid)
                     maybeReadLatestIncoming(messages, uid)
                 }
             } catch (exception: Exception) {
@@ -167,6 +171,18 @@ class ProximityChatConversationViewModel @Inject constructor(
             } catch (exception: Exception) {
                 SecureLog.e(TAG, "Failed to send message", exception)
                 _uiState.update { it.copy(isSending = false, errorMessage = "send_failed") }
+            }
+        }
+    }
+
+    private fun markConversationRead(messages: List<ChatMessageItem>, myUid: String) {
+        if (_uiState.value.roomStatus != ProximityChatConstants.ROOM_STATUS_ACTIVE) return
+        val readAt = messages.maxOfOrNull { it.timestamp } ?: System.currentTimeMillis()
+        viewModelScope.launch {
+            try {
+                chatRepository.updateLastReadAt(roomId, myUid, readAt)
+            } catch (exception: Exception) {
+                SecureLog.e(TAG, "Failed to update last read timestamp", exception)
             }
         }
     }

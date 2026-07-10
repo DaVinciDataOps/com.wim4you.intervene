@@ -4,7 +4,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -21,6 +23,7 @@ class NearbyChatUserAdapter(
         val alias: TextView = itemView.findViewById(R.id.tvNearbyAlias)
         val distance: TextView = itemView.findViewById(R.id.tvNearbyDistance)
         val checkbox: CheckBox = itemView.findViewById(R.id.cbNearbySelect)
+        val bell: ImageView = itemView.findViewById(R.id.ivNearbyBell)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -35,6 +38,8 @@ class NearbyChatUserAdapter(
         holder.alias.text = user.alias
         holder.distance.text = user.distanceMeters?.let { DistanceUtils.formatDistanceMeters(it) }
             ?: context.getString(R.string.chat_distance_unknown)
+        holder.bell.isVisible = user.hasUnreadIndicator
+        holder.bell.contentDescription = context.getString(R.string.chat_unread_label)
         val isSelected = user.uid in selectedIds()
         holder.checkbox.isChecked = isSelected
         holder.checkbox.visibility = if (selectedIds().isNotEmpty()) View.VISIBLE else View.GONE
