@@ -18,4 +18,7 @@ object ProximityChatConstants {
     val PROXIMITY_RADIUS_KM: Double = AppModeController.GEO_QUERY_RADIUS_KM
 
     const val PRESENCE_STALE_MS = 5 * 60 * 1000L
+
+    fun isNotifiableChatStatus(status: String): Boolean =
+        status == ROOM_STATUS_ACTIVE || status == ROOM_STATUS_RINGING
 }

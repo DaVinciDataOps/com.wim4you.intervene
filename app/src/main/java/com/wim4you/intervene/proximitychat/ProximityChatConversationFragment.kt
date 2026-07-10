@@ -97,7 +97,7 @@ class ProximityChatConversationFragment : Fragment() {
                         val isRinging = state.roomStatus == ProximityChatConstants.ROOM_STATUS_RINGING
                         val showHeader = isRinging || state.isIncomingRing
                         binding.chatHeaderBar.isVisible = showHeader
-                        binding.ivChatBell.isVisible = isRinging
+                        binding.ivChatBell.isVisible = showHeader
                         binding.tvChatHeaderTitle.text = state.roomTitle.ifBlank {
                             getString(R.string.menu_proximity_chat)
                         }
@@ -115,7 +115,7 @@ class ProximityChatConversationFragment : Fragment() {
 
                         if (state.isIncomingRing && !hasPlayedIncomingChime) {
                             hasPlayedIncomingChime = true
-                            PatrolAlertSoundPlayer.play(requireContext())
+                            PatrolAlertSoundPlayer.playChatNotification(requireContext())
                         }
 
                         messageAdapter.submitList(state.messages) {

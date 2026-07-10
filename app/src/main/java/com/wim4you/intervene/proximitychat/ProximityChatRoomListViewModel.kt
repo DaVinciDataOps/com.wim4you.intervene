@@ -31,6 +31,7 @@ data class ProximityChatRoomListUiState(
     val errorMessage: String? = null,
     val newIncomingRingRoomIds: Set<String> = emptySet(),
     val unreadSenderUids: Set<String> = emptySet(),
+    val newNearbyUnreadSenderUids: Set<String> = emptySet(),
 )
 
 @HiltViewModel
@@ -50,6 +51,8 @@ class ProximityChatRoomListViewModel @Inject constructor(
     private var lastLatitude: Double? = null
     private var lastLongitude: Double? = null
     private var knownIncomingRings = mutableSetOf<String>()
+    private var knownUnreadSenders = mutableSetOf<String>()
+    private var notifiedUnreadSenders = mutableSetOf<String>()
 
     fun start(location: Location?) {
         lastLatitude = location?.latitude
@@ -193,6 +196,11 @@ class ProximityChatRoomListViewModel @Inject constructor(
         _uiState.update { it.copy(newIncomingRingRoomIds = knownIncomingRings.toSet()) }
     }
 
+    fun clearNearbyUnreadNotification(senderUid: String) {
+        notifiedUnreadSenders.add(senderUid)
+        _uiState.update { it.copy(newNearbyUnreadSenderUids = emptySet()) }
+    }
+
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
     }
@@ -238,7 +246,14 @@ class ProximityChatRoomListViewModel @Inject constructor(
         nearbyJob = viewModelScope.launch {
             chatRepository.observeNearbyUsers(latitude, longitude, uid).collect { users ->
                 _uiState.update { state ->
-                    state.copy(nearbyUsers = applyUnreadToNearby(users, state.unreadSenderUids))
+                    state.copy(
+                        nearbyUsers = applyUnreadToNearby(
+                            users,
+                            state.unreadSenderUids,
+                            state.rooms,
+                            uid,
+                        ),
+                    )
                 }
             }
         }
@@ -248,10 +263,20 @@ class ProximityChatRoomListViewModel @Inject constructor(
         unreadSendersJob?.cancel()
         unreadSendersJob = viewModelScope.launch {
             chatRepository.observeIncomingUnreadSenderUids(uid).collect { unreadSenderUids ->
+                val clearedSenders = knownUnreadSenders - unreadSenderUids
+                notifiedUnreadSenders.removeAll(clearedSenders)
+                knownUnreadSenders = unreadSenderUids.toMutableSet()
+                val newUnreadSenders = unreadSenderUids - notifiedUnreadSenders
                 _uiState.update { state ->
                     state.copy(
                         unreadSenderUids = unreadSenderUids,
-                        nearbyUsers = applyUnreadToNearby(state.nearbyUsers, unreadSenderUids),
+                        nearbyUsers = applyUnreadToNearby(
+                            state.nearbyUsers,
+                            unreadSenderUids,
+                            state.rooms,
+                            uid,
+                        ),
+                        newNearbyUnreadSenderUids = newUnreadSenders,
                     )
                 }
             }
@@ -268,6 +293,12 @@ class ProximityChatRoomListViewModel @Inject constructor(
                 _uiState.update { state ->
                     state.copy(
                         rooms = rooms,
+                        nearbyUsers = applyUnreadToNearby(
+                            state.nearbyUsers,
+                            state.unreadSenderUids,
+                            rooms,
+                            uid,
+                        ),
                         newIncomingRingRoomIds = newRings,
                     )
                 }
@@ -278,9 +309,20 @@ class ProximityChatRoomListViewModel @Inject constructor(
     private fun applyUnreadToNearby(
         nearbyUsers: List<NearbyChatUser>,
         unreadSenderUids: Set<String>,
+        rooms: List<ChatRoomSummary>,
+        myUid: String,
     ): List<NearbyChatUser> {
+        val directRoomsByOtherUid = rooms
+            .filter { !it.isGroup }
+            .mapNotNull { room ->
+                chatRepository.otherUidFromDirectRoom(room.roomId, myUid)?.let { it to room }
+            }
+            .toMap()
         return nearbyUsers.map { user ->
-            user.copy(hasUnreadIndicator = user.uid in unreadSenderUids)
+            val room = directRoomsByOtherUid[user.uid]
+            user.copy(
+                hasUnreadIndicator = user.uid in unreadSenderUids || room?.hasUnreadForMe == true,
+            )
         }
     }
 

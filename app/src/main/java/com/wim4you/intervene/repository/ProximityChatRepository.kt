@@ -195,15 +195,20 @@ class ProximityChatRepository @Inject constructor() {
                 null
             }
             val lastMessageAt = room.lastMessageAt ?: room.createdAt ?: 0L
+            val lastMessageSenderId = room.lastMessageSenderId
+                ?: roomSnapshot.child("lastMessageSenderId").getValue(String::class.java)
             val myLastReadAt = participantsSnapshot.child(myUid)
                 .child("lastReadAt")
                 .getValue(Long::class.java) ?: 0L
             val otherLastReadAts = participantsSnapshot.children
                 .filter { it.key != myUid }
                 .map { it.child("lastReadAt").getValue(Long::class.java) ?: 0L }
-            val isActive = status == ProximityChatConstants.ROOM_STATUS_ACTIVE
-            val hasUnreadForMe = isActive && lastMessageAt > myLastReadAt
-            val hasUnreadByOthers = isActive && otherLastReadAts.any { it < lastMessageAt }
+            val isNotifiable = ProximityChatConstants.isNotifiableChatStatus(status)
+            val hasUnreadForMe = isNotifiable && lastMessageAt > myLastReadAt && (
+                isIncomingRing ||
+                    (lastMessageSenderId != null && lastMessageSenderId != myUid)
+                )
+            val hasUnreadByOthers = isNotifiable && otherLastReadAts.any { it < lastMessageAt }
             roomSummaries[roomId] = ChatRoomSummary(
                 roomId = roomId,
                 displayName = displayName,
@@ -291,9 +296,13 @@ class ProximityChatRepository @Inject constructor() {
         data class DirectRoomUnreadState(
             val otherUid: String,
             var myLastReadAt: Long = 0L,
+            var otherLastReadAt: Long = 0L,
             var latestMessageAt: Long = 0L,
             var latestMessageSenderId: String? = null,
             var status: String = ProximityChatConstants.ROOM_STATUS_ACTIVE,
+            var initiatorUid: String? = null,
+            var myAccepted: Boolean = true,
+            var roomActivityAt: Long = 0L,
         )
 
         val roomStates = linkedMapOf<String, DirectRoomUnreadState>()
@@ -308,10 +317,29 @@ class ProximityChatRepository @Inject constructor() {
 
         fun recomputeUnreadForRoom(roomId: String) {
             val state = roomStates[roomId] ?: return
-            val hasUnread = state.status == ProximityChatConstants.ROOM_STATUS_ACTIVE &&
+            if (state.status == ProximityChatConstants.ROOM_STATUS_DECLINED) {
+                unreadSenderUids.remove(state.otherUid)
+                emitUnreadSenders()
+                return
+            }
+            val activityAt = maxOf(state.latestMessageAt, state.roomActivityAt)
+            val hasUnread = when {
                 state.latestMessageSenderId != null &&
-                state.latestMessageSenderId != myUid &&
-                state.latestMessageAt > state.myLastReadAt
+                    state.latestMessageSenderId != myUid &&
+                    state.latestMessageAt > state.myLastReadAt -> true
+                state.status == ProximityChatConstants.ROOM_STATUS_RINGING &&
+                    state.initiatorUid != null &&
+                    state.initiatorUid != myUid &&
+                    !state.myAccepted &&
+                    activityAt > state.myLastReadAt -> true
+                state.status == ProximityChatConstants.ROOM_STATUS_RINGING &&
+                    state.initiatorUid == myUid &&
+                    state.otherLastReadAt < activityAt -> true
+                ProximityChatConstants.isNotifiableChatStatus(state.status) &&
+                    state.latestMessageSenderId == myUid &&
+                    state.latestMessageAt > state.otherLastReadAt -> true
+                else -> false
+            }
             if (hasUnread) {
                 unreadSenderUids.add(state.otherUid)
             } else {
@@ -374,6 +402,20 @@ class ProximityChatRepository @Inject constructor() {
                         .child(myUid)
                         .child("lastReadAt")
                         .getValue(Long::class.java) ?: state.myLastReadAt
+                    state.otherLastReadAt = snapshot.child("participants")
+                        .child(state.otherUid)
+                        .child("lastReadAt")
+                        .getValue(Long::class.java) ?: state.otherLastReadAt
+                    state.myAccepted = snapshot.child("participants")
+                        .child(myUid)
+                        .child("accepted")
+                        .getValue(Boolean::class.java) == true
+                    state.initiatorUid = room?.initiatorUid
+                    state.roomActivityAt = room?.lastMessageAt ?: room?.createdAt ?: state.roomActivityAt
+                    room?.lastMessageSenderId?.let { senderId ->
+                        state.latestMessageSenderId = senderId
+                        state.latestMessageAt = maxOf(state.latestMessageAt, state.roomActivityAt)
+                    }
                     state.status = room?.status?.takeIf { it.isNotBlank() }
                         ?: ProximityChatConstants.ROOM_STATUS_ACTIVE
                     recomputeUnreadForRoom(roomId)
@@ -402,9 +444,22 @@ class ProximityChatRepository @Inject constructor() {
                 .child(myUid)
                 .child("lastReadAt")
                 .getValue(Long::class.java) ?: 0L
+            val otherLastReadAt = roomSnapshot.child("participants")
+                .child(otherUid)
+                .child("lastReadAt")
+                .getValue(Long::class.java) ?: 0L
+            val myAccepted = roomSnapshot.child("participants")
+                .child(myUid)
+                .child("accepted")
+                .getValue(Boolean::class.java) == true
+            val activityAt = room.lastMessageAt ?: room.createdAt ?: 0L
             roomStates[roomId] = DirectRoomUnreadState(
                 otherUid = otherUid,
                 myLastReadAt = myLastReadAt,
+                otherLastReadAt = otherLastReadAt,
+                myAccepted = myAccepted,
+                initiatorUid = room.initiatorUid,
+                roomActivityAt = activityAt,
                 status = room.status?.takeIf { it.isNotBlank() }
                     ?: ProximityChatConstants.ROOM_STATUS_ACTIVE,
             )
@@ -504,6 +559,13 @@ class ProximityChatRepository @Inject constructor() {
         val snapshot = database.child(ProximityChatConstants.ROOMS_PATH).child(roomId).getOnce()
         val status = snapshot.child("status").getValue(String::class.java)
         return status.isNullOrBlank() || status == ProximityChatConstants.ROOM_STATUS_ACTIVE
+    }
+
+    suspend fun isRoomMessagingAllowed(roomId: String): Boolean {
+        val snapshot = database.child(ProximityChatConstants.ROOMS_PATH).child(roomId).getOnce()
+        val status = snapshot.child("status").getValue(String::class.java)
+            ?: ProximityChatConstants.ROOM_STATUS_ACTIVE
+        return ProximityChatConstants.isNotifiableChatStatus(status)
     }
 
     fun observeRoomStatus(roomId: String, myUid: String): Flow<ChatRoomStatus> = callbackFlow {
@@ -669,7 +731,7 @@ class ProximityChatRepository @Inject constructor() {
         text: String,
         isSpeech: Boolean,
     ) {
-        if (!isRoomActive(roomId)) return
+        if (!isRoomMessagingAllowed(roomId)) return
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return
         val now = System.currentTimeMillis()
@@ -686,6 +748,10 @@ class ProximityChatRepository @Inject constructor() {
             .child(roomId)
             .child("lastMessageAt")
             .setValueOnce(now)
+        database.child(ProximityChatConstants.ROOMS_PATH)
+            .child(roomId)
+            .child("lastMessageSenderId")
+            .setValueOnce(senderId)
         updateLastReadAt(roomId, senderId, now)
     }
 

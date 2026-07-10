@@ -117,6 +117,7 @@
     <string name="settings_appearance">Weergave</string>
     <string name="settings_notifications">Meldingen</string>
     <string name="settings_patrol_alert_sound">Geluid afspelen bij nieuwe noodoproepen tijdens patrouille</string>
+    <string name="settings_chat_ringing_sound">Geluid afspelen bij nabije chat-uitnodigingen en berichten</string>
     <string name="settings_about">Over</string>
     <string name="settings_privacy_summary">Je telefoonnummer, e-mail en veilig woord worden versleuteld op dit apparaat. Tijdens een noodmelding worden alleen een gehasht veilig woord en je alias gedeeld met hulpverleners.</string>
     <string name="settings_security">Beveiliging</string>

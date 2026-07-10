@@ -82,6 +82,12 @@ class SettingsFragment : Fragment() {
             AppPreferences.setPatrolAlertSoundEnabled(requireContext(), isChecked)
         }
 
+        binding.switchChatRingingSound.isChecked =
+            AppPreferences.isChatRingingSoundEnabled(requireContext())
+        binding.switchChatRingingSound.setOnCheckedChangeListener { _, isChecked ->
+            AppPreferences.setChatRingingSoundEnabled(requireContext(), isChecked)
+        }
+
         binding.switchReadAloud.isChecked =
             AppPreferences.isReadAloudEnabled(requireContext())
         binding.switchReadAloud.setOnCheckedChangeListener { _, isChecked ->

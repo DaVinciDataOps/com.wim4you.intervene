@@ -6,6 +6,7 @@ import android.media.MediaPlayer
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import com.wim4you.intervene.AppPreferences
 
 object PatrolAlertSoundPlayer {
 
@@ -27,5 +28,10 @@ object PatrolAlertSoundPlayer {
         } catch (_: Exception) {
             mediaPlayer.release()
         }
+    }
+
+    fun playChatNotification(context: Context) {
+        if (!AppPreferences.isChatRingingSoundEnabled(context)) return
+        play(context)
     }
 }

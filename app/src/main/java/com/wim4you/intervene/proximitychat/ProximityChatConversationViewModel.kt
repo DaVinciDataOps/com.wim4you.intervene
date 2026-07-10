@@ -72,7 +72,7 @@ class ProximityChatConversationViewModel @Inject constructor(
                         val isInitiator = status.initiatorUid == uid
                         val isIncomingRing = status.status == ProximityChatConstants.ROOM_STATUS_RINGING &&
                             !isInitiator && !status.myAccepted
-                        val canSend = status.status == ProximityChatConstants.ROOM_STATUS_ACTIVE
+                        val canSend = ProximityChatConstants.isNotifiableChatStatus(status.status)
                         _uiState.update {
                             it.copy(
                                 roomStatus = status.status,
@@ -82,14 +82,14 @@ class ProximityChatConversationViewModel @Inject constructor(
                                 acceptedCount = status.acceptedCount,
                             )
                         }
-                        if (canSend) {
-                            markConversationRead(_uiState.value.messages, uid)
+                        if (status.status != ProximityChatConstants.ROOM_STATUS_DECLINED) {
+                            markConversationAccessed(_uiState.value.messages, uid)
                         }
                     }
                 }
                 chatRepository.observeMessages(roomId, uid).collect { messages ->
                     _uiState.update { it.copy(messages = messages) }
-                    markConversationRead(messages, uid)
+                    markConversationAccessed(messages, uid)
                     maybeReadLatestIncoming(messages, uid)
                 }
             } catch (exception: Exception) {
@@ -175,8 +175,8 @@ class ProximityChatConversationViewModel @Inject constructor(
         }
     }
 
-    private fun markConversationRead(messages: List<ChatMessageItem>, myUid: String) {
-        if (_uiState.value.roomStatus != ProximityChatConstants.ROOM_STATUS_ACTIVE) return
+    private fun markConversationAccessed(messages: List<ChatMessageItem>, myUid: String) {
+        if (_uiState.value.roomStatus == ProximityChatConstants.ROOM_STATUS_DECLINED) return
         val readAt = messages.maxOfOrNull { it.timestamp } ?: System.currentTimeMillis()
         viewModelScope.launch {
             try {

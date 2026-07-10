@@ -97,9 +97,15 @@ class ProximityChatRoomListFragment : Fragment() {
                         )
                         updateSelectionUi()
                         if (state.newIncomingRingRoomIds.isNotEmpty()) {
-                            PatrolAlertSoundPlayer.play(requireContext())
+                            PatrolAlertSoundPlayer.playChatNotification(requireContext())
                             state.newIncomingRingRoomIds.forEach { roomId ->
                                 viewModel.clearIncomingRingNotification(roomId)
+                            }
+                        }
+                        if (state.newNearbyUnreadSenderUids.isNotEmpty()) {
+                            PatrolAlertSoundPlayer.playChatNotification(requireContext())
+                            state.newNearbyUnreadSenderUids.forEach { senderUid ->
+                                viewModel.clearNearbyUnreadNotification(senderUid)
                             }
                         }
                         state.errorMessage?.let { showError(it) }

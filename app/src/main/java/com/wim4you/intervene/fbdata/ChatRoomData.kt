@@ -15,6 +15,8 @@ data class ChatRoomData(
     var status: String? = null,
     @PropertyName("initiatorUid")
     var initiatorUid: String? = null,
+    @PropertyName("lastMessageSenderId")
+    var lastMessageSenderId: String? = null,
 ) {
-    constructor() : this(null, null, null, null, null, null)
+    constructor() : this(null, null, null, null, null, null, null)
 }

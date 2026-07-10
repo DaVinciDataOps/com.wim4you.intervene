@@ -37,12 +37,18 @@ class ChatRoomAdapter(
         val room = getItem(position)
         val context = holder.itemView.context
         holder.title.text = room.displayName
+        val showBell = room.isIncomingRing || room.hasUnreadForMe || room.hasUnreadByOthers
+        holder.bell.isVisible = showBell
         val isRinging = room.status == ProximityChatConstants.ROOM_STATUS_RINGING
-        holder.bell.isVisible = isRinging || room.hasUnreadIndicator
-        holder.bell.contentDescription = if (isRinging) {
-            context.getString(R.string.chat_ringing_label)
-        } else {
-            context.getString(R.string.chat_unread_label)
+        holder.bell.contentDescription = when {
+            room.isIncomingRing || room.hasUnreadForMe -> {
+                if (isRinging && room.isIncomingRing) {
+                    context.getString(R.string.chat_ringing_label)
+                } else {
+                    context.getString(R.string.chat_unread_label)
+                }
+            }
+            else -> context.getString(R.string.chat_unread_label)
         }
         val typeLabel = if (room.isGroup) {
             context.getString(R.string.chat_group_label, room.participantCount)
