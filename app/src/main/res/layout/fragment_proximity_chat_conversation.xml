@@ -11,31 +11,11 @@
         android:layout_height="0dp"
         android:clipToPadding="false"
         android:padding="8dp"
-        app:layout_constraintBottom_toTopOf="@+id/readAloudBar"
+        app:layout_constraintBottom_toTopOf="@+id/inputBar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         tools:listitem="@layout/item_chat_message_received" />
-
-    <LinearLayout
-        android:id="@+id/readAloudBar"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="4dp"
-        app:layout_constraintBottom_toTopOf="@+id/inputBar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <com.google.android.material.switchmaterial.SwitchMaterial
-            android:id="@+id/switchReadAloud"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:checked="true"
-            android:text="@string/chat_read_aloud" />
-    </LinearLayout>
 
     <TextView
         android:id="@+id/tvListening"

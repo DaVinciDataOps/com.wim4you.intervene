@@ -35,7 +35,7 @@ class SettingsFragment : Fragment() {
         )
 
         bindThemeSwitches()
-        bindPatrolAlertSwitch()
+        bindNotificationSwitches()
     }
 
     private fun bindThemeSwitches() {
@@ -75,11 +75,17 @@ class SettingsFragment : Fragment() {
         bindThemeSwitches()
     }
 
-    private fun bindPatrolAlertSwitch() {
+    private fun bindNotificationSwitches() {
         binding.switchPatrolAlertSound.isChecked =
             AppPreferences.isPatrolAlertSoundEnabled(requireContext())
         binding.switchPatrolAlertSound.setOnCheckedChangeListener { _, isChecked ->
             AppPreferences.setPatrolAlertSoundEnabled(requireContext(), isChecked)
+        }
+
+        binding.switchReadAloud.isChecked =
+            AppPreferences.isReadAloudEnabled(requireContext())
+        binding.switchReadAloud.setOnCheckedChangeListener { _, isChecked ->
+            AppPreferences.setReadAloudEnabled(requireContext(), isChecked)
         }
     }
 

@@ -51,6 +51,12 @@
       android:layout_marginTop="8dp"
       android:text="@string/settings_patrol_alert_sound" />
 
+    <com.google.android.material.switchmaterial.SwitchMaterial
+      android:id="@+id/switchReadAloud"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:text="@string/chat_read_aloud" />
+
     <View
       android:layout_width="match_parent"
       android:layout_height="1dp"

@@ -81,9 +81,6 @@ class ProximityChatConversationFragment : Fragment() {
         }
         binding.btnSend.setOnClickListener { viewModel.sendTextMessage() }
         binding.btnMic.setOnClickListener { startSpeechInput() }
-        binding.switchReadAloud.setOnCheckedChangeListener { _, checked ->
-            viewModel.setReadAloudEnabled(checked)
-        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {

@@ -1,13 +1,16 @@
 package com.wim4you.intervene.proximitychat
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wim4you.intervene.AppPreferences
 import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.ProximityChatRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,12 +28,12 @@ data class ProximityChatConversationUiState(
     val isSending: Boolean = false,
     val isListening: Boolean = false,
     val speechToTextEnabled: Boolean = true,
-    val readAloudEnabled: Boolean = true,
     val errorMessage: String? = null,
 )
 
 @HiltViewModel
 class ProximityChatConversationViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
     private val chatRepository: ProximityChatRepository,
     private val personDataRepository: PersonDataRepository,
@@ -93,10 +96,6 @@ class ProximityChatConversationViewModel @Inject constructor(
         _uiState.update { it.copy(isListening = isListening) }
     }
 
-    fun setReadAloudEnabled(enabled: Boolean) {
-        _uiState.update { it.copy(readAloudEnabled = enabled) }
-    }
-
     fun onMessageSpoken(messageId: String) {
         lastSpokenMessageId = messageId
     }
@@ -127,7 +126,7 @@ class ProximityChatConversationViewModel @Inject constructor(
     }
 
     private fun maybeReadLatestIncoming(messages: List<ChatMessageItem>, myUid: String) {
-        if (!_uiState.value.readAloudEnabled) return
+        if (!AppPreferences.isReadAloudEnabled(context)) return
         val latestIncoming = messages.lastOrNull { !it.isMine && it.senderId != myUid } ?: return
         if (latestIncoming.id == lastSpokenMessageId) return
         lastSpokenMessageId = latestIncoming.id
