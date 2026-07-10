@@ -29,6 +29,11 @@ data class ProximityChatConversationUiState(
     val isListening: Boolean = false,
     val speechToTextEnabled: Boolean = true,
     val errorMessage: String? = null,
+    val roomStatus: String = ProximityChatConstants.ROOM_STATUS_ACTIVE,
+    val isInitiator: Boolean = false,
+    val isIncomingRing: Boolean = false,
+    val canSendMessages: Boolean = true,
+    val acceptedCount: Int = 0,
 )
 
 @HiltViewModel
@@ -62,6 +67,23 @@ class ProximityChatConversationViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(myUid = uid, myAlias = alias, roomTitle = title, errorMessage = null)
                 }
+                launch {
+                    chatRepository.observeRoomStatus(roomId, uid).collect { status ->
+                        val isInitiator = status.initiatorUid == uid
+                        val isIncomingRing = status.status == ProximityChatConstants.ROOM_STATUS_RINGING &&
+                            !isInitiator && !status.myAccepted
+                        val canSend = status.status == ProximityChatConstants.ROOM_STATUS_ACTIVE
+                        _uiState.update {
+                            it.copy(
+                                roomStatus = status.status,
+                                isInitiator = isInitiator,
+                                isIncomingRing = isIncomingRing,
+                                canSendMessages = canSend,
+                                acceptedCount = status.acceptedCount,
+                            )
+                        }
+                    }
+                }
                 chatRepository.observeMessages(roomId, uid).collect { messages ->
                     _uiState.update { it.copy(messages = messages) }
                     maybeReadLatestIncoming(messages, uid)
@@ -81,13 +103,13 @@ class ProximityChatConversationViewModel @Inject constructor(
         val state = _uiState.value
         val uid = state.myUid ?: return
         val text = state.draftText.trim()
-        if (text.isEmpty() || state.isSending) return
+        if (text.isEmpty() || state.isSending || !state.canSendMessages) return
         sendMessage(text, isSpeech = false)
     }
 
     fun sendSpeechMessage(text: String) {
         val trimmed = text.trim()
-        if (trimmed.isEmpty()) return
+        if (trimmed.isEmpty() || !_uiState.value.canSendMessages) return
         _uiState.update { it.copy(draftText = trimmed) }
         sendMessage(trimmed, isSpeech = true)
     }
@@ -102,6 +124,30 @@ class ProximityChatConversationViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
+    }
+
+    fun acceptInvite() {
+        val uid = _uiState.value.myUid ?: return
+        viewModelScope.launch {
+            try {
+                chatRepository.acceptChatInvite(roomId, uid)
+            } catch (exception: Exception) {
+                SecureLog.e(TAG, "Failed to accept chat invite", exception)
+                _uiState.update { it.copy(errorMessage = "accept_failed") }
+            }
+        }
+    }
+
+    fun declineInvite() {
+        val uid = _uiState.value.myUid ?: return
+        viewModelScope.launch {
+            try {
+                chatRepository.declineChatInvite(roomId, uid)
+            } catch (exception: Exception) {
+                SecureLog.e(TAG, "Failed to decline chat invite", exception)
+                _uiState.update { it.copy(errorMessage = "decline_failed") }
+            }
+        }
     }
 
     private fun sendMessage(text: String, isSpeech: Boolean) {

@@ -16,9 +16,11 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.wim4you.intervene.R
 import com.wim4you.intervene.databinding.FragmentProximityChatConversationBinding
+import com.wim4you.intervene.ui.home.PatrolAlertSoundPlayer
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -32,6 +34,7 @@ class ProximityChatConversationFragment : Fragment() {
 
     private lateinit var messageAdapter: ChatMessageAdapter
     private var speechHelper: SpeechInputHelper? = null
+    private var hasPlayedIncomingChime = false
 
     private val requestMicPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -81,14 +84,40 @@ class ProximityChatConversationFragment : Fragment() {
         }
         binding.btnSend.setOnClickListener { viewModel.sendTextMessage() }
         binding.btnMic.setOnClickListener { startSpeechInput() }
+        binding.btnAcceptChat.setOnClickListener { viewModel.acceptInvite() }
+        binding.btnDeclineChat.setOnClickListener {
+            viewModel.declineInvite()
+            findNavController().navigateUp()
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.uiState.collectLatest { state ->
+                        val isRinging = state.roomStatus == ProximityChatConstants.ROOM_STATUS_RINGING
+                        val showHeader = isRinging || state.isIncomingRing
+                        binding.chatHeaderBar.isVisible = showHeader
+                        binding.ivChatBell.isVisible = isRinging
+                        binding.tvChatHeaderTitle.text = state.roomTitle.ifBlank {
+                            getString(R.string.menu_proximity_chat)
+                        }
                         requireActivity().title = state.roomTitle.ifBlank {
                             getString(R.string.menu_proximity_chat)
                         }
+
+                        val isWaiting = isRinging && state.isInitiator
+                        binding.tvWaitingForPickup.isVisible = isWaiting
+                        binding.pickupBar.isVisible = state.isIncomingRing
+                        binding.inputBar.isVisible = !state.isIncomingRing
+                        binding.etMessage.isEnabled = state.canSendMessages
+                        binding.btnSend.isEnabled = state.canSendMessages
+                        binding.btnMic.isEnabled = state.canSendMessages
+
+                        if (state.isIncomingRing && !hasPlayedIncomingChime) {
+                            hasPlayedIncomingChime = true
+                            PatrolAlertSoundPlayer.play(requireContext())
+                        }
+
                         messageAdapter.submitList(state.messages) {
                             if (state.messages.isNotEmpty()) {
                                 binding.recyclerMessages.scrollToPosition(state.messages.lastIndex)
@@ -128,6 +157,8 @@ class ProximityChatConversationFragment : Fragment() {
         val messageRes = when (key) {
             "chat_load_failed" -> R.string.chat_error_load
             "send_failed" -> R.string.chat_error_send
+            "accept_failed" -> R.string.chat_error_accept
+            "decline_failed" -> R.string.chat_error_decline
             else -> R.string.chat_error_generic
         }
         Toast.makeText(requireContext(), messageRes, Toast.LENGTH_SHORT).show()

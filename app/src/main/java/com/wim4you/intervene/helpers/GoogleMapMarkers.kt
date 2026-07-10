@@ -4,6 +4,9 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.graphics.scale
@@ -15,11 +18,22 @@ object GoogleMapMarkers {
         lateinit var distressMarker: Bitmap
 
         fun initialize(context: Context) {
-            patrolMarker = BitmapFactory.decodeResource(context.resources, R.drawable.png_patrol_marker)
+            val patrolSource = BitmapFactory.decodeResource(context.resources, R.drawable.png_patrol_marker)
                 .scale(90, 90, false)
+            patrolMarker = tintBitmap(patrolSource, context.getColor(R.color.color_patrol_other))
             myPatrolMarker = BitmapFactory.decodeResource(context.resources, R.drawable.png_my_patrol_marker)
                 .scale(90, 90, false)
             distressMarker = drawableToBitmap(context, R.drawable.ic_distress_person, 90)
+        }
+
+        private fun tintBitmap(source: Bitmap, color: Int): Bitmap {
+            val result = source.copy(Bitmap.Config.ARGB_8888, true)
+            val canvas = Canvas(result)
+            val paint = Paint().apply {
+                colorFilter = PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN)
+            }
+            canvas.drawBitmap(source, 0f, 0f, paint)
+            return result
         }
 
         private fun drawableToBitmap(context: Context, drawableRes: Int, size: Int): Bitmap {

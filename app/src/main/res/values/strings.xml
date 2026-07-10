@@ -162,6 +162,14 @@
     <string name="chat_error_load">Could not load chat messages</string>
     <string name="chat_error_send">Could not send message</string>
     <string name="chat_error_generic">Something went wrong with chat</string>
+    <string name="chat_waiting_for_pickup">Waiting for someone to pick up…</string>
+    <string name="chat_incoming_request">%1$s wants to chat</string>
+    <string name="chat_accept">Pick up</string>
+    <string name="chat_decline">Decline</string>
+    <string name="chat_ringing_label">Ringing</string>
+    <string name="chat_error_accept">Could not accept chat request</string>
+    <string name="chat_error_decline">Could not decline chat request</string>
+    <string name="chat_chat_active">Chat is live</string>
 
 
     <string-array name="gender_options">

@@ -14,6 +14,7 @@
     <color name="color_success">#66DE7B</color>
     <color name="color_warning">#FFAB40</color>
     <color name="color_vigilante">#26A69A</color>
+    <color name="color_patrol_other">#898989</color>
 
     <!-- Theme mapping -->
     <color name="color_primary">@color/color_tracking</color>

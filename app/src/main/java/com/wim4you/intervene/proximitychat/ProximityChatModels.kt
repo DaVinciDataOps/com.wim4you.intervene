@@ -14,6 +14,17 @@ data class ChatRoomSummary(
     val isGroup: Boolean,
     val participantCount: Int,
     val lastMessageAt: Long,
+    val status: String = ProximityChatConstants.ROOM_STATUS_ACTIVE,
+    val isIncomingRing: Boolean = false,
+    val initiatorAlias: String? = null,
+)
+
+data class ChatRoomStatus(
+    val status: String,
+    val initiatorUid: String?,
+    val myAccepted: Boolean,
+    val acceptedCount: Int,
+    val isGroup: Boolean,
 )
 
 data class ChatMessageItem(

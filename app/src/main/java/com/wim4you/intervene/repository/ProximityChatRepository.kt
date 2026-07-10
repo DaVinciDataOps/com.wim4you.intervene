@@ -17,6 +17,7 @@ import com.wim4you.intervene.fbdata.ChatParticipantData
 import com.wim4you.intervene.fbdata.ChatRoomData
 import com.wim4you.intervene.helpers.DistanceUtils
 import com.wim4you.intervene.proximitychat.ChatMessageItem
+import com.wim4you.intervene.proximitychat.ChatRoomStatus
 import com.wim4you.intervene.proximitychat.ChatRoomSummary
 import com.wim4you.intervene.proximitychat.NearbyChatUser
 import com.wim4you.intervene.proximitychat.ProximityChatConstants
@@ -168,12 +169,28 @@ class ProximityChatRepository @Inject constructor() {
                         ?: roomId
                 }
             }
+            val status = room.status?.takeIf { it.isNotBlank() }
+                ?: ProximityChatConstants.ROOM_STATUS_ACTIVE
+            val initiatorUid = room.initiatorUid
+            val isIncomingRing = status == ProximityChatConstants.ROOM_STATUS_RINGING &&
+                initiatorUid != null &&
+                initiatorUid != myUid
+            val initiatorAlias = if (isIncomingRing) {
+                participantsSnapshot.child(initiatorUid!!)
+                    .child("alias")
+                    .getValue(String::class.java)
+            } else {
+                null
+            }
             roomSummaries[roomId] = ChatRoomSummary(
                 roomId = roomId,
                 displayName = displayName,
                 isGroup = room.type == ProximityChatConstants.ROOM_TYPE_GROUP,
                 participantCount = participantAliases.size,
                 lastMessageAt = room.lastMessageAt ?: room.createdAt ?: 0L,
+                status = status,
+                isIncomingRing = isIncomingRing,
+                initiatorAlias = initiatorAlias,
             )
         }
 
@@ -222,18 +239,103 @@ class ProximityChatRepository @Inject constructor() {
                 name = null,
                 createdAt = now,
                 lastMessageAt = now,
+                status = ProximityChatConstants.ROOM_STATUS_RINGING,
+                initiatorUid = myUid,
             )
             roomRef.setValueOnce(room)
             linkUserToRoom(myUid, roomId, now)
             linkUserToRoom(otherUid, roomId, now)
             roomRef.child("participants").child(myUid).setValueOnce(
-                mapOf("alias" to myAlias, "joinedAt" to now),
+                mapOf("alias" to myAlias, "joinedAt" to now, "accepted" to true),
             )
             roomRef.child("participants").child(otherUid).setValueOnce(
-                mapOf("alias" to otherAlias, "joinedAt" to now),
+                mapOf("alias" to otherAlias, "joinedAt" to now, "accepted" to false),
             )
         }
         return roomId
+    }
+
+    suspend fun isRoomActive(roomId: String): Boolean {
+        val snapshot = database.child(ProximityChatConstants.ROOMS_PATH).child(roomId).getOnce()
+        val status = snapshot.child("status").getValue(String::class.java)
+        return status.isNullOrBlank() || status == ProximityChatConstants.ROOM_STATUS_ACTIVE
+    }
+
+    fun observeRoomStatus(roomId: String, myUid: String): Flow<ChatRoomStatus> = callbackFlow {
+        val roomRef = database.child(ProximityChatConstants.ROOMS_PATH).child(roomId)
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val room = snapshot.getValue(ChatRoomData::class.java)
+                val status = room?.status?.takeIf { it.isNotBlank() }
+                    ?: ProximityChatConstants.ROOM_STATUS_ACTIVE
+                val initiatorUid = room?.initiatorUid
+                val isGroup = room?.type == ProximityChatConstants.ROOM_TYPE_GROUP
+                var myAccepted = true
+                var acceptedCount = 0
+                snapshot.child("participants").children.forEach { child ->
+                    val accepted = child.child("accepted").getValue(Boolean::class.java) == true
+                    if (accepted) acceptedCount++
+                    if (child.key == myUid) myAccepted = accepted
+                }
+                trySend(
+                    ChatRoomStatus(
+                        status = status,
+                        initiatorUid = initiatorUid,
+                        myAccepted = myAccepted,
+                        acceptedCount = acceptedCount,
+                        isGroup = isGroup,
+                    ),
+                )
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                SecureLog.e(TAG, "Room status listener cancelled: ${error.message}")
+            }
+        }
+        roomRef.addValueEventListener(listener)
+        awaitClose { roomRef.removeEventListener(listener) }
+    }
+
+    suspend fun acceptChatInvite(roomId: String, myUid: String) {
+        val roomRef = database.child(ProximityChatConstants.ROOMS_PATH).child(roomId)
+        val snapshot = roomRef.getOnce()
+        val initiatorUid = snapshot.child("initiatorUid").getValue(String::class.java)
+        val isGroup = snapshot.child("type").getValue(String::class.java) ==
+            ProximityChatConstants.ROOM_TYPE_GROUP
+        roomRef.child("participants").child(myUid).child("accepted").setValueOnce(true)
+        var acceptedCount = 0
+        snapshot.child("participants").children.forEach { child ->
+            val accepted = if (child.key == myUid) {
+                true
+            } else {
+                child.child("accepted").getValue(Boolean::class.java) == true
+            }
+            if (accepted) acceptedCount++
+        }
+        val shouldActivate = if (isGroup) {
+            acceptedCount >= 2
+        } else {
+            myUid != initiatorUid
+        }
+        if (shouldActivate) {
+            roomRef.child("status").setValueOnce(ProximityChatConstants.ROOM_STATUS_ACTIVE)
+        }
+    }
+
+    suspend fun declineChatInvite(roomId: String, myUid: String) {
+        val roomRef = database.child(ProximityChatConstants.ROOMS_PATH).child(roomId)
+        database.child(ProximityChatConstants.USER_ROOMS_PATH)
+            .child(myUid)
+            .child(roomId)
+            .removeValueOnce()
+        val snapshot = roomRef.getOnce()
+        val isGroup = snapshot.child("type").getValue(String::class.java) ==
+            ProximityChatConstants.ROOM_TYPE_GROUP
+        if (isGroup) {
+            roomRef.child("participants").child(myUid).removeValueOnce()
+        } else {
+            roomRef.child("status").setValueOnce(ProximityChatConstants.ROOM_STATUS_DECLINED)
+        }
     }
 
     suspend fun createGroupRoom(
@@ -251,13 +353,16 @@ class ProximityChatRepository @Inject constructor() {
             name = groupName,
             createdAt = now,
             lastMessageAt = now,
+            status = ProximityChatConstants.ROOM_STATUS_RINGING,
+            initiatorUid = myUid,
         )
         roomRef.setValueOnce(room)
         allParticipants.forEach { uid ->
             linkUserToRoom(uid, roomId, now)
             val alias = aliases[uid] ?: "User"
+            val accepted = uid == myUid
             roomRef.child("participants").child(uid).setValueOnce(
-                mapOf("alias" to alias, "joinedAt" to now),
+                mapOf("alias" to alias, "joinedAt" to now, "accepted" to accepted),
             )
         }
         return roomId
@@ -319,6 +424,7 @@ class ProximityChatRepository @Inject constructor() {
         text: String,
         isSpeech: Boolean,
     ) {
+        if (!isRoomActive(roomId)) return
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return
         val now = System.currentTimeMillis()
@@ -381,6 +487,13 @@ class ProximityChatRepository @Inject constructor() {
     private suspend fun com.google.firebase.database.DatabaseReference.setValueOnce(value: Any?): Unit =
         suspendCancellableCoroutine { continuation ->
             setValue(value)
+                .addOnSuccessListener { continuation.resume(Unit) }
+                .addOnFailureListener { continuation.resumeWithException(it) }
+        }
+
+    private suspend fun com.google.firebase.database.DatabaseReference.removeValueOnce(): Unit =
+        suspendCancellableCoroutine { continuation ->
+            removeValue()
                 .addOnSuccessListener { continuation.resume(Unit) }
                 .addOnFailureListener { continuation.resumeWithException(it) }
         }

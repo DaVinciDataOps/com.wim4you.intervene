@@ -29,6 +29,7 @@ data class ProximityChatRoomListUiState(
     val isLoading: Boolean = true,
     val isCreatingGroup: Boolean = false,
     val errorMessage: String? = null,
+    val newIncomingRingRoomIds: Set<String> = emptySet(),
 )
 
 @HiltViewModel
@@ -46,6 +47,7 @@ class ProximityChatRoomListViewModel @Inject constructor(
     private var roomsJob: Job? = null
     private var lastLatitude: Double? = null
     private var lastLongitude: Double? = null
+    private var knownIncomingRings = mutableSetOf<String>()
 
     fun start(location: Location?) {
         lastLatitude = location?.latitude
@@ -172,6 +174,11 @@ class ProximityChatRoomListViewModel @Inject constructor(
         }
     }
 
+    fun clearIncomingRingNotification(roomId: String) {
+        knownIncomingRings.remove(roomId)
+        _uiState.update { it.copy(newIncomingRingRoomIds = knownIncomingRings.toSet()) }
+    }
+
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
     }
@@ -224,7 +231,15 @@ class ProximityChatRoomListViewModel @Inject constructor(
         roomsJob?.cancel()
         roomsJob = viewModelScope.launch {
             chatRepository.observeMyRooms(uid).collect { rooms ->
-                _uiState.update { it.copy(rooms = rooms) }
+                val incomingRings = rooms.filter { it.isIncomingRing }.map { it.roomId }.toSet()
+                val newRings = incomingRings - knownIncomingRings
+                knownIncomingRings.addAll(incomingRings)
+                _uiState.update {
+                    it.copy(
+                        rooms = rooms,
+                        newIncomingRingRoomIds = newRings,
+                    )
+                }
             }
         }
     }

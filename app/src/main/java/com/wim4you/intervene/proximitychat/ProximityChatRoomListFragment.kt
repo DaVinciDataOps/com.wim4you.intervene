@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.wim4you.intervene.R
 import com.wim4you.intervene.databinding.FragmentProximityChatRoomsBinding
 import com.wim4you.intervene.location.LocationUtils
+import com.wim4you.intervene.ui.home.PatrolAlertSoundPlayer
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -93,6 +94,12 @@ class ProximityChatRoomListFragment : Fragment() {
                             ProximityChatConstants.PROXIMITY_RADIUS_KM,
                         )
                         updateSelectionUi()
+                        if (state.newIncomingRingRoomIds.isNotEmpty()) {
+                            PatrolAlertSoundPlayer.play(requireContext())
+                            state.newIncomingRingRoomIds.forEach { roomId ->
+                                viewModel.clearIncomingRingNotification(roomId)
+                            }
+                        }
                         state.errorMessage?.let { showError(it) }
                     }
                 }

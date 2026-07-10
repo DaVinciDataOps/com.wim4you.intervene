@@ -3,7 +3,9 @@ package com.wim4you.intervene.proximitychat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -18,6 +20,7 @@ class ChatRoomAdapter(
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val title: TextView = itemView.findViewById(R.id.tvChatRoomTitle)
         val subtitle: TextView = itemView.findViewById(R.id.tvChatRoomSubtitle)
+        val bell: ImageView = itemView.findViewById(R.id.ivChatRoomBell)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -30,13 +33,23 @@ class ChatRoomAdapter(
         val room = getItem(position)
         val context = holder.itemView.context
         holder.title.text = room.displayName
+        val isRinging = room.status == ProximityChatConstants.ROOM_STATUS_RINGING
+        holder.bell.isVisible = isRinging
         val typeLabel = if (room.isGroup) {
             context.getString(R.string.chat_group_label, room.participantCount)
         } else {
             context.getString(R.string.chat_direct_label)
         }
         val timeLabel = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(room.lastMessageAt))
-        holder.subtitle.text = context.getString(R.string.chat_room_meta, typeLabel, timeLabel)
+        val subtitle = if (room.isIncomingRing && room.initiatorAlias != null) {
+            context.getString(R.string.chat_incoming_request, room.initiatorAlias)
+        } else if (isRinging) {
+            context.getString(R.string.chat_ringing_label) + " · " +
+                context.getString(R.string.chat_room_meta, typeLabel, timeLabel)
+        } else {
+            context.getString(R.string.chat_room_meta, typeLabel, timeLabel)
+        }
+        holder.subtitle.text = subtitle
         holder.itemView.setOnClickListener { onRoomClick(room) }
     }
 

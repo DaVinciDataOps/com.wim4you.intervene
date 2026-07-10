@@ -11,6 +11,10 @@ data class ChatRoomData(
     var createdAt: Long? = null,
     @PropertyName("lastMessageAt")
     var lastMessageAt: Long? = null,
+    @PropertyName("status")
+    var status: String? = null,
+    @PropertyName("initiatorUid")
+    var initiatorUid: String? = null,
 ) {
-    constructor() : this(null, null, null, null)
+    constructor() : this(null, null, null, null, null, null)
 }
