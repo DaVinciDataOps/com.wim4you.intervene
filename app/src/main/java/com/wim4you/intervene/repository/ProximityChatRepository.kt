@@ -859,8 +859,14 @@ class ProximityChatRepository @Inject constructor() {
                 val messageId = snapshot.key ?: return
                 val data = snapshot.getValue(ChatMessageData::class.java) ?: return
                 val senderId = data.senderId ?: return
-                val text = data.text?.takeIf { it.isNotBlank() } ?: return
                 val timestamp = data.timestamp ?: return
+                val isDeleted = data.deleted == true ||
+                    data.text == ProximityChatConstants.REMOVED_MESSAGE_TEXT
+                val text = if (isDeleted) {
+                    ""
+                } else {
+                    data.text?.takeIf { it.isNotBlank() } ?: return
+                }
                 messages[messageId] = ChatMessageItem(
                     id = messageId,
                     senderId = senderId,
@@ -869,6 +875,7 @@ class ProximityChatRepository @Inject constructor() {
                     isSpeech = data.isSpeech == true,
                     timestamp = timestamp,
                     isMine = senderId == myUid,
+                    isDeleted = isDeleted,
                 )
                 trySend(messages.values.sortedBy { it.timestamp })
             }
@@ -928,6 +935,22 @@ class ProximityChatRepository @Inject constructor() {
             .child("lastMessageSenderId")
             .setValueOnce(senderId)
         updateLastReadAt(roomId, senderId, now)
+    }
+
+    suspend fun deleteMessage(roomId: String, messageId: String, myUid: String) {
+        val messageRef = database.child(ProximityChatConstants.MESSAGES_PATH)
+            .child(roomId)
+            .child(messageId)
+        val data = messageRef.getOnce().getValue(ChatMessageData::class.java) ?: return
+        val senderId = data.senderId ?: return
+        if (senderId != myUid) return
+        if (data.deleted == true || data.text == ProximityChatConstants.REMOVED_MESSAGE_TEXT) return
+        messageRef.updateChildrenOnce(
+            mapOf(
+                "deleted" to true,
+                "text" to ProximityChatConstants.REMOVED_MESSAGE_TEXT,
+            ),
+        )
     }
 
     suspend fun updateLastReadAt(roomId: String, uid: String, readAt: Long) {

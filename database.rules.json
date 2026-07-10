@@ -59,7 +59,7 @@
         ".write": "auth != null",
         "$messageId": {
           ".write": "auth != null && (!newData.exists() || newData.child('senderId').val() == auth.uid)",
-          ".validate": "!newData.exists() || (newData.child('text').isString() && newData.child('timestamp').isNumber())"
+          ".validate": "!newData.exists() || (newData.child('text').isString() && newData.child('timestamp').isNumber() && (!newData.child('deleted').exists() || newData.child('deleted').isBoolean()))"
         }
       }
     }

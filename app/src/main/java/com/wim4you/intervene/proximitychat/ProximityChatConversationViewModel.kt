@@ -166,6 +166,38 @@ class ProximityChatConversationViewModel @Inject constructor(
         }
     }
 
+    fun removeMessage(messageId: String) {
+        val uid = _uiState.value.myUid ?: return
+        val previousMessage = _uiState.value.messages.find { it.id == messageId } ?: return
+        if (!previousMessage.isMine || previousMessage.isDeleted) return
+        _uiState.update { state ->
+            state.copy(
+                messages = state.messages.map { message ->
+                    if (message.id == messageId) {
+                        message.copy(isDeleted = true, text = "")
+                    } else {
+                        message
+                    }
+                },
+            )
+        }
+        viewModelScope.launch {
+            try {
+                chatRepository.deleteMessage(roomId, messageId, uid)
+            } catch (exception: Exception) {
+                SecureLog.e(TAG, "Failed to remove message", exception)
+                _uiState.update { state ->
+                    state.copy(
+                        messages = state.messages.map { message ->
+                            if (message.id == messageId) previousMessage else message
+                        },
+                        errorMessage = "remove_message_failed",
+                    )
+                }
+            }
+        }
+    }
+
     private fun sendMessage(text: String, isSpeech: Boolean) {
         val state = _uiState.value
         val uid = state.myUid ?: return
@@ -201,7 +233,9 @@ class ProximityChatConversationViewModel @Inject constructor(
 
     private fun maybeReadLatestIncoming(messages: List<ChatMessageItem>, myUid: String) {
         if (!AppPreferences.isReadAloudEnabled(context)) return
-        val latestIncoming = messages.lastOrNull { !it.isMine && it.senderId != myUid } ?: return
+        val latestIncoming = messages.lastOrNull {
+            !it.isMine && it.senderId != myUid && !it.isDeleted
+        } ?: return
         if (latestIncoming.id == lastSpokenMessageId) return
         lastSpokenMessageId = latestIncoming.id
         _pendingSpeechText.value = latestIncoming.text

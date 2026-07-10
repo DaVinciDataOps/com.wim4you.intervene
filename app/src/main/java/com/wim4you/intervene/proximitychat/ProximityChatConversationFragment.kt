@@ -59,9 +59,14 @@ class ProximityChatConversationFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        messageAdapter = ChatMessageAdapter { message ->
-            speechHelper?.speak(message.text)
-        }
+        messageAdapter = ChatMessageAdapter(
+            onSpeakMessage = { message ->
+                if (!message.isDeleted) {
+                    speechHelper?.speak(message.text)
+                }
+            },
+            onRemoveMessage = { message -> showRemoveMessageDialog(message) },
+        )
         binding.recyclerMessages.layoutManager = LinearLayoutManager(requireContext()).apply {
             stackFromEnd = true
         }
@@ -155,6 +160,17 @@ class ProximityChatConversationFragment : Fragment() {
         }
     }
 
+    private fun showRemoveMessageDialog(message: ChatMessageItem) {
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.chat_remove_message_title)
+            .setMessage(R.string.chat_remove_message_body)
+            .setPositiveButton(R.string.chat_remove_confirm) { _, _ ->
+                viewModel.removeMessage(message.id)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
     private fun showRemoveChatDialog() {
         val title = viewModel.uiState.value.roomTitle.ifBlank {
             getString(R.string.menu_proximity_chat)
@@ -180,6 +196,7 @@ class ProximityChatConversationFragment : Fragment() {
             "accept_failed" -> R.string.chat_error_accept
             "decline_failed" -> R.string.chat_error_decline
             "remove_failed" -> R.string.chat_error_remove
+            "remove_message_failed" -> R.string.chat_error_remove_message
             else -> R.string.chat_error_generic
         }
         Toast.makeText(requireContext(), messageRes, Toast.LENGTH_SHORT).show()

@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -14,6 +15,7 @@ import java.util.Date
 
 class ChatMessageAdapter(
     private val onSpeakMessage: (ChatMessageItem) -> Unit,
+    private val onRemoveMessage: (ChatMessageItem) -> Unit,
 ) : ListAdapter<ChatMessageItem, ChatMessageAdapter.ViewHolder>(DiffCallback()) {
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -46,10 +48,35 @@ class ChatMessageAdapter(
         } else {
             message.senderAlias
         }
-        holder.body.text = message.text
+        if (message.isDeleted) {
+            holder.body.text = context.getString(R.string.chat_message_removed)
+            holder.body.setTextColor(ContextCompat.getColor(context, R.color.color_distress))
+            holder.speechBadge.visibility = View.GONE
+        } else {
+            holder.body.text = message.text
+            if (getItemViewType(position) == VIEW_TYPE_SENT) {
+                holder.body.setTextColor(ContextCompat.getColor(context, android.R.color.white))
+            } else {
+                holder.body.setTextColor(ContextCompat.getColor(context, R.color.text_primary))
+            }
+            holder.speechBadge.visibility = if (message.isSpeech) View.VISIBLE else View.GONE
+        }
         holder.time.text = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(message.timestamp))
-        holder.speechBadge.visibility = if (message.isSpeech) View.VISIBLE else View.GONE
-        holder.speakButton.setOnClickListener { onSpeakMessage(message) }
+        holder.speakButton.isEnabled = !message.isDeleted
+        holder.speakButton.alpha = if (message.isDeleted) 0.4f else 1f
+        holder.speakButton.setOnClickListener {
+            if (!message.isDeleted) {
+                onSpeakMessage(message)
+            }
+        }
+        holder.itemView.setOnLongClickListener {
+            if (message.isMine && !message.isDeleted) {
+                onRemoveMessage(message)
+                true
+            } else {
+                false
+            }
+        }
     }
 
     private class DiffCallback : DiffUtil.ItemCallback<ChatMessageItem>() {

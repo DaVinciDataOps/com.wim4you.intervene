@@ -19,6 +19,8 @@ object ProximityChatConstants {
 
     const val PRESENCE_STALE_MS = 5 * 60 * 1000L
 
+    const val REMOVED_MESSAGE_TEXT = "..."
+
     fun isNotifiableChatStatus(status: String): Boolean =
         status == ROOM_STATUS_ACTIVE || status == ROOM_STATUS_RINGING
 }

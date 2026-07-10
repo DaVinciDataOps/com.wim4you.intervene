@@ -39,4 +39,5 @@ data class ChatMessageItem(
     val isSpeech: Boolean,
     val timestamp: Long,
     val isMine: Boolean,
+    val isDeleted: Boolean = false,
 )

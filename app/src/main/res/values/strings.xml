@@ -177,6 +177,10 @@
     <string name="chat_remove_message">Remove \"%1$s\" and delete its message history?</string>
     <string name="chat_remove_confirm">Remove</string>
     <string name="chat_error_remove">Could not remove chat</string>
+    <string name="chat_remove_message_title">Remove message?</string>
+    <string name="chat_remove_message_body">This message will be replaced with … for everyone in the chat.</string>
+    <string name="chat_message_removed">...</string>
+    <string name="chat_error_remove_message">Could not remove message</string>
     <string name="chat_clear_all">Clear all</string>
     <string name="chat_clear_all_title">Clear all chats?</string>
     <string name="chat_clear_all_message">Remove all active chats and delete their message history? This cannot be undone.</string>

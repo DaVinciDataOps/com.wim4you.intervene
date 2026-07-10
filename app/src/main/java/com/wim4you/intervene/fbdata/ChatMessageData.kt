@@ -13,6 +13,9 @@ data class ChatMessageData(
     var isSpeech: Boolean? = false,
     @PropertyName("timestamp")
     var timestamp: Long? = null,
+    @get:PropertyName("deleted")
+    @set:PropertyName("deleted")
+    var deleted: Boolean? = false,
 ) {
-    constructor() : this(null, null, null, false, null)
+    constructor() : this(null, null, null, false, null, false)
 }
