@@ -128,6 +128,7 @@
     <string name="chat_active_chats">Actieve chats</string>
     <string name="chat_nearby_people">Mensen in de buurt</string>
     <string name="chat_nearby_hint">Tik voor een 1-op-1-chat. Houd ingedrukt om meerdere personen te selecteren voor een groepschat.</string>
+    <string name="chat_active_chats_hint">Tik op het verwijderpictogram of houd een chat ingedrukt om deze uit je lijst te verwijderen.</string>
     <string name="chat_no_active_chats">Nog geen actieve chats</string>
     <string name="chat_no_nearby_users">Er is nu niemand in de buurt beschikbaar voor chat</string>
     <string name="chat_distance_unknown">Afstand onbekend</string>

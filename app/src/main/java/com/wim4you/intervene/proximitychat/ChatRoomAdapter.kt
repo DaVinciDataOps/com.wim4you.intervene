@@ -3,6 +3,7 @@ package com.wim4you.intervene.proximitychat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.view.isVisible
@@ -15,12 +16,15 @@ import java.util.Date
 
 class ChatRoomAdapter(
     private val onRoomClick: (ChatRoomSummary) -> Unit,
+    private val onRoomLongClick: (ChatRoomSummary) -> Unit,
+    private val onRoomDeleteClick: (ChatRoomSummary) -> Unit,
 ) : ListAdapter<ChatRoomSummary, ChatRoomAdapter.ViewHolder>(DiffCallback()) {
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val title: TextView = itemView.findViewById(R.id.tvChatRoomTitle)
         val subtitle: TextView = itemView.findViewById(R.id.tvChatRoomSubtitle)
         val bell: ImageView = itemView.findViewById(R.id.ivChatRoomBell)
+        val deleteButton: ImageButton = itemView.findViewById(R.id.btnDeleteChatRoom)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -51,6 +55,11 @@ class ChatRoomAdapter(
         }
         holder.subtitle.text = subtitle
         holder.itemView.setOnClickListener { onRoomClick(room) }
+        holder.itemView.setOnLongClickListener {
+            onRoomLongClick(room)
+            true
+        }
+        holder.deleteButton.setOnClickListener { onRoomDeleteClick(room) }
     }
 
     private class DiffCallback : DiffUtil.ItemCallback<ChatRoomSummary>() {

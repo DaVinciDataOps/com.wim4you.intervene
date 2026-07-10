@@ -35,6 +35,15 @@
             android:textSize="16sp"
             android:textStyle="bold"
             tools:text="Alex" />
+
+        <ImageButton
+            android:id="@+id/btnDeleteChatRoom"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/chat_remove_title"
+            android:src="@drawable/ic_delete"
+            app:tint="?android:attr/textColorSecondary" />
     </LinearLayout>
 
     <TextView

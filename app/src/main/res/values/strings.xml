@@ -128,6 +128,7 @@
     <string name="chat_active_chats">Active chats</string>
     <string name="chat_nearby_people">Nearby people</string>
     <string name="chat_nearby_hint">Tap to start a 1-on-1 chat. Long-press to select multiple people for a group chat.</string>
+    <string name="chat_active_chats_hint">Tap the delete icon or long-press a chat to remove it from your list.</string>
     <string name="chat_no_active_chats">No active chats yet</string>
     <string name="chat_no_nearby_users">No one nearby is available for chat right now</string>
     <string name="chat_distance_unknown">Distance unknown</string>
@@ -170,6 +171,10 @@
     <string name="chat_error_accept">Could not accept chat request</string>
     <string name="chat_error_decline">Could not decline chat request</string>
     <string name="chat_chat_active">Chat is live</string>
+    <string name="chat_remove_title">Remove chat?</string>
+    <string name="chat_remove_message">Remove \"%1$s\" from your active chats?</string>
+    <string name="chat_remove_confirm">Remove</string>
+    <string name="chat_error_remove">Could not remove chat</string>
 
 
     <string-array name="gender_options">

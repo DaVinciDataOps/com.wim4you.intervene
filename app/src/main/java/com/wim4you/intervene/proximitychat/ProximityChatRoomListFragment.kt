@@ -46,9 +46,11 @@ class ProximityChatRoomListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        roomAdapter = ChatRoomAdapter { room ->
-            navigateToConversation(room.roomId)
-        }
+        roomAdapter = ChatRoomAdapter(
+            onRoomClick = { room -> navigateToConversation(room.roomId) },
+            onRoomLongClick = { room -> showRemoveChatDialog(room) },
+            onRoomDeleteClick = { room -> showRemoveChatDialog(room) },
+        )
         nearbyAdapter = NearbyChatUserAdapter(
             selectedIds = { viewModel.uiState.value.selectedUserIds },
             onUserClick = { user ->
@@ -169,6 +171,19 @@ class ProximityChatRoomListFragment : Fragment() {
             .show()
     }
 
+    private fun showRemoveChatDialog(room: ChatRoomSummary) {
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.chat_remove_title)
+            .setMessage(getString(R.string.chat_remove_message, room.displayName))
+            .setPositiveButton(R.string.chat_remove_confirm) { _, _ ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    viewModel.removeChat(room.roomId)
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
     private fun navigateToConversation(roomId: String) {
         val bundle = Bundle().apply {
             putString(ProximityChatConversationViewModel.ARG_ROOM_ID, roomId)
@@ -187,6 +202,7 @@ class ProximityChatRoomListFragment : Fragment() {
             "profile_failed" -> R.string.chat_error_profile
             "presence_failed" -> R.string.chat_error_presence
             "room_failed" -> R.string.chat_error_room
+            "remove_failed" -> R.string.chat_error_remove
             else -> R.string.chat_error_generic
         }
         Toast.makeText(requireContext(), messageRes, Toast.LENGTH_LONG).show()

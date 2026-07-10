@@ -149,6 +149,17 @@ class ProximityChatRoomListViewModel @Inject constructor(
         }
     }
 
+    suspend fun removeChat(roomId: String) {
+        val myUid = _uiState.value.myUid ?: return
+        try {
+            chatRepository.removeChatRoom(roomId, myUid)
+            knownIncomingRings.remove(roomId)
+        } catch (exception: Exception) {
+            SecureLog.e(TAG, "Failed to remove chat", exception)
+            _uiState.update { it.copy(errorMessage = "remove_failed") }
+        }
+    }
+
     suspend fun createGroupChat(groupName: String): String? {
         val state = _uiState.value
         val myUid = state.myUid ?: return null

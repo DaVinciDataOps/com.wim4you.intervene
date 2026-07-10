@@ -251,8 +251,24 @@ class ProximityChatRepository @Inject constructor() {
             roomRef.child("participants").child(otherUid).setValueOnce(
                 mapOf("alias" to otherAlias, "joinedAt" to now, "accepted" to false),
             )
+        } else {
+            linkUserToRoom(myUid, roomId, System.currentTimeMillis())
         }
         return roomId
+    }
+
+    suspend fun removeChatRoom(roomId: String, myUid: String) {
+        database.child(ProximityChatConstants.USER_ROOMS_PATH)
+            .child(myUid)
+            .child(roomId)
+            .removeValueOnce()
+        val roomRef = database.child(ProximityChatConstants.ROOMS_PATH).child(roomId)
+        val snapshot = roomRef.getOnce()
+        val isGroup = snapshot.child("type").getValue(String::class.java) ==
+            ProximityChatConstants.ROOM_TYPE_GROUP
+        if (isGroup) {
+            roomRef.child("participants").child(myUid).removeValueOnce()
+        }
     }
 
     suspend fun isRoomActive(roomId: String): Boolean {
