@@ -25,19 +25,17 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
-import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.getValue
 import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.Constants
 import com.wim4you.intervene.FirebaseAuthManager
+import com.wim4you.intervene.FirebaseDatabaseProvider
 import com.wim4you.intervene.R
 import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.fbdata.DistressLocationData
 import com.wim4you.intervene.fbdata.PatrolLocationData
-import com.wim4you.intervene.helpers.DistanceUtils
 import com.wim4you.intervene.repository.MapLocationRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -55,17 +53,17 @@ class LocationTrackerService : Service() {
     private lateinit var locationCallback: LocationCallback
     private lateinit var geoFirePatrols: GeoFire
     private lateinit var geoQueryPatrols: GeoQuery
+    private lateinit var geoFireDistress: GeoFire
+    private lateinit var geoQueryDistress: GeoQuery
 
     private val patrolLocationDataList = mutableListOf<PatrolLocationData>()
     private val distressLocationDataList = mutableListOf<DistressLocationData>()
-    private val distressCache = mutableMapOf<String, DistressLocationData>()
     private lateinit var attributedContext: Context
 
     private var lastPatrolQueryCenter: GeoLocation? = null
-    private var distressQueryCenter: GeoLocation? = null
+    private var lastDistressQueryCenter: GeoLocation? = null
     private var patrolListenersAttached = false
-    private var distressChildListenerAttached = false
-    private var distressChildListener: ChildEventListener? = null
+    private var distressListenersAttached = false
     private var isFirebaseReady = false
     private var pendingQueryLocation: GeoLocation? = null
 
@@ -104,27 +102,28 @@ class LocationTrackerService : Service() {
         }
     }
 
-    private val distressChildListenerImpl = object : ChildEventListener {
-        override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-            handleDistressChildSnapshot(snapshot)
+    private val distressQueryListener = object : GeoQueryDataEventListener {
+        override fun onDataEntered(dataSnapshot: DataSnapshot, location: GeoLocation) {
+            handleDistressSnapshot(dataSnapshot, location)
         }
 
-        override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
-            handleDistressChildSnapshot(snapshot)
+        override fun onDataExited(dataSnapshot: DataSnapshot) {
+            distressLocationDataList.removeAll { it.id == dataSnapshot.key }
+            broadcastDistressUpdate(distressLocationDataList)
         }
 
-        override fun onChildRemoved(snapshot: DataSnapshot) {
-            val key = snapshot.key ?: return
-            distressCache.remove(key)
-            publishDistressNearby()
+        override fun onDataMoved(dataSnapshot: DataSnapshot, location: GeoLocation) {
+            handleDistressSnapshot(dataSnapshot, location)
         }
 
-        override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
-            handleDistressChildSnapshot(snapshot)
+        override fun onDataChanged(dataSnapshot: DataSnapshot, location: GeoLocation) {
+            handleDistressSnapshot(dataSnapshot, location)
         }
 
-        override fun onCancelled(error: DatabaseError) {
-            Log.e("LocationTrackerService", "Distress child listener error: ${error.message}")
+        override fun onGeoQueryReady() = Unit
+
+        override fun onGeoQueryError(error: DatabaseError) {
+            Log.e("LocationTrackerService", "Distress geo query error: ${error.message}")
         }
     }
 
@@ -155,8 +154,9 @@ class LocationTrackerService : Service() {
     }
 
     private fun setupFirebase() {
-        val database = FirebaseDatabase.getInstance()
-        geoFirePatrols = GeoFire(database.getReference("patrols"))
+        val database = FirebaseDatabaseProvider.reference()
+        geoFirePatrols = GeoFire(database.child("patrols"))
+        geoFireDistress = GeoFire(database.child("distress"))
         SecureLog.d("LocationTrackerService", "Firebase geo queries initialized")
     }
 
@@ -226,13 +226,13 @@ class LocationTrackerService : Service() {
             }
         }
         ensurePatrolQuery(userLocation)
-        ensureDistressObservation(userLocation)
+        ensureDistressQuery(userLocation)
     }
 
     private fun bootstrapGeoQueries() {
         pendingQueryLocation?.let { location ->
             ensurePatrolQuery(location)
-            ensureDistressObservation(location)
+            ensureDistressQuery(location)
             return
         }
         if (ActivityCompat.checkSelfPermission(attributedContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -278,51 +278,37 @@ class LocationTrackerService : Service() {
         patrolListenersAttached = true
     }
 
-    private fun ensureDistressObservation(center: GeoLocation) {
+    private fun ensureDistressQuery(location: GeoLocation) {
         if (!isFirebaseReady) return
-        distressQueryCenter = center
-        if (!distressChildListenerAttached) {
-            val distressRef = FirebaseDatabase.getInstance().getReference("distress")
-            distressRef.addChildEventListener(distressChildListenerImpl)
-            distressChildListener = distressChildListenerImpl
-            distressChildListenerAttached = true
-            SecureLog.d("LocationTrackerService", "Distress child listener attached")
-        }
-        publishDistressNearby()
-    }
-
-    private fun handleDistressChildSnapshot(snapshot: DataSnapshot) {
-        val key = snapshot.key ?: return
-        val distress = parseDistressSnapshot(snapshot)
-        if (distress == null || !validData(distress)) {
-            distressCache.remove(key)
-        } else {
-            distress.id = key
-            if (distress.personId.isNullOrBlank()) {
-                distress.personId = key
-            }
-            distressCache[key] = distress
-        }
-        publishDistressNearby()
-    }
-
-    private fun publishDistressNearby() {
-        val center = distressQueryCenter
-        if (center == null) {
-            distressLocationDataList.clear()
-            broadcastDistressUpdate(distressLocationDataList)
+        if (distressListenersAttached && !shouldRecenterQuery(lastDistressQueryCenter, location)) {
             return
         }
-        val radiusMeters = AppModeController.GEO_QUERY_RADIUS_KM * 1000.0
-        val nearby = distressCache.values.filter { distress ->
-            val lat = distress.latitude ?: return@filter false
-            val lng = distress.longitude ?: return@filter false
-            validData(distress) &&
-                DistanceUtils.metersBetween(center.latitude, center.longitude, lat, lng) <= radiusMeters
+        if (distressListenersAttached && ::geoQueryDistress.isInitialized) {
+            geoQueryDistress.removeAllListeners()
         }
         distressLocationDataList.clear()
-        distressLocationDataList.addAll(nearby)
-        broadcastDistressUpdate(nearby)
+        broadcastDistressUpdate(distressLocationDataList)
+        lastDistressQueryCenter = location
+        geoQueryDistress = geoFireDistress.queryAtLocation(location, AppModeController.GEO_QUERY_RADIUS_KM)
+        geoQueryDistress.addGeoQueryDataEventListener(distressQueryListener)
+        distressListenersAttached = true
+    }
+
+    private fun handleDistressSnapshot(dataSnapshot: DataSnapshot, location: GeoLocation) {
+        val distress = parseDistressSnapshot(dataSnapshot) ?: return
+        if (!validData(distress)) return
+        distress.id = dataSnapshot.key
+        if (distress.personId.isNullOrBlank()) {
+            distress.personId = dataSnapshot.key
+        }
+        distress.l = listOf(location.latitude, location.longitude)
+        val index = distressLocationDataList.indexOfFirst { it.id == dataSnapshot.key }
+        if (index == -1) {
+            distressLocationDataList.add(distress)
+        } else {
+            distressLocationDataList[index] = distress
+        }
+        broadcastDistressUpdate(distressLocationDataList)
     }
 
     private fun parseDistressSnapshot(snapshot: DataSnapshot): DistressLocationData? {
@@ -377,8 +363,8 @@ class LocationTrackerService : Service() {
         if (::geoQueryPatrols.isInitialized) {
             geoQueryPatrols.removeAllListeners()
         }
-        distressChildListener?.let { listener ->
-            FirebaseDatabase.getInstance().getReference("distress").removeEventListener(listener)
+        if (::geoQueryDistress.isInitialized) {
+            geoQueryDistress.removeAllListeners()
         }
         if (::locationCallback.isInitialized) {
             fusedLocationClient.removeLocationUpdates(locationCallback)

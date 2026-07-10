@@ -52,7 +52,6 @@ class ProximityChatRoomListFragment : Fragment() {
             onRoomDeleteClick = { room -> showRemoveChatDialog(room) },
         )
         nearbyAdapter = NearbyChatUserAdapter(
-            selectedIds = { viewModel.uiState.value.selectedUserIds },
             onUserClick = { user ->
                 viewLifecycleOwner.lifecycleScope.launch {
                     val roomId = viewModel.openDirectChat(user)
@@ -63,7 +62,6 @@ class ProximityChatRoomListFragment : Fragment() {
             },
             onUserLongClick = { user ->
                 viewModel.toggleUserSelection(user.uid)
-                nearbyAdapter.notifyDataSetChanged()
                 updateSelectionUi()
             },
         )
@@ -77,7 +75,6 @@ class ProximityChatRoomListFragment : Fragment() {
         binding.btnClearAllChats.setOnClickListener { showClearAllChatsDialog() }
         binding.btnClearSelection.setOnClickListener {
             viewModel.clearSelection()
-            nearbyAdapter.notifyDataSetChanged()
             updateSelectionUi()
         }
         binding.swipeRefresh.setOnRefreshListener { requestLocationAndRefresh() }
@@ -87,6 +84,7 @@ class ProximityChatRoomListFragment : Fragment() {
                 launch {
                     viewModel.uiState.collectLatest { state ->
                         roomAdapter.submitList(state.rooms)
+                        nearbyAdapter.selectionUiVisible = state.selectedUserIds.isNotEmpty()
                         nearbyAdapter.submitList(state.nearbyUsers)
                         binding.emptyChatRooms.isVisible = state.rooms.isEmpty()
                         binding.btnClearAllChats.isVisible = state.rooms.isNotEmpty()

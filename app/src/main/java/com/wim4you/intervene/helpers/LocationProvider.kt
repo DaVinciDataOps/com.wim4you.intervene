@@ -7,6 +7,7 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 object LocationProvider {
@@ -27,7 +28,7 @@ object LocationProvider {
 
                 fusedLocationClient.getCurrentLocation(request, cancellationTokenSource.token)
                     .addOnSuccessListener { newLocation ->
-                        continuation.resume(newLocation) { cause, _, _ -> cancellationTokenSource }
+                        continuation.resume(newLocation) { _, _, _ -> cancellationTokenSource.cancel() }
                     }
                     .addOnFailureListener { exception ->
                         continuation.resumeWithException(exception)

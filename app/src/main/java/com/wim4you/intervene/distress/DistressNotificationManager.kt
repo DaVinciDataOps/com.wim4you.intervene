@@ -5,8 +5,8 @@ import android.location.Geocoder
 import android.location.Location
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ServerValue
+import com.wim4you.intervene.FirebaseDatabaseProvider
 import android.util.Log
 import java.util.Locale
 
@@ -50,7 +50,7 @@ object DistressNotificationManager {
                         }
 
                         // Reference to Firebase Realtime Database
-                        val database = FirebaseDatabase.getInstance().reference
+                        val database = FirebaseDatabaseProvider.reference()
                         val notificationRef = database.child("notifications").push()
 
                         // Create notification data payload with geolocation
@@ -91,7 +91,7 @@ object DistressNotificationManager {
     }
 
     private fun sendFallbackNotification(context: Context) {
-        val database = FirebaseDatabase.getInstance().reference
+        val database = FirebaseDatabaseProvider.reference()
         val notificationRef = database.child("notifications").push()
 
         val notificationData = mapOf(

@@ -14,10 +14,16 @@ import com.wim4you.intervene.R
 import com.wim4you.intervene.helpers.DistanceUtils
 
 class NearbyChatUserAdapter(
-    private val selectedIds: () -> Set<String>,
     private val onUserClick: (NearbyChatUser) -> Unit,
     private val onUserLongClick: (NearbyChatUser) -> Unit,
 ) : ListAdapter<NearbyChatUser, NearbyChatUserAdapter.ViewHolder>(DiffCallback()) {
+
+    var selectionUiVisible: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            notifyItemRangeChanged(0, itemCount, PAYLOAD_SELECTION_UI)
+        }
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val alias: TextView = itemView.findViewById(R.id.tvNearbyAlias)
@@ -29,32 +35,58 @@ class NearbyChatUserAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_nearby_chat_user, parent, false)
-        return ViewHolder(view)
-    }
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val user = getItem(position)
-        val context = holder.itemView.context
-        holder.alias.text = user.alias
-        holder.distance.text = user.distanceMeters?.let { DistanceUtils.formatDistanceMeters(it) }
-            ?: context.getString(R.string.chat_distance_unknown)
-        holder.bell.isVisible = user.hasUnreadIndicator
-        holder.bell.contentDescription = context.getString(R.string.chat_unread_label)
-        val isSelected = user.uid in selectedIds()
-        holder.checkbox.isChecked = isSelected
-        holder.checkbox.visibility = if (selectedIds().isNotEmpty()) View.VISIBLE else View.GONE
+        val holder = ViewHolder(view)
         holder.itemView.setOnClickListener {
-            if (selectedIds().isNotEmpty()) {
+            val position = holder.bindingAdapterPosition
+            if (position == RecyclerView.NO_POSITION) return@setOnClickListener
+            val user = getItem(position)
+            if (selectionUiVisible) {
                 onUserLongClick(user)
             } else {
                 onUserClick(user)
             }
         }
         holder.itemView.setOnLongClickListener {
-            onUserLongClick(user)
+            val position = holder.bindingAdapterPosition
+            if (position == RecyclerView.NO_POSITION) return@setOnLongClickListener false
+            onUserLongClick(getItem(position))
             true
         }
-        holder.checkbox.setOnClickListener { onUserLongClick(user) }
+        holder.checkbox.setOnClickListener {
+            val position = holder.bindingAdapterPosition
+            if (position == RecyclerView.NO_POSITION) return@setOnClickListener
+            onUserLongClick(getItem(position))
+        }
+        return holder
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        bindUser(holder, getItem(position), fullBind = true)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.contains(PAYLOAD_SELECTION_UI)) {
+            bindSelectionUi(holder, getItem(position))
+        } else {
+            super.onBindViewHolder(holder, position, payloads)
+        }
+    }
+
+    private fun bindUser(holder: ViewHolder, user: NearbyChatUser, fullBind: Boolean) {
+        if (fullBind) {
+            val context = holder.itemView.context
+            holder.alias.text = user.alias
+            holder.distance.text = user.distanceMeters?.let { DistanceUtils.formatDistanceMeters(it) }
+                ?: context.getString(R.string.chat_distance_unknown)
+            holder.bell.isVisible = user.hasUnreadIndicator
+            holder.bell.contentDescription = context.getString(R.string.chat_unread_label)
+        }
+        bindSelectionUi(holder, user)
+    }
+
+    private fun bindSelectionUi(holder: ViewHolder, user: NearbyChatUser) {
+        holder.checkbox.isChecked = user.isSelected
+        holder.checkbox.visibility = if (selectionUiVisible) View.VISIBLE else View.GONE
     }
 
     private class DiffCallback : DiffUtil.ItemCallback<NearbyChatUser>() {
@@ -63,5 +95,9 @@ class NearbyChatUserAdapter(
 
         override fun areContentsTheSame(oldItem: NearbyChatUser, newItem: NearbyChatUser): Boolean =
             oldItem == newItem
+    }
+
+    companion object {
+        private const val PAYLOAD_SELECTION_UI = "selection_ui"
     }
 }

@@ -11,6 +11,8 @@ import com.wim4you.intervene.repository.ProximityChatRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,6 +51,9 @@ class ProximityChatConversationViewModel @Inject constructor(
     val uiState: StateFlow<ProximityChatConversationUiState> = _uiState.asStateFlow()
 
     private var lastSpokenMessageId: String? = null
+    private var readReceiptJob: Job? = null
+    private var pendingReadAt: Long = 0L
+    private var lastPersistedReadAt: Long = 0L
 
     init {
         if (roomId.isNotEmpty()) {
@@ -197,10 +202,17 @@ class ProximityChatConversationViewModel @Inject constructor(
 
     private fun markConversationAccessed(messages: List<ChatMessageItem>, myUid: String) {
         if (_uiState.value.roomStatus == ProximityChatConstants.ROOM_STATUS_DECLINED) return
-        val readAt = messages.maxOfOrNull { it.timestamp } ?: System.currentTimeMillis()
-        viewModelScope.launch {
+        val readAt = messages.maxOfOrNull { it.timestamp } ?: return
+        if (readAt <= lastPersistedReadAt) return
+        pendingReadAt = maxOf(pendingReadAt, readAt)
+        readReceiptJob?.cancel()
+        readReceiptJob = viewModelScope.launch {
+            delay(READ_RECEIPT_DEBOUNCE_MS)
+            val toWrite = pendingReadAt
+            if (toWrite <= lastPersistedReadAt) return@launch
             try {
-                chatRepository.updateLastReadAt(roomId, myUid, readAt)
+                chatRepository.updateLastReadAt(roomId, myUid, toWrite)
+                lastPersistedReadAt = toWrite
             } catch (exception: Exception) {
                 SecureLog.e(TAG, "Failed to update last read timestamp", exception)
             }
@@ -239,5 +251,6 @@ class ProximityChatConversationViewModel @Inject constructor(
     companion object {
         const val ARG_ROOM_ID = "roomId"
         private const val TAG = "ProximityChatConversationVM"
+        private const val READ_RECEIPT_DEBOUNCE_MS = 1_500L
     }
 }

@@ -17,7 +17,6 @@ import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import com.google.firebase.database.FirebaseDatabase
 import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.Constants
 import com.wim4you.intervene.FirebaseAuthManager
@@ -38,6 +37,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import java.util.Locale
 
@@ -156,7 +156,7 @@ class DistressService : Service() {
                 .addOnFailureListener { continuation.resume(null) }
         }
 
-    private fun sendStartDistressToFirebase(
+    private suspend fun sendStartDistressToFirebase(
         personData: PersonData,
         firebaseUid: String,
         init: Boolean,
@@ -186,7 +186,7 @@ class DistressService : Service() {
             }
     }
 
-    private fun sendDistressToHistory(
+    private suspend fun sendDistressToHistory(
         personData: PersonData,
         firebaseUid: String,
         geoLocation: GeoLocation,
@@ -241,23 +241,28 @@ class DistressService : Service() {
         manager.createNotificationChannel(channel)
     }
 
-    private fun getAddress(geoLocation: GeoLocation): AddressData {
-        var unknown = "Unknown location"
-        val apiAvailability = GoogleApiAvailability.getInstance()
-        val resultCode = apiAvailability.isGooglePlayServicesAvailable(attributedContext)
-        if (resultCode != ConnectionResult.SUCCESS) {
-            return AddressData(street = unknown, city = unknown, country = unknown)
-        }
+    private suspend fun getAddress(geoLocation: GeoLocation): AddressData =
+        withContext(Dispatchers.IO) {
+            val unknown = "Unknown location"
+            val apiAvailability = GoogleApiAvailability.getInstance()
+            val resultCode = apiAvailability.isGooglePlayServicesAvailable(attributedContext)
+            if (resultCode != ConnectionResult.SUCCESS) {
+                return@withContext AddressData(street = unknown, city = unknown, country = unknown)
+            }
 
-        val geocoder = Geocoder(attributedContext, Locale.getDefault())
-        val addresses = geocoder.getFromLocation(geoLocation.latitude, geoLocation.longitude, 1)
-        if (!addresses.isNullOrEmpty()){
-            var address = addresses.first()
-            return AddressData(street = "${address.thoroughfare} ${address.subThoroughfare}", city = address.locality, country = address.countryName)
-        }
+            val geocoder = Geocoder(attributedContext, Locale.getDefault())
+            val addresses = geocoder.getFromLocation(geoLocation.latitude, geoLocation.longitude, 1)
+            if (!addresses.isNullOrEmpty()) {
+                val address = addresses.first()
+                return@withContext AddressData(
+                    street = "${address.thoroughfare} ${address.subThoroughfare}",
+                    city = address.locality,
+                    country = address.countryName,
+                )
+            }
 
-        return AddressData(street = unknown, city = unknown, country = unknown)
-    }
+            AddressData(street = unknown, city = unknown, country = unknown)
+        }
 
     override fun onDestroy() {
         super.onDestroy()

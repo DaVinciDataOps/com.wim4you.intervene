@@ -7,6 +7,7 @@ data class NearbyChatUser(
     val latitude: Double?,
     val longitude: Double?,
     val hasUnreadIndicator: Boolean = false,
+    val isSelected: Boolean = false,
 )
 
 data class ChatRoomSummary(

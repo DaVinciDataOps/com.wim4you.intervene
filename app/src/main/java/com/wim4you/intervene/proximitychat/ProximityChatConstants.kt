@@ -21,6 +21,9 @@ object ProximityChatConstants {
 
     const val REMOVED_MESSAGE_TEXT = "..."
 
+    /** Maximum messages loaded per conversation to keep UI responsive. */
+    const val MESSAGE_LOAD_LIMIT = 200
+
     fun isNotifiableChatStatus(status: String): Boolean =
         status == ROOM_STATUS_ACTIVE
 

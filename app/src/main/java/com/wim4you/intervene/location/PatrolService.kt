@@ -15,10 +15,10 @@ import com.firebase.geofire.GeoFireUtils
 import com.firebase.geofire.GeoLocation
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import com.google.firebase.database.FirebaseDatabase
 import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.Constants
 import com.wim4you.intervene.FirebaseAuthManager
+import com.wim4you.intervene.FirebaseDatabaseProvider
 import com.wim4you.intervene.FirebaseUtils
 import com.wim4you.intervene.R
 import com.wim4you.intervene.SecureLog
@@ -42,7 +42,7 @@ class PatrolService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val channelId = Constants.PATROL_SERVICE_CHANNEL_ID
     private val notificationId = Constants.PATROL_SERVICE_NOTIFICATION_ID
-    private val database = FirebaseDatabase.getInstance().reference
+    private val database = FirebaseDatabaseProvider.reference()
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var patrolJob: Job? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())

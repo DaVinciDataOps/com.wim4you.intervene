@@ -45,7 +45,7 @@ class ChatRoomAdapter(
         } else {
             context.getString(R.string.chat_direct_label)
         }
-        val timeLabel = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(room.lastMessageAt))
+        val timeLabel = TIME_FORMATTER.format(Date(room.lastMessageAt))
         holder.subtitle.text = context.getString(R.string.chat_room_meta, typeLabel, timeLabel)
         holder.itemView.setOnClickListener { onRoomClick(room) }
         holder.itemView.setOnLongClickListener {
@@ -61,5 +61,9 @@ class ChatRoomAdapter(
 
         override fun areContentsTheSame(oldItem: ChatRoomSummary, newItem: ChatRoomSummary): Boolean =
             oldItem == newItem
+    }
+
+    companion object {
+        private val TIME_FORMATTER: DateFormat = DateFormat.getTimeInstance(DateFormat.SHORT)
     }
 }

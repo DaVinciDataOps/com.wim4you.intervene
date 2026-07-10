@@ -9,8 +9,8 @@ import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.wim4you.intervene.FirebaseDatabaseProvider
 import com.wim4you.intervene.FirebaseUtils
 import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.fbdata.ChatMessageData
@@ -25,6 +25,7 @@ import com.wim4you.intervene.proximitychat.ProximityChatConstants
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -41,7 +42,7 @@ import kotlin.coroutines.resumeWithException
 @Singleton
 class ProximityChatRepository @Inject constructor() {
 
-    private val database = FirebaseDatabase.getInstance().reference
+    private val database = FirebaseDatabaseProvider.reference()
     private val geoFire = GeoFire(database.child(ProximityChatConstants.PRESENCE_PATH))
 
     fun directRoomId(uid1: String, uid2: String): String {
@@ -875,47 +876,73 @@ class ProximityChatRepository @Inject constructor() {
 
     fun observeMessages(roomId: String, myUid: String): Flow<List<ChatMessageItem>> = callbackFlow {
         val messages = linkedMapOf<String, ChatMessageItem>()
-        val messagesRef = database.child(ProximityChatConstants.MESSAGES_PATH).child(roomId)
+        var sortedSnapshot = emptyList<ChatMessageItem>()
+        val mutex = Mutex()
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+        suspend fun publishSortedList() {
+            val next = messages.values.sortedBy { it.timestamp }
+            if (next == sortedSnapshot) return
+            sortedSnapshot = next
+            trySend(next)
+        }
+
+        fun parseMessage(snapshot: DataSnapshot): ChatMessageItem? {
+            val messageId = snapshot.key ?: return null
+            val data = snapshot.getValue(ChatMessageData::class.java) ?: return null
+            val senderId = data.senderId ?: return null
+            val timestamp = data.timestamp ?: return null
+            val isDeleted = data.deleted == true ||
+                data.text == ProximityChatConstants.REMOVED_MESSAGE_TEXT
+            val text = if (isDeleted) {
+                ""
+            } else {
+                data.text?.takeIf { it.isNotBlank() } ?: return null
+            }
+            return ChatMessageItem(
+                id = messageId,
+                senderId = senderId,
+                senderAlias = data.senderAlias.orEmpty(),
+                text = text,
+                isSpeech = data.isSpeech == true,
+                timestamp = timestamp,
+                isMine = senderId == myUid,
+                isDeleted = isDeleted,
+            )
+        }
 
         val listener = object : ChildEventListener {
-            private fun handleSnapshot(snapshot: DataSnapshot) {
-                val messageId = snapshot.key ?: return
-                val data = snapshot.getValue(ChatMessageData::class.java) ?: return
-                val senderId = data.senderId ?: return
-                val timestamp = data.timestamp ?: return
-                val isDeleted = data.deleted == true ||
-                    data.text == ProximityChatConstants.REMOVED_MESSAGE_TEXT
-                val text = if (isDeleted) {
-                    ""
-                } else {
-                    data.text?.takeIf { it.isNotBlank() } ?: return
+            private fun scheduleUpdate(snapshot: DataSnapshot) {
+                scope.launch {
+                    mutex.withLock {
+                        val item = parseMessage(snapshot) ?: return@launch
+                        messages[item.id] = item
+                        publishSortedList()
+                    }
                 }
-                messages[messageId] = ChatMessageItem(
-                    id = messageId,
-                    senderId = senderId,
-                    senderAlias = data.senderAlias.orEmpty(),
-                    text = text,
-                    isSpeech = data.isSpeech == true,
-                    timestamp = timestamp,
-                    isMine = senderId == myUid,
-                    isDeleted = isDeleted,
-                )
-                trySend(messages.values.sortedBy { it.timestamp })
+            }
+
+            private fun scheduleRemove(messageId: String) {
+                scope.launch {
+                    mutex.withLock {
+                        if (messages.remove(messageId) != null) {
+                            publishSortedList()
+                        }
+                    }
+                }
             }
 
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                handleSnapshot(snapshot)
+                scheduleUpdate(snapshot)
             }
 
             override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
-                handleSnapshot(snapshot)
+                scheduleUpdate(snapshot)
             }
 
             override fun onChildRemoved(snapshot: DataSnapshot) {
                 val messageId = snapshot.key ?: return
-                if (messages.remove(messageId) != null) {
-                    trySend(messages.values.sortedBy { it.timestamp })
-                }
+                scheduleRemove(messageId)
             }
 
             override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) = Unit
@@ -925,8 +952,14 @@ class ProximityChatRepository @Inject constructor() {
             }
         }
 
+        val messagesRef = database.child(ProximityChatConstants.MESSAGES_PATH)
+            .child(roomId)
+            .limitToLast(ProximityChatConstants.MESSAGE_LOAD_LIMIT)
         messagesRef.addChildEventListener(listener)
-        awaitClose { messagesRef.removeEventListener(listener) }
+        awaitClose {
+            scope.cancel()
+            messagesRef.removeEventListener(listener)
+        }
     }
 
     suspend fun sendMessage(

@@ -2,9 +2,9 @@ package com.wim4you.intervene.repository
 
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.wim4you.intervene.FirebaseAuthManager
+import com.wim4you.intervene.FirebaseDatabaseProvider
 import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.helpers.SafeWordHasher
@@ -12,11 +12,12 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 @Singleton
 class InterveningRepository @Inject constructor() {
 
-    private val database = FirebaseDatabase.getInstance().reference
+    private val database = FirebaseDatabaseProvider.reference()
 
     suspend fun verifySafeWord(distressFirebaseUid: String, safeWord: String): Boolean {
         return try {
@@ -66,7 +67,7 @@ class InterveningRepository @Inject constructor() {
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    continuation.resumeWith(Result.failure(error.toException()))
+                    continuation.resumeWithException(error.toException())
                 }
             })
         }
@@ -75,7 +76,7 @@ class InterveningRepository @Inject constructor() {
         suspendCancellableCoroutine { continuation ->
             setValue(value)
                 .addOnSuccessListener { continuation.resume(Unit) }
-                .addOnFailureListener { continuation.resumeWith(Result.failure(it)) }
+                .addOnFailureListener { continuation.resumeWithException(it) }
         }
 
     private companion object {

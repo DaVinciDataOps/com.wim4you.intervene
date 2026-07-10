@@ -18,6 +18,10 @@ class ChatMessageAdapter(
     private val onRemoveMessage: (ChatMessageItem) -> Unit,
 ) : ListAdapter<ChatMessageItem, ChatMessageAdapter.ViewHolder>(DiffCallback()) {
 
+    init {
+        setHasStableIds(true)
+    }
+
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val sender: TextView = itemView.findViewById(R.id.tvMessageSender)
         val body: TextView = itemView.findViewById(R.id.tvMessageBody)
@@ -25,6 +29,8 @@ class ChatMessageAdapter(
         val speechBadge: TextView = itemView.findViewById(R.id.tvSpeechBadge)
         val speakButton: ImageButton = itemView.findViewById(R.id.btnSpeakMessage)
     }
+
+    override fun getItemId(position: Int): Long = getItem(position).id.hashCode().toLong()
 
     override fun getItemViewType(position: Int): Int {
         return if (getItem(position).isMine) VIEW_TYPE_SENT else VIEW_TYPE_RECEIVED
@@ -37,7 +43,27 @@ class ChatMessageAdapter(
             R.layout.item_chat_message_received
         }
         val view = LayoutInflater.from(parent.context).inflate(layout, parent, false)
-        return ViewHolder(view)
+        val holder = ViewHolder(view)
+        holder.speakButton.setOnClickListener {
+            val position = holder.bindingAdapterPosition
+            if (position == RecyclerView.NO_POSITION) return@setOnClickListener
+            val message = getItem(position)
+            if (!message.isDeleted) {
+                onSpeakMessage(message)
+            }
+        }
+        holder.itemView.setOnLongClickListener {
+            val position = holder.bindingAdapterPosition
+            if (position == RecyclerView.NO_POSITION) return@setOnLongClickListener false
+            val message = getItem(position)
+            if (message.isMine && !message.isDeleted) {
+                onRemoveMessage(message)
+                true
+            } else {
+                false
+            }
+        }
+        return holder
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -61,22 +87,9 @@ class ChatMessageAdapter(
             }
             holder.speechBadge.visibility = if (message.isSpeech) View.VISIBLE else View.GONE
         }
-        holder.time.text = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(message.timestamp))
+        holder.time.text = TIME_FORMATTER.format(Date(message.timestamp))
         holder.speakButton.isEnabled = !message.isDeleted
         holder.speakButton.alpha = if (message.isDeleted) 0.4f else 1f
-        holder.speakButton.setOnClickListener {
-            if (!message.isDeleted) {
-                onSpeakMessage(message)
-            }
-        }
-        holder.itemView.setOnLongClickListener {
-            if (message.isMine && !message.isDeleted) {
-                onRemoveMessage(message)
-                true
-            } else {
-                false
-            }
-        }
     }
 
     private class DiffCallback : DiffUtil.ItemCallback<ChatMessageItem>() {
@@ -90,5 +103,6 @@ class ChatMessageAdapter(
     companion object {
         private const val VIEW_TYPE_SENT = 1
         private const val VIEW_TYPE_RECEIVED = 2
+        private val TIME_FORMATTER: DateFormat = DateFormat.getTimeInstance(DateFormat.SHORT)
     }
 }

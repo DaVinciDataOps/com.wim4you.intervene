@@ -130,12 +130,31 @@ class ProximityChatRoomListViewModel @Inject constructor(
             if (!updated.add(uid)) {
                 updated.remove(uid)
             }
-            state.copy(selectedUserIds = updated)
+            val myUid = state.myUid
+            state.copy(
+                selectedUserIds = updated,
+                nearbyUsers = if (myUid == null) {
+                    state.nearbyUsers.map { it.copy(isSelected = it.uid in updated) }
+                } else {
+                    applyNearbyUserState(
+                        state.nearbyUsers,
+                        state.unreadSenderUids,
+                        updated,
+                        state.rooms,
+                        myUid,
+                    )
+                },
+            )
         }
     }
 
     fun clearSelection() {
-        _uiState.update { it.copy(selectedUserIds = emptySet()) }
+        _uiState.update { state ->
+            state.copy(
+                selectedUserIds = emptySet(),
+                nearbyUsers = state.nearbyUsers.map { it.copy(isSelected = false) },
+            )
+        }
     }
 
     suspend fun openDirectChat(otherUser: NearbyChatUser): String? {
@@ -259,9 +278,10 @@ class ProximityChatRoomListViewModel @Inject constructor(
             chatRepository.observeNearbyUsers(latitude, longitude, uid).collect { users ->
                 _uiState.update { state ->
                     state.copy(
-                        nearbyUsers = applyUnreadToNearby(
+                        nearbyUsers = applyNearbyUserState(
                             users,
                             state.unreadSenderUids,
+                            state.selectedUserIds,
                             state.rooms,
                             uid,
                         ),
@@ -282,9 +302,10 @@ class ProximityChatRoomListViewModel @Inject constructor(
                 _uiState.update { state ->
                     state.copy(
                         unreadSenderUids = unreadSenderUids,
-                        nearbyUsers = applyUnreadToNearby(
+                        nearbyUsers = applyNearbyUserState(
                             state.nearbyUsers,
                             unreadSenderUids,
+                            state.selectedUserIds,
                             state.rooms,
                             uid,
                         ),
@@ -306,9 +327,10 @@ class ProximityChatRoomListViewModel @Inject constructor(
                 _uiState.update { state ->
                     state.copy(
                         rooms = rooms,
-                        nearbyUsers = applyUnreadToNearby(
+                        nearbyUsers = applyNearbyUserState(
                             state.nearbyUsers,
                             state.unreadSenderUids,
+                            state.selectedUserIds,
                             rooms,
                             uid,
                         ),
@@ -319,9 +341,10 @@ class ProximityChatRoomListViewModel @Inject constructor(
         }
     }
 
-    private fun applyUnreadToNearby(
+    private fun applyNearbyUserState(
         nearbyUsers: List<NearbyChatUser>,
         unreadSenderUids: Set<String>,
+        selectedUserIds: Set<String>,
         rooms: List<ChatRoomSummary>,
         myUid: String,
     ): List<NearbyChatUser> {
@@ -335,6 +358,7 @@ class ProximityChatRoomListViewModel @Inject constructor(
             val room = directRoomsByOtherUid[user.uid]
             user.copy(
                 hasUnreadIndicator = user.uid in unreadSenderUids || room?.hasUnreadForMe == true,
+                isSelected = user.uid in selectedUserIds,
             )
         }
     }

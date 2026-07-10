@@ -19,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.wim4you.intervene.R
 import com.wim4you.intervene.databinding.FragmentProximityChatConversationBinding
 import dagger.hilt.android.AndroidEntryPoint
@@ -34,6 +35,8 @@ class ProximityChatConversationFragment : Fragment() {
 
     private lateinit var messageAdapter: ChatMessageAdapter
     private var speechHelper: SpeechInputHelper? = null
+    private var stickToBottom = true
+    private var lastMessageCount = 0
 
     private val requestMicPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -68,6 +71,13 @@ class ProximityChatConversationFragment : Fragment() {
         binding.recyclerMessages.layoutManager = LinearLayoutManager(requireContext()).apply {
             stackFromEnd = true
         }
+        binding.recyclerMessages.setHasFixedSize(true)
+        binding.recyclerMessages.itemAnimator = null
+        binding.recyclerMessages.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                stickToBottom = !recyclerView.canScrollVertically(1)
+            }
+        })
         binding.recyclerMessages.adapter = messageAdapter
 
         speechHelper = SpeechInputHelper(
@@ -111,8 +121,11 @@ class ProximityChatConversationFragment : Fragment() {
                         binding.btnMic.isEnabled = state.canSendMessages
 
                         messageAdapter.submitList(state.messages) {
-                            if (state.messages.isNotEmpty()) {
-                                binding.recyclerMessages.scrollToPosition(state.messages.lastIndex)
+                            val messageCount = state.messages.size
+                            val hasNewMessages = messageCount > lastMessageCount
+                            lastMessageCount = messageCount
+                            if (messageCount > 0 && (stickToBottom || (hasNewMessages && state.messages.last().isMine))) {
+                                binding.recyclerMessages.scrollToPosition(messageCount - 1)
                             }
                         }
                         binding.progressSending.isVisible = state.isSending
