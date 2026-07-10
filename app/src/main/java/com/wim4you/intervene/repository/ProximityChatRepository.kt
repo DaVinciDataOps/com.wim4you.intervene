@@ -8,6 +8,7 @@ import com.firebase.geofire.GeoQueryDataEventListener
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.wim4you.intervene.FirebaseUtils
@@ -160,7 +161,18 @@ class ProximityChatRepository @Inject constructor() {
             val roomSnapshot = database.child(ProximityChatConstants.ROOMS_PATH)
                 .child(roomId)
                 .getOnce()
-            val room = roomSnapshot.getValue(ChatRoomData::class.java) ?: return
+            if (!roomSnapshot.exists()) {
+                roomSummaries.remove(roomId)
+                database.child(ProximityChatConstants.USER_ROOMS_PATH)
+                    .child(myUid)
+                    .child(roomId)
+                    .removeValueOnce()
+                return
+            }
+            val room = roomSnapshot.getValue(ChatRoomData::class.java) ?: run {
+                roomSummaries.remove(roomId)
+                return
+            }
             val participantsSnapshot = roomSnapshot.child("participants")
             val participantAliases = participantsSnapshot.children.mapNotNull { child ->
                 child.key to child.child("alias").getValue(String::class.java)
@@ -174,11 +186,19 @@ class ProximityChatRepository @Inject constructor() {
                             .ifBlank { roomId }
                 }
                 else -> {
-                    participantAliases
+                    val otherAlias = participantAliases
                         .firstOrNull { it.first != myUid }
                         ?.second
                         ?.takeIf { it.isNotBlank() }
-                        ?: roomId
+                    if (otherAlias == null) {
+                        roomSummaries.remove(roomId)
+                        database.child(ProximityChatConstants.USER_ROOMS_PATH)
+                            .child(myUid)
+                            .child(roomId)
+                            .removeValueOnce()
+                        return
+                    }
+                    otherAlias
                 }
             }
             val status = room.status?.takeIf { it.isNotBlank() }
@@ -517,41 +537,196 @@ class ProximityChatRepository @Inject constructor() {
         val roomRef = database.child(ProximityChatConstants.ROOMS_PATH).child(roomId)
         val existing = roomRef.getOnce()
         if (!existing.exists()) {
-            val now = System.currentTimeMillis()
-            val room = ChatRoomData(
-                type = ProximityChatConstants.ROOM_TYPE_DIRECT,
-                name = null,
-                createdAt = now,
-                lastMessageAt = now,
-                status = ProximityChatConstants.ROOM_STATUS_RINGING,
-                initiatorUid = myUid,
-            )
-            roomRef.setValueOnce(room)
-            linkUserToRoom(myUid, roomId, now)
-            linkUserToRoom(otherUid, roomId, now)
-            roomRef.child("participants").child(myUid).setValueOnce(
-                mapOf("alias" to myAlias, "joinedAt" to now, "accepted" to true),
-            )
-            roomRef.child("participants").child(otherUid).setValueOnce(
-                mapOf("alias" to otherAlias, "joinedAt" to now, "accepted" to false),
-            )
+            createDirectRoom(roomRef, roomId, myUid, otherUid, myAlias, otherAlias)
         } else {
-            linkUserToRoom(myUid, roomId, System.currentTimeMillis())
+            val myRoomLink = database.child(ProximityChatConstants.USER_ROOMS_PATH)
+                .child(myUid)
+                .child(roomId)
+                .getOnce()
+            val participantsSnapshot = existing.child("participants")
+            val hasParticipants = participantsSnapshot.hasChild(myUid) &&
+                participantsSnapshot.hasChild(otherUid)
+            if (!myRoomLink.exists() || !hasParticipants) {
+                resetDirectRoom(roomRef, roomId, myUid, otherUid, myAlias, otherAlias)
+            } else {
+                linkUserToRoom(myUid, roomId, System.currentTimeMillis())
+                roomRef.child("participants").child(myUid).child("alias").setValueOnce(myAlias)
+                roomRef.child("participants").child(otherUid).child("alias").setValueOnce(otherAlias)
+            }
         }
         return roomId
     }
 
+    private suspend fun createDirectRoom(
+        roomRef: DatabaseReference,
+        roomId: String,
+        myUid: String,
+        otherUid: String,
+        myAlias: String,
+        otherAlias: String,
+    ) {
+        val now = System.currentTimeMillis()
+        writeDirectRoomMetadata(roomRef, myUid, now)
+        linkUserToRoom(myUid, roomId, now)
+        linkUserToRoom(otherUid, roomId, now)
+        writeDirectRoomParticipants(roomRef, myUid, otherUid, myAlias, otherAlias, now)
+    }
+
+    private suspend fun resetDirectRoom(
+        roomRef: DatabaseReference,
+        roomId: String,
+        myUid: String,
+        otherUid: String,
+        myAlias: String,
+        otherAlias: String,
+    ) {
+        clearRoomMessagesBestEffort(roomId)
+        val now = System.currentTimeMillis()
+        writeDirectRoomMetadata(roomRef, myUid, now)
+        writeDirectRoomParticipants(roomRef, myUid, otherUid, myAlias, otherAlias, now)
+        linkUserToRoom(myUid, roomId, now)
+        linkUserToRoom(otherUid, roomId, now)
+    }
+
+    private suspend fun writeDirectRoomMetadata(
+        roomRef: DatabaseReference,
+        initiatorUid: String,
+        now: Long,
+    ) {
+        roomRef.child("type").setValueOnce(ProximityChatConstants.ROOM_TYPE_DIRECT)
+        roomRef.child("createdAt").setValueOnce(now)
+        roomRef.child("lastMessageAt").setValueOnce(now)
+        roomRef.child("status").setValueOnce(ProximityChatConstants.ROOM_STATUS_RINGING)
+        roomRef.child("initiatorUid").setValueOnce(initiatorUid)
+        roomRef.child("lastMessageSenderId").removeValueOnce()
+    }
+
+    private suspend fun writeDirectRoomParticipants(
+        roomRef: DatabaseReference,
+        myUid: String,
+        otherUid: String,
+        myAlias: String,
+        otherAlias: String,
+        now: Long,
+    ) {
+        roomRef.child("participants").child(myUid).setValueOnce(
+            mapOf("alias" to myAlias, "joinedAt" to now, "accepted" to true),
+        )
+        roomRef.child("participants").child(otherUid).setValueOnce(
+            mapOf("alias" to otherAlias, "joinedAt" to now, "accepted" to false),
+        )
+    }
+
     suspend fun removeChatRoom(roomId: String, myUid: String) {
-        database.child(ProximityChatConstants.USER_ROOMS_PATH)
-            .child(myUid)
-            .child(roomId)
-            .removeValueOnce()
         val roomRef = database.child(ProximityChatConstants.ROOMS_PATH).child(roomId)
         val snapshot = roomRef.getOnce()
         val isGroup = snapshot.child("type").getValue(String::class.java) ==
             ProximityChatConstants.ROOM_TYPE_GROUP
+
+        database.child(ProximityChatConstants.USER_ROOMS_PATH)
+            .child(myUid)
+            .child(roomId)
+            .removeValueOnce()
+
         if (isGroup) {
-            roomRef.child("participants").child(myUid).removeValueOnce()
+            if (snapshot.exists()) {
+                roomRef.child("participants").child(myUid).removeValueOnce()
+            }
+            return
+        }
+
+        clearRoomMessagesBestEffort(roomId)
+
+        snapshot.child("participants").children.forEach { child ->
+            val uid = child.key ?: return@forEach
+            if (uid == myUid) return@forEach
+            try {
+                database.child(ProximityChatConstants.USER_ROOMS_PATH)
+                    .child(uid)
+                    .child(roomId)
+                    .removeValueOnce()
+            } catch (exception: Exception) {
+                SecureLog.e(TAG, "Could not unlink room $roomId from user $uid", exception)
+            }
+        }
+
+        if (snapshot.exists()) {
+            try {
+                roomRef.removeValueOnce()
+            } catch (exception: Exception) {
+                SecureLog.e(TAG, "Could not delete room $roomId", exception)
+            }
+        }
+    }
+
+    private suspend fun clearRoomMessagesBestEffort(roomId: String): Boolean {
+        val messagesRef = database.child(ProximityChatConstants.MESSAGES_PATH).child(roomId)
+        val snapshot = messagesRef.getOnce()
+        if (!snapshot.exists()) return true
+
+        try {
+            messagesRef.removeValueOnce()
+        } catch (exception: Exception) {
+            SecureLog.e(TAG, "Bulk delete failed for $roomId", exception)
+        }
+
+        val afterBulkDelete = messagesRef.getOnce()
+        if (!afterBulkDelete.exists()) return true
+
+        deleteAllMessages(roomId)
+
+        val remaining = messagesRef.getOnce()
+        if (remaining.hasChildren()) {
+            SecureLog.e(
+                TAG,
+                "Could not delete ${remaining.childrenCount} messages from Firebase for room $roomId",
+            )
+            return false
+        }
+        return true
+    }
+
+    private suspend fun deleteAllMessages(roomId: String) {
+        val messagesRef = database.child(ProximityChatConstants.MESSAGES_PATH).child(roomId)
+        val snapshot = messagesRef.getOnce()
+        if (!snapshot.exists()) return
+
+        val updates = mutableMapOf<String, Any?>()
+        snapshot.children.forEach { child ->
+            val messageId = child.key ?: return@forEach
+            updates["/${ProximityChatConstants.MESSAGES_PATH}/$roomId/$messageId"] = null
+        }
+        if (updates.isEmpty()) return
+
+        try {
+            database.updateChildrenOnce(updates)
+        } catch (exception: Exception) {
+            SecureLog.e(TAG, "Batch delete failed for $roomId", exception)
+            snapshot.children.forEach { child ->
+                try {
+                    child.ref.removeValueOnce()
+                } catch (deleteException: Exception) {
+                    SecureLog.e(
+                        TAG,
+                        "Could not delete message ${child.key} in $roomId",
+                        deleteException,
+                    )
+                }
+            }
+        }
+    }
+
+    suspend fun getMyRoomIds(myUid: String): List<String> {
+        val snapshot = database.child(ProximityChatConstants.USER_ROOMS_PATH)
+            .child(myUid)
+            .getOnce()
+        return snapshot.children.mapNotNull { it.key }
+    }
+
+    suspend fun clearAllChatRooms(myUid: String) {
+        val roomIds = getMyRoomIds(myUid)
+        roomIds.forEach { roomId ->
+            removeChatRoom(roomId, myUid)
         }
     }
 
@@ -821,6 +996,14 @@ class ProximityChatRepository @Inject constructor() {
                 .addOnSuccessListener { continuation.resume(Unit) }
                 .addOnFailureListener { continuation.resumeWithException(it) }
         }
+
+    private suspend fun com.google.firebase.database.DatabaseReference.updateChildrenOnce(
+        updates: Map<String, Any?>,
+    ): Unit = suspendCancellableCoroutine { continuation ->
+        updateChildren(updates)
+            .addOnSuccessListener { continuation.resume(Unit) }
+            .addOnFailureListener { continuation.resumeWithException(it) }
+    }
 
     private companion object {
         const val TAG = "ProximityChatRepository"

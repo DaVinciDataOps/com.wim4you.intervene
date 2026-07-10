@@ -56,9 +56,10 @@
     "chat_messages": {
       "$roomId": {
         ".read": "auth != null",
+        ".write": "auth != null",
         "$messageId": {
-          ".write": "auth != null && newData.child('senderId').val() == auth.uid",
-          ".validate": "newData.child('text').isString() && newData.child('timestamp').isNumber()"
+          ".write": "auth != null && (!newData.exists() || newData.child('senderId').val() == auth.uid)",
+          ".validate": "!newData.exists() || (newData.child('text').isString() && newData.child('timestamp').isNumber())"
         }
       }
     }

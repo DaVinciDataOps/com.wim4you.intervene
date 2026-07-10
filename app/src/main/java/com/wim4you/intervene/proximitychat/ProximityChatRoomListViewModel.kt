@@ -166,6 +166,18 @@ class ProximityChatRoomListViewModel @Inject constructor(
         }
     }
 
+    suspend fun clearAllChats() {
+        val myUid = _uiState.value.myUid ?: return
+        try {
+            chatRepository.clearAllChatRooms(myUid)
+            knownIncomingRings.clear()
+            notifiedUnreadSenders.clear()
+        } catch (exception: Exception) {
+            SecureLog.e(TAG, "Failed to clear all chats", exception)
+            _uiState.update { it.copy(errorMessage = "clear_all_failed") }
+        }
+    }
+
     suspend fun createGroupChat(groupName: String): String? {
         val state = _uiState.value
         val myUid = state.myUid ?: return null

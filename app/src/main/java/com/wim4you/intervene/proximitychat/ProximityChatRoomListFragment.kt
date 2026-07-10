@@ -74,6 +74,7 @@ class ProximityChatRoomListFragment : Fragment() {
         binding.recyclerNearbyUsers.adapter = nearbyAdapter
 
         binding.btnCreateGroup.setOnClickListener { showGroupNameDialog() }
+        binding.btnClearAllChats.setOnClickListener { showClearAllChatsDialog() }
         binding.btnClearSelection.setOnClickListener {
             viewModel.clearSelection()
             nearbyAdapter.notifyDataSetChanged()
@@ -88,6 +89,7 @@ class ProximityChatRoomListFragment : Fragment() {
                         roomAdapter.submitList(state.rooms)
                         nearbyAdapter.submitList(state.nearbyUsers)
                         binding.emptyChatRooms.isVisible = state.rooms.isEmpty()
+                        binding.btnClearAllChats.isVisible = state.rooms.isNotEmpty()
                         binding.emptyNearbyUsers.isVisible = state.nearbyUsers.isEmpty() && !state.isLoading
                         binding.progressLoading.isVisible = state.isLoading
                         binding.swipeRefresh.isRefreshing = false
@@ -177,6 +179,19 @@ class ProximityChatRoomListFragment : Fragment() {
             .show()
     }
 
+    private fun showClearAllChatsDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.chat_clear_all_title)
+            .setMessage(R.string.chat_clear_all_message)
+            .setPositiveButton(R.string.chat_clear_all_confirm) { _, _ ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    viewModel.clearAllChats()
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
     private fun showRemoveChatDialog(room: ChatRoomSummary) {
         AlertDialog.Builder(requireContext())
             .setTitle(R.string.chat_remove_title)
@@ -209,6 +224,7 @@ class ProximityChatRoomListFragment : Fragment() {
             "presence_failed" -> R.string.chat_error_presence
             "room_failed" -> R.string.chat_error_room
             "remove_failed" -> R.string.chat_error_remove
+            "clear_all_failed" -> R.string.chat_error_clear_all
             else -> R.string.chat_error_generic
         }
         Toast.makeText(requireContext(), messageRes, Toast.LENGTH_LONG).show()

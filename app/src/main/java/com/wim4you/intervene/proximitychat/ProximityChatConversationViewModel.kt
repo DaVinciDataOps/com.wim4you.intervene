@@ -154,6 +154,18 @@ class ProximityChatConversationViewModel @Inject constructor(
         }
     }
 
+    suspend fun removeChat(): Boolean {
+        val uid = _uiState.value.myUid ?: return false
+        return try {
+            chatRepository.removeChatRoom(roomId, uid)
+            true
+        } catch (exception: Exception) {
+            SecureLog.e(TAG, "Failed to remove chat", exception)
+            _uiState.update { it.copy(errorMessage = "remove_failed") }
+            false
+        }
+    }
+
     private fun sendMessage(text: String, isSpeech: Boolean) {
         val state = _uiState.value
         val uid = state.myUid ?: return

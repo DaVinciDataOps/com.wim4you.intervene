@@ -129,7 +129,7 @@
     <string name="chat_active_chats">Actieve chats</string>
     <string name="chat_nearby_people">Mensen in de buurt</string>
     <string name="chat_nearby_hint">Tik voor een 1-op-1-chat. Houd ingedrukt om meerdere personen te selecteren voor een groepschat.</string>
-    <string name="chat_active_chats_hint">Tik op het verwijderpictogram of houd een chat ingedrukt om deze uit je lijst te verwijderen.</string>
+    <string name="chat_active_chats_hint">Tik op het verwijderpictogram of houd een chat ingedrukt om deze en de berichtgeschiedenis te verwijderen.</string>
     <string name="chat_no_active_chats">Nog geen actieve chats</string>
     <string name="chat_no_nearby_users">Er is nu niemand in de buurt beschikbaar voor chat</string>
     <string name="chat_distance_unknown">Afstand onbekend</string>
@@ -164,6 +164,24 @@
     <string name="chat_error_load">Kon chatberichten niet laden</string>
     <string name="chat_error_send">Kon bericht niet versturen</string>
     <string name="chat_error_generic">Er ging iets mis met chat</string>
+    <string name="chat_waiting_for_pickup">Wachten tot iemand opneemt…</string>
+    <string name="chat_incoming_request">%1$s wil chatten</string>
+    <string name="chat_accept">Opnemen</string>
+    <string name="chat_decline">Weigeren</string>
+    <string name="chat_ringing_label">Gaat over</string>
+    <string name="chat_unread_label">Ongelezen berichten</string>
+    <string name="chat_error_accept">Kon chatverzoek niet accepteren</string>
+    <string name="chat_error_decline">Kon chatverzoek niet weigeren</string>
+    <string name="chat_chat_active">Chat is actief</string>
+    <string name="chat_remove_title">Chat verwijderen?</string>
+    <string name="chat_remove_message">\"%1$s\" verwijderen en de berichtgeschiedenis wissen?</string>
+    <string name="chat_remove_confirm">Verwijderen</string>
+    <string name="chat_error_remove">Kon chat niet verwijderen</string>
+    <string name="chat_clear_all">Alles wissen</string>
+    <string name="chat_clear_all_title">Alle chats wissen?</string>
+    <string name="chat_clear_all_message">Alle actieve chats verwijderen en de berichtgeschiedenis wissen? Dit kan niet ongedaan worden gemaakt.</string>
+    <string name="chat_clear_all_confirm">Alles wissen</string>
+    <string name="chat_error_clear_all">Kon niet alle chats wissen</string>
 
 
     <string-array name="gender_options">

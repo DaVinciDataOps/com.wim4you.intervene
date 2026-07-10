@@ -65,19 +65,28 @@
         app:layout_constraintTop_toBottomOf="@+id/tvWaitingForPickup"
         tools:visibility="visible">
 
-        <com.google.android.material.button.MaterialButton
+        <ImageButton
             android:id="@+id/btnDeclineChat"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:text="@string/chat_decline" />
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginEnd="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/chat_decline"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_call_decline"
+            app:tint="@color/color_distress" />
 
-        <com.google.android.material.button.MaterialButton
+        <ImageButton
             android:id="@+id/btnAcceptChat"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/chat_accept" />
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/chat_accept"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_phone"
+            app:tint="@color/color_success" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -114,6 +123,15 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
+
+        <ImageButton
+            android:id="@+id/btnDeleteChat"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/chat_remove_title"
+            android:src="@drawable/ic_delete"
+            app:tint="?android:attr/textColorSecondary" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="0dp"

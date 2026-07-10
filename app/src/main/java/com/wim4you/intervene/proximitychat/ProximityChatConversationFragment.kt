@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
@@ -89,6 +90,7 @@ class ProximityChatConversationFragment : Fragment() {
             viewModel.declineInvite()
             findNavController().navigateUp()
         }
+        binding.btnDeleteChat.setOnClickListener { showRemoveChatDialog() }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -153,12 +155,31 @@ class ProximityChatConversationFragment : Fragment() {
         }
     }
 
+    private fun showRemoveChatDialog() {
+        val title = viewModel.uiState.value.roomTitle.ifBlank {
+            getString(R.string.menu_proximity_chat)
+        }
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.chat_remove_title)
+            .setMessage(getString(R.string.chat_remove_message, title))
+            .setPositiveButton(R.string.chat_remove_confirm) { _, _ ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    if (viewModel.removeChat()) {
+                        findNavController().navigateUp()
+                    }
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
     private fun showError(key: String) {
         val messageRes = when (key) {
             "chat_load_failed" -> R.string.chat_error_load
             "send_failed" -> R.string.chat_error_send
             "accept_failed" -> R.string.chat_error_accept
             "decline_failed" -> R.string.chat_error_decline
+            "remove_failed" -> R.string.chat_error_remove
             else -> R.string.chat_error_generic
         }
         Toast.makeText(requireContext(), messageRes, Toast.LENGTH_SHORT).show()
