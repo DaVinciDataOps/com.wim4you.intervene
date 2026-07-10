@@ -29,6 +29,7 @@ data class ChatRoomStatus(
     val myAccepted: Boolean,
     val acceptedCount: Int,
     val isGroup: Boolean,
+    val exists: Boolean = true,
 )
 
 data class ChatMessageItem(

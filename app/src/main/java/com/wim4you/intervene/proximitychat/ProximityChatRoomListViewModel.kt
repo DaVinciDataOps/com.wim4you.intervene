@@ -50,7 +50,7 @@ class ProximityChatRoomListViewModel @Inject constructor(
     private var unreadSendersJob: Job? = null
     private var lastLatitude: Double? = null
     private var lastLongitude: Double? = null
-    private var knownIncomingRings = mutableSetOf<String>()
+    private var knownRoomIds = mutableSetOf<String>()
     private var knownUnreadSenders = mutableSetOf<String>()
     private var notifiedUnreadSenders = mutableSetOf<String>()
 
@@ -159,7 +159,7 @@ class ProximityChatRoomListViewModel @Inject constructor(
         val myUid = _uiState.value.myUid ?: return
         try {
             chatRepository.removeChatRoom(roomId, myUid)
-            knownIncomingRings.remove(roomId)
+            knownRoomIds.remove(roomId)
         } catch (exception: Exception) {
             SecureLog.e(TAG, "Failed to remove chat", exception)
             _uiState.update { it.copy(errorMessage = "remove_failed") }
@@ -170,7 +170,7 @@ class ProximityChatRoomListViewModel @Inject constructor(
         val myUid = _uiState.value.myUid ?: return
         try {
             chatRepository.clearAllChatRooms(myUid)
-            knownIncomingRings.clear()
+            knownRoomIds.clear()
             notifiedUnreadSenders.clear()
         } catch (exception: Exception) {
             SecureLog.e(TAG, "Failed to clear all chats", exception)
@@ -204,8 +204,8 @@ class ProximityChatRoomListViewModel @Inject constructor(
     }
 
     fun clearIncomingRingNotification(roomId: String) {
-        knownIncomingRings.remove(roomId)
-        _uiState.update { it.copy(newIncomingRingRoomIds = knownIncomingRings.toSet()) }
+        knownRoomIds.remove(roomId)
+        _uiState.update { it.copy(newIncomingRingRoomIds = emptySet()) }
     }
 
     fun clearNearbyUnreadNotification(senderUid: String) {
@@ -299,9 +299,10 @@ class ProximityChatRoomListViewModel @Inject constructor(
         roomsJob?.cancel()
         roomsJob = viewModelScope.launch {
             chatRepository.observeMyRooms(uid).collect { rooms ->
-                val incomingRings = rooms.filter { it.isIncomingRing }.map { it.roomId }.toSet()
-                val newRings = incomingRings - knownIncomingRings
-                knownIncomingRings.addAll(incomingRings)
+                val roomIds = rooms.map { it.roomId }.toSet()
+                val newRoomIds = roomIds - knownRoomIds
+                knownRoomIds.addAll(roomIds)
+                knownRoomIds.retainAll(roomIds)
                 _uiState.update { state ->
                     state.copy(
                         rooms = rooms,
@@ -311,7 +312,7 @@ class ProximityChatRoomListViewModel @Inject constructor(
                             rooms,
                             uid,
                         ),
-                        newIncomingRingRoomIds = newRings,
+                        newIncomingRingRoomIds = newRoomIds,
                     )
                 }
             }

@@ -22,5 +22,8 @@ object ProximityChatConstants {
     const val REMOVED_MESSAGE_TEXT = "..."
 
     fun isNotifiableChatStatus(status: String): Boolean =
-        status == ROOM_STATUS_ACTIVE || status == ROOM_STATUS_RINGING
+        status == ROOM_STATUS_ACTIVE
+
+    fun isMessagingAllowed(status: String): Boolean =
+        status != ROOM_STATUS_DECLINED
 }

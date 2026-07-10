@@ -30,10 +30,8 @@ data class ProximityChatConversationUiState(
     val speechToTextEnabled: Boolean = true,
     val errorMessage: String? = null,
     val roomStatus: String = ProximityChatConstants.ROOM_STATUS_ACTIVE,
-    val isInitiator: Boolean = false,
-    val isIncomingRing: Boolean = false,
     val canSendMessages: Boolean = true,
-    val acceptedCount: Int = 0,
+    val roomClosed: Boolean = false,
 )
 
 @HiltViewModel
@@ -67,19 +65,21 @@ class ProximityChatConversationViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(myUid = uid, myAlias = alias, roomTitle = title, errorMessage = null)
                 }
+                chatRepository.ensureChatActive(roomId, uid, alias)
                 launch {
                     chatRepository.observeRoomStatus(roomId, uid).collect { status ->
-                        val isInitiator = status.initiatorUid == uid
-                        val isIncomingRing = status.status == ProximityChatConstants.ROOM_STATUS_RINGING &&
-                            !isInitiator && !status.myAccepted
-                        val canSend = ProximityChatConstants.isNotifiableChatStatus(status.status)
+                        if (!status.exists) {
+                            _uiState.update {
+                                it.copy(roomClosed = true, canSendMessages = false)
+                            }
+                            return@collect
+                        }
+                        val canSend = ProximityChatConstants.isMessagingAllowed(status.status)
                         _uiState.update {
                             it.copy(
                                 roomStatus = status.status,
-                                isInitiator = isInitiator,
-                                isIncomingRing = isIncomingRing,
                                 canSendMessages = canSend,
-                                acceptedCount = status.acceptedCount,
+                                roomClosed = false,
                             )
                         }
                         if (status.status != ProximityChatConstants.ROOM_STATUS_DECLINED) {
@@ -128,30 +128,6 @@ class ProximityChatConversationViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
-    }
-
-    fun acceptInvite() {
-        val uid = _uiState.value.myUid ?: return
-        viewModelScope.launch {
-            try {
-                chatRepository.acceptChatInvite(roomId, uid)
-            } catch (exception: Exception) {
-                SecureLog.e(TAG, "Failed to accept chat invite", exception)
-                _uiState.update { it.copy(errorMessage = "accept_failed") }
-            }
-        }
-    }
-
-    fun declineInvite() {
-        val uid = _uiState.value.myUid ?: return
-        viewModelScope.launch {
-            try {
-                chatRepository.declineChatInvite(roomId, uid)
-            } catch (exception: Exception) {
-                SecureLog.e(TAG, "Failed to decline chat invite", exception)
-                _uiState.update { it.copy(errorMessage = "decline_failed") }
-            }
-        }
     }
 
     suspend fun removeChat(): Boolean {

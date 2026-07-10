@@ -37,34 +37,16 @@ class ChatRoomAdapter(
         val room = getItem(position)
         val context = holder.itemView.context
         holder.title.text = room.displayName
-        val showBell = room.isIncomingRing || room.hasUnreadForMe || room.hasUnreadByOthers
+        val showBell = room.hasUnreadForMe || room.hasUnreadByOthers
         holder.bell.isVisible = showBell
-        val isRinging = room.status == ProximityChatConstants.ROOM_STATUS_RINGING
-        holder.bell.contentDescription = when {
-            room.isIncomingRing || room.hasUnreadForMe -> {
-                if (isRinging && room.isIncomingRing) {
-                    context.getString(R.string.chat_ringing_label)
-                } else {
-                    context.getString(R.string.chat_unread_label)
-                }
-            }
-            else -> context.getString(R.string.chat_unread_label)
-        }
+        holder.bell.contentDescription = context.getString(R.string.chat_unread_label)
         val typeLabel = if (room.isGroup) {
             context.getString(R.string.chat_group_label, room.participantCount)
         } else {
             context.getString(R.string.chat_direct_label)
         }
         val timeLabel = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(room.lastMessageAt))
-        val subtitle = if (room.isIncomingRing && room.initiatorAlias != null) {
-            context.getString(R.string.chat_incoming_request, room.initiatorAlias)
-        } else if (isRinging) {
-            context.getString(R.string.chat_ringing_label) + " · " +
-                context.getString(R.string.chat_room_meta, typeLabel, timeLabel)
-        } else {
-            context.getString(R.string.chat_room_meta, typeLabel, timeLabel)
-        }
-        holder.subtitle.text = subtitle
+        holder.subtitle.text = context.getString(R.string.chat_room_meta, typeLabel, timeLabel)
         holder.itemView.setOnClickListener { onRoomClick(room) }
         holder.itemView.setOnLongClickListener {
             onRoomLongClick(room)

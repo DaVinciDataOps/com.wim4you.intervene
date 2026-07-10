@@ -31,6 +31,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -151,11 +153,8 @@ class ProximityChatRepository @Inject constructor() {
     fun observeMyRooms(myUid: String): Flow<List<ChatRoomSummary>> = callbackFlow {
         val roomSummaries = linkedMapOf<String, ChatRoomSummary>()
         val roomListeners = linkedMapOf<String, ValueEventListener>()
+        val roomMutex = Mutex()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-        fun emitSorted() {
-            trySend(roomSummaries.values.sortedByDescending { it.lastMessageAt })
-        }
 
         suspend fun loadRoom(roomId: String) {
             val roomSnapshot = database.child(ProximityChatConstants.ROOMS_PATH)
@@ -203,17 +202,6 @@ class ProximityChatRepository @Inject constructor() {
             }
             val status = room.status?.takeIf { it.isNotBlank() }
                 ?: ProximityChatConstants.ROOM_STATUS_ACTIVE
-            val initiatorUid = room.initiatorUid
-            val isIncomingRing = status == ProximityChatConstants.ROOM_STATUS_RINGING &&
-                initiatorUid != null &&
-                initiatorUid != myUid
-            val initiatorAlias = if (isIncomingRing) {
-                participantsSnapshot.child(initiatorUid!!)
-                    .child("alias")
-                    .getValue(String::class.java)
-            } else {
-                null
-            }
             val lastMessageAt = room.lastMessageAt ?: room.createdAt ?: 0L
             val lastMessageSenderId = room.lastMessageSenderId
                 ?: roomSnapshot.child("lastMessageSenderId").getValue(String::class.java)
@@ -224,10 +212,8 @@ class ProximityChatRepository @Inject constructor() {
                 .filter { it.key != myUid }
                 .map { it.child("lastReadAt").getValue(Long::class.java) ?: 0L }
             val isNotifiable = ProximityChatConstants.isNotifiableChatStatus(status)
-            val hasUnreadForMe = isNotifiable && lastMessageAt > myLastReadAt && (
-                isIncomingRing ||
-                    (lastMessageSenderId != null && lastMessageSenderId != myUid)
-                )
+            val hasUnreadForMe = isNotifiable && lastMessageAt > myLastReadAt &&
+                lastMessageSenderId != null && lastMessageSenderId != myUid
             val hasUnreadByOthers = isNotifiable && otherLastReadAts.any { it < lastMessageAt }
             roomSummaries[roomId] = ChatRoomSummary(
                 roomId = roomId,
@@ -236,8 +222,8 @@ class ProximityChatRepository @Inject constructor() {
                 participantCount = participantAliases.size,
                 lastMessageAt = lastMessageAt,
                 status = status,
-                isIncomingRing = isIncomingRing,
-                initiatorAlias = initiatorAlias,
+                isIncomingRing = false,
+                initiatorAlias = null,
                 hasUnreadForMe = hasUnreadForMe,
                 hasUnreadByOthers = hasUnreadByOthers,
                 hasUnreadIndicator = hasUnreadForMe || hasUnreadByOthers,
@@ -250,11 +236,13 @@ class ProximityChatRepository @Inject constructor() {
             val listener = object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     scope.launch {
-                        try {
-                            loadRoom(roomId)
-                            emitSorted()
-                        } catch (exception: Exception) {
-                            SecureLog.e(TAG, "Failed to reload room $roomId", exception)
+                        roomMutex.withLock {
+                            try {
+                                loadRoom(roomId)
+                                trySend(roomSummaries.values.sortedByDescending { it.lastMessageAt })
+                            } catch (exception: Exception) {
+                                SecureLog.e(TAG, "Failed to reload room $roomId", exception)
+                            }
                         }
                     }
                 }
@@ -278,20 +266,22 @@ class ProximityChatRepository @Inject constructor() {
         val valueListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 scope.launch {
-                    val roomIds = snapshot.children.mapNotNull { it.key }.toSet()
-                    roomSummaries.keys.filter { it !in roomIds }.forEach { roomId ->
-                        roomSummaries.remove(roomId)
-                        detachRoomListener(roomId)
-                    }
-                    roomIds.forEach { roomId ->
-                        try {
-                            loadRoom(roomId)
-                            attachRoomListener(roomId)
-                        } catch (exception: Exception) {
-                            SecureLog.e(TAG, "Failed to load room $roomId", exception)
+                    roomMutex.withLock {
+                        val roomIds = snapshot.children.mapNotNull { it.key }.toSet()
+                        roomSummaries.keys.filter { it !in roomIds }.forEach { roomId ->
+                            roomSummaries.remove(roomId)
+                            detachRoomListener(roomId)
                         }
+                        roomIds.forEach { roomId ->
+                            try {
+                                loadRoom(roomId)
+                                attachRoomListener(roomId)
+                            } catch (exception: Exception) {
+                                SecureLog.e(TAG, "Failed to load room $roomId", exception)
+                            }
+                        }
+                        trySend(roomSummaries.values.sortedByDescending { it.lastMessageAt })
                     }
-                    emitSorted()
                 }
             }
 
@@ -329,6 +319,7 @@ class ProximityChatRepository @Inject constructor() {
         val unreadSenderUids = linkedSetOf<String>()
         val roomListeners = linkedMapOf<String, ValueEventListener>()
         val messageListeners = linkedMapOf<String, ChildEventListener>()
+        val roomMutex = Mutex()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
         fun emitUnreadSenders() {
@@ -342,19 +333,10 @@ class ProximityChatRepository @Inject constructor() {
                 emitUnreadSenders()
                 return
             }
-            val activityAt = maxOf(state.latestMessageAt, state.roomActivityAt)
             val hasUnread = when {
                 state.latestMessageSenderId != null &&
                     state.latestMessageSenderId != myUid &&
                     state.latestMessageAt > state.myLastReadAt -> true
-                state.status == ProximityChatConstants.ROOM_STATUS_RINGING &&
-                    state.initiatorUid != null &&
-                    state.initiatorUid != myUid &&
-                    !state.myAccepted &&
-                    activityAt > state.myLastReadAt -> true
-                state.status == ProximityChatConstants.ROOM_STATUS_RINGING &&
-                    state.initiatorUid == myUid &&
-                    state.otherLastReadAt < activityAt -> true
                 ProximityChatConstants.isNotifiableChatStatus(state.status) &&
                     state.latestMessageSenderId == myUid &&
                     state.latestMessageAt > state.otherLastReadAt -> true
@@ -385,11 +367,19 @@ class ProximityChatRepository @Inject constructor() {
             val messagesRef = database.child(ProximityChatConstants.MESSAGES_PATH).child(roomId)
             val listener = object : ChildEventListener {
                 override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                    handleMessageSnapshot(roomId, snapshot)
+                    scope.launch {
+                        roomMutex.withLock {
+                            handleMessageSnapshot(roomId, snapshot)
+                        }
+                    }
                 }
 
                 override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
-                    handleMessageSnapshot(roomId, snapshot)
+                    scope.launch {
+                        roomMutex.withLock {
+                            handleMessageSnapshot(roomId, snapshot)
+                        }
+                    }
                 }
 
                 override fun onChildRemoved(snapshot: DataSnapshot) = Unit
@@ -411,34 +401,57 @@ class ProximityChatRepository @Inject constructor() {
                 .removeEventListener(listener)
         }
 
+        fun detachRoomListener(roomId: String) {
+            val listener = roomListeners.remove(roomId) ?: return
+            database.child(ProximityChatConstants.ROOMS_PATH)
+                .child(roomId)
+                .removeEventListener(listener)
+        }
+
+        fun detachDirectRoom(roomId: String) {
+            val state = roomStates.remove(roomId) ?: return
+            unreadSenderUids.remove(state.otherUid)
+            detachRoomListener(roomId)
+            detachMessageListener(roomId)
+            emitUnreadSenders()
+        }
+
         fun attachRoomListener(roomId: String) {
             if (roomId in roomListeners) return
             val roomRef = database.child(ProximityChatConstants.ROOMS_PATH).child(roomId)
             val listener = object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    val state = roomStates[roomId] ?: return
-                    val room = snapshot.getValue(ChatRoomData::class.java)
-                    state.myLastReadAt = snapshot.child("participants")
-                        .child(myUid)
-                        .child("lastReadAt")
-                        .getValue(Long::class.java) ?: state.myLastReadAt
-                    state.otherLastReadAt = snapshot.child("participants")
-                        .child(state.otherUid)
-                        .child("lastReadAt")
-                        .getValue(Long::class.java) ?: state.otherLastReadAt
-                    state.myAccepted = snapshot.child("participants")
-                        .child(myUid)
-                        .child("accepted")
-                        .getValue(Boolean::class.java) == true
-                    state.initiatorUid = room?.initiatorUid
-                    state.roomActivityAt = room?.lastMessageAt ?: room?.createdAt ?: state.roomActivityAt
-                    room?.lastMessageSenderId?.let { senderId ->
-                        state.latestMessageSenderId = senderId
-                        state.latestMessageAt = maxOf(state.latestMessageAt, state.roomActivityAt)
+                    scope.launch {
+                        roomMutex.withLock {
+                            if (!snapshot.exists()) {
+                                detachDirectRoom(roomId)
+                                return@withLock
+                            }
+                            val state = roomStates[roomId] ?: return@withLock
+                            val room = snapshot.getValue(ChatRoomData::class.java)
+                            state.myLastReadAt = snapshot.child("participants")
+                                .child(myUid)
+                                .child("lastReadAt")
+                                .getValue(Long::class.java) ?: state.myLastReadAt
+                            state.otherLastReadAt = snapshot.child("participants")
+                                .child(state.otherUid)
+                                .child("lastReadAt")
+                                .getValue(Long::class.java) ?: state.otherLastReadAt
+                            state.myAccepted = snapshot.child("participants")
+                                .child(myUid)
+                                .child("accepted")
+                                .getValue(Boolean::class.java) == true
+                            state.initiatorUid = room?.initiatorUid
+                            state.roomActivityAt = room?.lastMessageAt ?: room?.createdAt ?: state.roomActivityAt
+                            room?.lastMessageSenderId?.let { senderId ->
+                                state.latestMessageSenderId = senderId
+                                state.latestMessageAt = maxOf(state.latestMessageAt, state.roomActivityAt)
+                            }
+                            state.status = room?.status?.takeIf { it.isNotBlank() }
+                                ?: ProximityChatConstants.ROOM_STATUS_ACTIVE
+                            recomputeUnreadForRoom(roomId)
+                        }
                     }
-                    state.status = room?.status?.takeIf { it.isNotBlank() }
-                        ?: ProximityChatConstants.ROOM_STATUS_ACTIVE
-                    recomputeUnreadForRoom(roomId)
                 }
 
                 override fun onCancelled(error: DatabaseError) {
@@ -447,13 +460,6 @@ class ProximityChatRepository @Inject constructor() {
             }
             roomRef.addValueEventListener(listener)
             roomListeners[roomId] = listener
-        }
-
-        fun detachRoomListener(roomId: String) {
-            val listener = roomListeners.remove(roomId) ?: return
-            database.child(ProximityChatConstants.ROOMS_PATH)
-                .child(roomId)
-                .removeEventListener(listener)
         }
 
         suspend fun attachDirectRoom(roomId: String) {
@@ -488,26 +494,24 @@ class ProximityChatRepository @Inject constructor() {
             recomputeUnreadForRoom(roomId)
         }
 
-        fun detachDirectRoom(roomId: String) {
-            val state = roomStates.remove(roomId) ?: return
-            unreadSenderUids.remove(state.otherUid)
-            detachRoomListener(roomId)
-            detachMessageListener(roomId)
-            emitUnreadSenders()
-        }
-
         val userRoomsRef = database.child(ProximityChatConstants.USER_ROOMS_PATH).child(myUid)
         val userRoomsListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 scope.launch {
-                    val roomIds = snapshot.children.mapNotNull { it.key }.toSet()
-                    roomStates.keys.filter { it !in roomIds }.forEach { detachDirectRoom(it) }
-                    roomIds.forEach { roomId ->
-                        if (roomId !in roomStates) {
-                            try {
-                                attachDirectRoom(roomId)
-                            } catch (exception: Exception) {
-                                SecureLog.e(TAG, "Failed to attach nearby unread listener for $roomId", exception)
+                    roomMutex.withLock {
+                        val roomIds = snapshot.children.mapNotNull { it.key }.toSet()
+                        roomStates.keys.filter { it !in roomIds }.forEach { detachDirectRoom(it) }
+                        roomIds.forEach { roomId ->
+                            if (roomId !in roomStates) {
+                                try {
+                                    attachDirectRoom(roomId)
+                                } catch (exception: Exception) {
+                                    SecureLog.e(
+                                        TAG,
+                                        "Failed to attach nearby unread listener for $roomId",
+                                        exception,
+                                    )
+                                }
                             }
                         }
                     }
@@ -565,6 +569,7 @@ class ProximityChatRepository @Inject constructor() {
         myAlias: String,
         otherAlias: String,
     ) {
+        clearRoomMessagesBestEffort(roomId)
         val now = System.currentTimeMillis()
         writeDirectRoomMetadata(roomRef, myUid, now)
         linkUserToRoom(myUid, roomId, now)
@@ -596,7 +601,7 @@ class ProximityChatRepository @Inject constructor() {
         roomRef.child("type").setValueOnce(ProximityChatConstants.ROOM_TYPE_DIRECT)
         roomRef.child("createdAt").setValueOnce(now)
         roomRef.child("lastMessageAt").setValueOnce(now)
-        roomRef.child("status").setValueOnce(ProximityChatConstants.ROOM_STATUS_RINGING)
+        roomRef.child("status").setValueOnce(ProximityChatConstants.ROOM_STATUS_ACTIVE)
         roomRef.child("initiatorUid").setValueOnce(initiatorUid)
         roomRef.child("lastMessageSenderId").removeValueOnce()
     }
@@ -613,106 +618,102 @@ class ProximityChatRepository @Inject constructor() {
             mapOf("alias" to myAlias, "joinedAt" to now, "accepted" to true),
         )
         roomRef.child("participants").child(otherUid).setValueOnce(
-            mapOf("alias" to otherAlias, "joinedAt" to now, "accepted" to false),
+            mapOf("alias" to otherAlias, "joinedAt" to now, "accepted" to true),
         )
     }
 
     suspend fun removeChatRoom(roomId: String, myUid: String) {
-        val roomRef = database.child(ProximityChatConstants.ROOMS_PATH).child(roomId)
-        val snapshot = roomRef.getOnce()
-        val isGroup = snapshot.child("type").getValue(String::class.java) ==
-            ProximityChatConstants.ROOM_TYPE_GROUP
+        val roomSnapshot = database.child(ProximityChatConstants.ROOMS_PATH)
+            .child(roomId)
+            .getOnce()
 
+        val participantUids = linkedSetOf(myUid)
+        roomSnapshot.child("participants").children.forEach { child ->
+            child.key?.let { participantUids.add(it) }
+        }
+
+        removeUserRoomLink(myUid, roomId)
+        deleteChatRoomData(roomId)
+
+        participantUids
+            .filter { it != myUid }
+            .forEach { uid ->
+                try {
+                    removeUserRoomLink(uid, roomId)
+                } catch (exception: Exception) {
+                    SecureLog.e(TAG, "Could not unlink room $roomId from user $uid", exception)
+                }
+            }
+    }
+
+    private suspend fun removeUserRoomLink(uid: String, roomId: String) {
         database.child(ProximityChatConstants.USER_ROOMS_PATH)
-            .child(myUid)
+            .child(uid)
             .child(roomId)
             .removeValueOnce()
+    }
 
-        if (isGroup) {
-            if (snapshot.exists()) {
-                roomRef.child("participants").child(myUid).removeValueOnce()
-            }
-            return
-        }
-
-        clearRoomMessagesBestEffort(roomId)
-
-        snapshot.child("participants").children.forEach { child ->
-            val uid = child.key ?: return@forEach
-            if (uid == myUid) return@forEach
+    private suspend fun deleteChatRoomData(roomId: String) {
+        try {
+            database.updateChildrenOnce(
+                mapOf(
+                    "/${ProximityChatConstants.MESSAGES_PATH}/$roomId" to null,
+                    "/${ProximityChatConstants.ROOMS_PATH}/$roomId" to null,
+                ),
+            )
+        } catch (exception: Exception) {
+            SecureLog.e(TAG, "Batch delete failed for room $roomId", exception)
+            clearRoomMessagesBestEffort(roomId)
             try {
-                database.child(ProximityChatConstants.USER_ROOMS_PATH)
-                    .child(uid)
+                database.child(ProximityChatConstants.ROOMS_PATH)
                     .child(roomId)
                     .removeValueOnce()
-            } catch (exception: Exception) {
-                SecureLog.e(TAG, "Could not unlink room $roomId from user $uid", exception)
+            } catch (roomException: Exception) {
+                SecureLog.e(TAG, "Could not delete room $roomId", roomException)
             }
         }
 
-        if (snapshot.exists()) {
-            try {
-                roomRef.removeValueOnce()
-            } catch (exception: Exception) {
-                SecureLog.e(TAG, "Could not delete room $roomId", exception)
-            }
-        }
-    }
-
-    private suspend fun clearRoomMessagesBestEffort(roomId: String): Boolean {
-        val messagesRef = database.child(ProximityChatConstants.MESSAGES_PATH).child(roomId)
-        val snapshot = messagesRef.getOnce()
-        if (!snapshot.exists()) return true
-
-        try {
-            messagesRef.removeValueOnce()
-        } catch (exception: Exception) {
-            SecureLog.e(TAG, "Bulk delete failed for $roomId", exception)
-        }
-
-        val afterBulkDelete = messagesRef.getOnce()
-        if (!afterBulkDelete.exists()) return true
-
-        deleteAllMessages(roomId)
-
-        val remaining = messagesRef.getOnce()
-        if (remaining.hasChildren()) {
+        val messagesRemain = database.child(ProximityChatConstants.MESSAGES_PATH)
+            .child(roomId)
+            .getOnce()
+            .exists()
+        val roomRemains = database.child(ProximityChatConstants.ROOMS_PATH)
+            .child(roomId)
+            .getOnce()
+            .exists()
+        if (messagesRemain || roomRemains) {
             SecureLog.e(
                 TAG,
-                "Could not delete ${remaining.childrenCount} messages from Firebase for room $roomId",
+                "Chat data for room $roomId was not fully deleted from Firebase " +
+                    "(messagesRemain=$messagesRemain, roomRemains=$roomRemains)",
             )
-            return false
         }
-        return true
     }
 
-    private suspend fun deleteAllMessages(roomId: String) {
+    private suspend fun clearRoomMessagesBestEffort(roomId: String) {
         val messagesRef = database.child(ProximityChatConstants.MESSAGES_PATH).child(roomId)
         val snapshot = messagesRef.getOnce()
         if (!snapshot.exists()) return
 
-        val updates = mutableMapOf<String, Any?>()
-        snapshot.children.forEach { child ->
-            val messageId = child.key ?: return@forEach
-            updates["/${ProximityChatConstants.MESSAGES_PATH}/$roomId/$messageId"] = null
-        }
-        if (updates.isEmpty()) return
-
         try {
-            database.updateChildrenOnce(updates)
+            database.updateChildrenOnce(
+                mapOf("/${ProximityChatConstants.MESSAGES_PATH}/$roomId" to null),
+            )
+            if (!messagesRef.getOnce().exists()) return
         } catch (exception: Exception) {
-            SecureLog.e(TAG, "Batch delete failed for $roomId", exception)
-            snapshot.children.forEach { child ->
-                try {
-                    child.ref.removeValueOnce()
-                } catch (deleteException: Exception) {
-                    SecureLog.e(
-                        TAG,
-                        "Could not delete message ${child.key} in $roomId",
-                        deleteException,
-                    )
-                }
+            SecureLog.e(TAG, "Bulk clear messages failed for $roomId", exception)
+        }
+
+        for (child in snapshot.children.toList()) {
+            try {
+                child.ref.removeValueOnce()
+            } catch (exception: Exception) {
+                SecureLog.e(TAG, "Could not delete message ${child.key} in $roomId", exception)
             }
+        }
+
+        if (messagesRef.getOnce().exists()) {
+            SecureLog.e(TAG, "Orphaned messages remain for room $roomId after clear attempt")
         }
     }
 
@@ -724,9 +725,20 @@ class ProximityChatRepository @Inject constructor() {
     }
 
     suspend fun clearAllChatRooms(myUid: String) {
-        val roomIds = getMyRoomIds(myUid)
+        val roomIds = getMyRoomIds(myUid).toList()
+        val failedRoomIds = mutableListOf<String>()
         roomIds.forEach { roomId ->
-            removeChatRoom(roomId, myUid)
+            try {
+                removeChatRoom(roomId, myUid)
+            } catch (exception: Exception) {
+                SecureLog.e(TAG, "Failed to remove room $roomId while clearing all chats", exception)
+                failedRoomIds.add(roomId)
+            }
+        }
+        if (failedRoomIds.isNotEmpty()) {
+            throw IllegalStateException(
+                "Failed to clear ${failedRoomIds.size} of ${roomIds.size} chats",
+            )
         }
     }
 
@@ -740,24 +752,39 @@ class ProximityChatRepository @Inject constructor() {
         val snapshot = database.child(ProximityChatConstants.ROOMS_PATH).child(roomId).getOnce()
         val status = snapshot.child("status").getValue(String::class.java)
             ?: ProximityChatConstants.ROOM_STATUS_ACTIVE
-        return ProximityChatConstants.isNotifiableChatStatus(status)
+        return ProximityChatConstants.isMessagingAllowed(status)
     }
 
     fun observeRoomStatus(roomId: String, myUid: String): Flow<ChatRoomStatus> = callbackFlow {
         val roomRef = database.child(ProximityChatConstants.ROOMS_PATH).child(roomId)
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
+                if (!snapshot.exists()) {
+                    trySend(
+                        ChatRoomStatus(
+                            status = ProximityChatConstants.ROOM_STATUS_DECLINED,
+                            initiatorUid = null,
+                            myAccepted = false,
+                            acceptedCount = 0,
+                            isGroup = false,
+                            exists = false,
+                        ),
+                    )
+                    return
+                }
                 val room = snapshot.getValue(ChatRoomData::class.java)
                 val status = room?.status?.takeIf { it.isNotBlank() }
                     ?: ProximityChatConstants.ROOM_STATUS_ACTIVE
                 val initiatorUid = room?.initiatorUid
                 val isGroup = room?.type == ProximityChatConstants.ROOM_TYPE_GROUP
-                var myAccepted = true
+                var myAccepted = false
                 var acceptedCount = 0
                 snapshot.child("participants").children.forEach { child ->
                     val accepted = child.child("accepted").getValue(Boolean::class.java) == true
                     if (accepted) acceptedCount++
-                    if (child.key == myUid) myAccepted = accepted
+                    if (child.key == myUid) {
+                        myAccepted = accepted
+                    }
                 }
                 trySend(
                     ChatRoomStatus(
@@ -778,30 +805,27 @@ class ProximityChatRepository @Inject constructor() {
         awaitClose { roomRef.removeEventListener(listener) }
     }
 
-    suspend fun acceptChatInvite(roomId: String, myUid: String) {
+    suspend fun ensureChatActive(roomId: String, myUid: String, myAlias: String) {
         val roomRef = database.child(ProximityChatConstants.ROOMS_PATH).child(roomId)
         val snapshot = roomRef.getOnce()
-        val initiatorUid = snapshot.child("initiatorUid").getValue(String::class.java)
-        val isGroup = snapshot.child("type").getValue(String::class.java) ==
-            ProximityChatConstants.ROOM_TYPE_GROUP
-        roomRef.child("participants").child(myUid).child("accepted").setValueOnce(true)
-        var acceptedCount = 0
-        snapshot.child("participants").children.forEach { child ->
-            val accepted = if (child.key == myUid) {
-                true
-            } else {
-                child.child("accepted").getValue(Boolean::class.java) == true
-            }
-            if (accepted) acceptedCount++
+        if (!snapshot.exists()) return
+
+        val status = snapshot.child("status").getValue(String::class.java)
+            ?: ProximityChatConstants.ROOM_STATUS_ACTIVE
+        if (status == ProximityChatConstants.ROOM_STATUS_DECLINED) return
+
+        val updates = linkedMapOf<String, Any?>()
+        val participantBase = "/${ProximityChatConstants.ROOMS_PATH}/$roomId/participants/$myUid"
+        updates["$participantBase/accepted"] = true
+        if (!snapshot.child("participants").hasChild(myUid)) {
+            updates["$participantBase/joinedAt"] = System.currentTimeMillis()
+            updates["$participantBase/alias"] = myAlias.ifBlank { "User" }
         }
-        val shouldActivate = if (isGroup) {
-            acceptedCount >= 2
-        } else {
-            myUid != initiatorUid
+        if (status != ProximityChatConstants.ROOM_STATUS_ACTIVE) {
+            updates["/${ProximityChatConstants.ROOMS_PATH}/$roomId/status"] =
+                ProximityChatConstants.ROOM_STATUS_ACTIVE
         }
-        if (shouldActivate) {
-            roomRef.child("status").setValueOnce(ProximityChatConstants.ROOM_STATUS_ACTIVE)
-        }
+        database.updateChildrenOnce(updates)
     }
 
     suspend fun declineChatInvite(roomId: String, myUid: String) {
@@ -835,16 +859,15 @@ class ProximityChatRepository @Inject constructor() {
             name = groupName,
             createdAt = now,
             lastMessageAt = now,
-            status = ProximityChatConstants.ROOM_STATUS_RINGING,
+            status = ProximityChatConstants.ROOM_STATUS_ACTIVE,
             initiatorUid = myUid,
         )
         roomRef.setValueOnce(room)
         allParticipants.forEach { uid ->
             linkUserToRoom(uid, roomId, now)
             val alias = aliases[uid] ?: "User"
-            val accepted = uid == myUid
             roomRef.child("participants").child(uid).setValueOnce(
-                mapOf("alias" to alias, "joinedAt" to now, "accepted" to accepted),
+                mapOf("alias" to alias, "joinedAt" to now, "accepted" to true),
             )
         }
         return roomId

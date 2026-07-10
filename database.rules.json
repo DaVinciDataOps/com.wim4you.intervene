@@ -42,6 +42,7 @@
     "chat_user_rooms": {
       ".read": "auth != null",
       "$uid": {
+        ".write": "auth != null",
         "$roomId": {
           ".write": "auth != null"
         }
@@ -58,8 +59,9 @@
         ".read": "auth != null",
         ".write": "auth != null",
         "$messageId": {
+          ".read": "auth != null",
           ".write": "auth != null && (!newData.exists() || newData.child('senderId').val() == auth.uid)",
-          ".validate": "!newData.exists() || (newData.child('text').isString() && newData.child('timestamp').isNumber() && (!newData.child('deleted').exists() || newData.child('deleted').isBoolean()))"
+          ".validate": "!newData.exists() || (newData.child('senderId').val() == auth.uid && newData.child('text').isString() && newData.child('timestamp').isNumber() && (!newData.child('deleted').exists() || newData.child('deleted').isBoolean()))"
         }
       }
     }
