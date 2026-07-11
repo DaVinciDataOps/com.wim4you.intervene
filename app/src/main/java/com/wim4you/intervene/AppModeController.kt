@@ -107,6 +107,8 @@ object AppModeController {
         persistState()
         DistressSoundService.stop(context)
         stopDistressService(context)
+        // Clear after stopping the service so in-flight distress writes cannot
+        // overwrite the inactive state and leave patrol maps showing stale markers.
         clearDistressInFirebase(context)
     }
 

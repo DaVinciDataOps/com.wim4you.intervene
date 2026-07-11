@@ -162,6 +162,8 @@ class DistressService : Service() {
         init: Boolean,
         geoLocation: GeoLocation,
     ) {
+        if (!AppModeController.isDistressActive) return
+
         val address = getAddress(geoLocation)
         val distressDataMap = DataMappings.toDistressDataMap(
             personData,
@@ -178,6 +180,10 @@ class DistressService : Service() {
         database.child("distress").child(firebaseUid)
             .updateChildren(distressDataMap)
             .addOnSuccessListener {
+                if (!AppModeController.isDistressActive) {
+                    sendStopDistressToFirebase(firebaseUid)
+                    return@addOnSuccessListener
+                }
                 SecureLog.i("DistressService", "Distress location updated")
             }
             .addOnFailureListener { exception ->
@@ -259,7 +265,8 @@ class DistressService : Service() {
         }
 
     override fun onDestroy() {
-        super.onDestroy()
+        distressJob?.cancel()
+        distressJob = null
 
         if (!AppModeController.isDistressActive) {
             serviceScope.launch {
@@ -274,7 +281,7 @@ class DistressService : Service() {
             }
         }
 
-        distressJob?.cancel()
+        super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? {

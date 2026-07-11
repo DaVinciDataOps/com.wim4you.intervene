@@ -323,7 +323,8 @@ class LocationTrackerService : Service() {
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val active = snapshot.child("active").getValue(Boolean::class.java) ?: false
-                if (!active) {
+                val hasGeoHash = !snapshot.child("g").getValue(String::class.java).isNullOrBlank()
+                if (!active || !hasGeoHash) {
                     removeDistressByKey(snapshot.key)
                 }
             }

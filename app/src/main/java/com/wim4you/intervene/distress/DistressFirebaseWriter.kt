@@ -1,5 +1,6 @@
 package com.wim4you.intervene.distress
 
+import com.firebase.geofire.GeoFire
 import com.firebase.geofire.GeoLocation
 import com.wim4you.intervene.FirebaseAuthManager
 import com.wim4you.intervene.FirebaseDatabaseProvider
@@ -22,11 +23,10 @@ object DistressFirebaseWriter {
     )
 
     suspend fun markDistressInactive(firebaseUid: String) {
-        FirebaseDatabaseProvider.reference()
-            .child("distress")
-            .child(firebaseUid)
-            .updateChildren(inactiveUpdateMap())
-            .awaitTask()
+        val database = FirebaseDatabaseProvider.reference()
+        val distressRef = database.child("distress").child(firebaseUid)
+        distressRef.updateChildren(inactiveUpdateMap()).awaitTask()
+        removeFromGeoIndex(database, firebaseUid)
         SecureLog.i(TAG, "Distress marked inactive for $firebaseUid")
     }
 
@@ -34,17 +34,48 @@ object DistressFirebaseWriter {
         firebaseUid: String,
         onFailure: ((Exception) -> Unit)? = null,
     ) {
-        FirebaseDatabaseProvider.reference()
-            .child("distress")
-            .child(firebaseUid)
-            .updateChildren(inactiveUpdateMap())
+        val database = FirebaseDatabaseProvider.reference()
+        val distressRef = database.child("distress").child(firebaseUid)
+        distressRef.updateChildren(inactiveUpdateMap())
             .addOnSuccessListener {
-                SecureLog.i(TAG, "Distress marked inactive for $firebaseUid")
+                removeFromGeoIndex(
+                    database = database,
+                    firebaseUid = firebaseUid,
+                    onFailure = onFailure,
+                )
             }
             .addOnFailureListener { exception ->
                 SecureLog.e(TAG, "Failed to mark distress inactive for $firebaseUid", exception)
                 onFailure?.invoke(exception)
             }
+    }
+
+    private fun removeFromGeoIndex(
+        database: com.google.firebase.database.DatabaseReference,
+        firebaseUid: String,
+        onFailure: ((Exception) -> Unit)? = null,
+    ) {
+        GeoFire(database.child("distress")).removeLocation(firebaseUid) { _, error ->
+            if (error != null) {
+                SecureLog.e(TAG, "Failed to remove distress from geo index for $firebaseUid", error.toException())
+                onFailure?.invoke(error.toException())
+            }
+        }
+    }
+
+    private suspend fun removeFromGeoIndex(
+        database: com.google.firebase.database.DatabaseReference,
+        firebaseUid: String,
+    ) {
+        suspendCancellableCoroutine { continuation ->
+            GeoFire(database.child("distress")).removeLocation(firebaseUid) { _, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toException())
+                } else {
+                    continuation.resume(Unit)
+                }
+            }
+        }
     }
 
     suspend fun pushDistress(
