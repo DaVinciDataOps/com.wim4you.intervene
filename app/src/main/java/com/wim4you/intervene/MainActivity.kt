@@ -20,7 +20,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.ActionMenuView
 import androidx.appcompat.widget.Toolbar
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.findNavController
@@ -39,6 +41,7 @@ import com.wim4you.intervene.helpers.NetworkUtils
 import com.wim4you.intervene.location.LocationTrackerService
 import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.location.PatrolFirebaseWriter
+import com.wim4you.intervene.proximitychat.ChatPresenceManager
 import com.wim4you.intervene.repository.MapLocationRepository
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
@@ -60,6 +63,7 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var personStore: PersonDataRepository
     @Inject lateinit var vigilanteStore: VigilanteDataRepository
     @Inject lateinit var mapLocationRepository: MapLocationRepository
+    @Inject lateinit var chatPresenceManager: ChatPresenceManager
 
     private val homeViewModel: HomeViewModel by viewModels()
     private val mapDataViewModel: MapDataViewModel by viewModels()
@@ -141,6 +145,16 @@ class MainActivity : AppCompatActivity() {
 
         AppModeController.reconcileServices(this)
         lifecycleScope.launch { FirebaseDataRetention.reconcileOwnEntries() }
+
+        lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStart(owner: LifecycleOwner) {
+                chatPresenceManager.start()
+            }
+
+            override fun onStop(owner: LifecycleOwner) {
+                chatPresenceManager.stop()
+            }
+        })
 
         if (PermissionsUtils.hasForegroundLocationPermission(this)) {
             startLocationTrackerService(this)
@@ -374,6 +388,9 @@ class MainActivity : AppCompatActivity() {
         startLocationTrackerService(this)
         AppModeController.reconcileServices(this)
         locationPermissionListeners.forEach { it.onForegroundLocationGranted() }
+        if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            chatPresenceManager.start()
+        }
         requestBackgroundLocationIfNeeded()
     }
 

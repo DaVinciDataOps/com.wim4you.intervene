@@ -1,25 +1,19 @@
 package com.wim4you.intervene.proximitychat
 
-import android.content.Context
 import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.FirebaseAuthManager
 import com.wim4you.intervene.SecureLog
-import com.wim4you.intervene.profilepicture.ProfilePictureSharingCoordinator
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.ProximityChatRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -39,7 +33,6 @@ data class ProximityChatRoomListUiState(
 
 @HiltViewModel
 class ProximityChatRoomListViewModel @Inject constructor(
-    @ApplicationContext private val appContext: Context,
     private val chatRepository: ProximityChatRepository,
     private val personDataRepository: PersonDataRepository,
     private val vigilanteDataRepository: VigilanteDataRepository,
@@ -48,19 +41,14 @@ class ProximityChatRoomListViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ProximityChatRoomListUiState())
     val uiState: StateFlow<ProximityChatRoomListUiState> = _uiState.asStateFlow()
 
-    private var presenceJob: Job? = null
     private var nearbyJob: Job? = null
     private var roomsJob: Job? = null
     private var unreadSendersJob: Job? = null
-    private var lastLatitude: Double? = null
-    private var lastLongitude: Double? = null
     private var knownRoomIds = mutableSetOf<String>()
     private var knownUnreadSenders = mutableSetOf<String>()
     private var notifiedUnreadSenders = mutableSetOf<String>()
 
     fun start(location: Location?) {
-        lastLatitude = location?.latitude
-        lastLongitude = location?.longitude
         viewModelScope.launch {
             val uid = try {
                 chatRepository.ensureAuthenticated()
@@ -94,7 +82,6 @@ class ProximityChatRoomListViewModel @Inject constructor(
                 return@launch
             }
 
-            startPresenceUpdates(uid, alias)
             observeNearby(uid, location.latitude, location.longitude)
         }
     }
@@ -104,8 +91,6 @@ class ProximityChatRoomListViewModel @Inject constructor(
             _uiState.update { it.copy(errorMessage = "location_unavailable") }
             return
         }
-        lastLatitude = location.latitude
-        lastLongitude = location.longitude
         val state = _uiState.value
         val uid = state.myUid
         if (uid == null) {
@@ -115,23 +100,6 @@ class ProximityChatRoomListViewModel @Inject constructor(
         _uiState.update { it.copy(errorMessage = null) }
         nearbyJob?.cancel()
         observeNearby(uid, location.latitude, location.longitude)
-        if (presenceJob?.isActive != true) {
-            startPresenceUpdates(uid, state.myAlias)
-        }
-        viewModelScope.launch {
-            try {
-                chatRepository.updatePresence(
-                    uid,
-                    state.myAlias,
-                    location.latitude,
-                    location.longitude,
-                    ProfilePictureSharingCoordinator.getPublishedUrl(appContext),
-                )
-            } catch (exception: Exception) {
-                SecureLog.e(TAG, "Failed to refresh chat presence", exception)
-                _uiState.update { it.copy(errorMessage = "presence_failed") }
-            }
-        }
     }
 
     fun toggleUserSelection(uid: String) {
@@ -247,45 +215,10 @@ class ProximityChatRoomListViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        presenceJob?.cancel()
         nearbyJob?.cancel()
         roomsJob?.cancel()
         unreadSendersJob?.cancel()
-        val uid = _uiState.value.myUid
-        if (uid != null) {
-            viewModelScope.launch {
-                try {
-                    chatRepository.clearPresence(uid)
-                } catch (exception: Exception) {
-                    SecureLog.e(TAG, "Failed to clear chat presence", exception)
-                }
-            }
-        }
         super.onCleared()
-    }
-
-    private fun startPresenceUpdates(uid: String, alias: String) {
-        presenceJob?.cancel()
-        presenceJob = viewModelScope.launch {
-            while (isActive) {
-                val lat = lastLatitude
-                val lng = lastLongitude
-                if (lat != null && lng != null) {
-                    try {
-                        chatRepository.updatePresence(
-                            uid,
-                            alias,
-                            lat,
-                            lng,
-                            ProfilePictureSharingCoordinator.getPublishedUrl(appContext),
-                        )
-                    } catch (exception: Exception) {
-                        SecureLog.e(TAG, "Failed to update chat presence", exception)
-                    }
-                }
-                delay(AppModeController.LOCATION_UPDATE_INTERVAL_MS)
-            }
-        }
     }
 
     private fun observeNearby(uid: String, latitude: Double, longitude: Double) {
