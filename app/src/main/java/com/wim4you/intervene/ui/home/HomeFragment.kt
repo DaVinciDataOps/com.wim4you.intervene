@@ -19,6 +19,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
@@ -81,7 +82,9 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
 
     override fun onResume() {
         super.onResume()
-        if (!AppModeController.isGuidedTrip) {
+        if (AppModeController.isGuidedTrip) {
+            restoreRouteOnMap()
+        } else if (mapDataViewModel.selectedDistressId.value == null) {
             isDestinationPanelOpen = false
             viewModel.clearRoute()
             mapOverlay?.clearRoute()
@@ -117,6 +120,9 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
         val currentRoute = viewModel.routeState.value
         if (currentRoute is RouteState.Success) {
             mapOverlay?.drawRoute(currentRoute)
+        }
+        mapDataViewModel.selectedDistressId.value?.let { selectedId ->
+            planRouteToSelectedDistress(selectedId)
         }
     }
 
@@ -202,12 +208,14 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
                             .firstOrNull { (it.id ?: it.personId) == selectedId }
                         val lat = distress?.latitude
                         val lng = distress?.longitude
-                        if (lat != null && lng != null && mMapInitialized) {
-                            mapOverlay?.focusOnDistress(selectedId, lat, lng)
-                            mapOverlay?.updateDistressMarkers(
-                                mapDataViewModel.distressLocations.value,
-                                selectedId,
-                            )
+                        if (lat != null && lng != null) {
+                            planRouteToSelectedDistress(selectedId)
+                            if (mMapInitialized) {
+                                mapOverlay?.updateDistressMarkers(
+                                    mapDataViewModel.distressLocations.value,
+                                    selectedId,
+                                )
+                            }
                         }
                     }
                 }
@@ -216,38 +224,84 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
     }
 
     private fun renderRouteState(state: RouteState) {
+        val isPatrolDistressRoute = AppModeController.isPatrolling &&
+            mapDataViewModel.selectedDistressId.value != null
+
         when (state) {
             RouteState.Idle -> {
                 binding.showRouteButton.isEnabled = true
                 binding.routeSummary.visibility = View.GONE
-                if (!AppModeController.isGuidedTrip) {
+                if (!AppModeController.isGuidedTrip && !isPatrolDistressRoute) {
                     mapOverlay?.clearRoute()
                 }
             }
             RouteState.Loading -> {
-                binding.showRouteButton.isEnabled = false
-                binding.routeSummary.visibility = View.VISIBLE
-                binding.routeSummary.text = getString(R.string.route_loading)
+                if (AppModeController.isGuidedTrip) {
+                    binding.showRouteButton.isEnabled = false
+                    binding.routeSummary.visibility = View.VISIBLE
+                    binding.routeSummary.text = getString(R.string.route_loading)
+                }
             }
             is RouteState.Success -> {
-                binding.showRouteButton.isEnabled = true
-                binding.routeSummary.visibility = View.VISIBLE
-                binding.routeSummary.text = state.summary
+                if (AppModeController.isGuidedTrip) {
+                    binding.showRouteButton.isEnabled = true
+                    binding.routeSummary.visibility = View.VISIBLE
+                    binding.routeSummary.text = state.summary
+                    isDestinationPanelOpen = false
+                    updateGuidedTripUi()
+                }
                 if (mMapInitialized) {
                     mapOverlay?.drawRoute(state)
                 }
-                isDestinationPanelOpen = false
-                updateGuidedTripUi()
             }
             is RouteState.Error -> {
-                binding.showRouteButton.isEnabled = true
-                binding.routeSummary.visibility = View.GONE
+                if (AppModeController.isGuidedTrip) {
+                    binding.showRouteButton.isEnabled = true
+                    binding.routeSummary.visibility = View.GONE
+                }
+                if (isPatrolDistressRoute) {
+                    focusSelectedDistressOnMap()
+                }
                 Toast.makeText(
                     requireContext(),
                     state.message.resolve(requireContext()),
                     Toast.LENGTH_LONG,
                 ).show()
             }
+        }
+    }
+
+    private fun planRouteToSelectedDistress(selectedId: String) {
+        if (!AppModeController.isPatrolling) return
+
+        val distress = mapDataViewModel.distressLocations.value
+            .firstOrNull { (it.id ?: it.personId) == selectedId }
+        val lat = distress?.latitude
+        val lng = distress?.longitude
+        if (lat == null || lng == null) return
+
+        LocationUtils.getLocation(requireContext()) { origin ->
+            if (origin == null) {
+                Toast.makeText(requireContext(), R.string.route_location_unavailable, Toast.LENGTH_SHORT).show()
+                focusSelectedDistressOnMap()
+                return@getLocation
+            }
+            viewModel.planPatrolRouteToDistress(
+                origin,
+                LatLng(lat, lng),
+                NetworkUtils.isOnline(requireContext()),
+            )
+        }
+    }
+
+    private fun focusSelectedDistressOnMap() {
+        val selectedId = mapDataViewModel.selectedDistressId.value ?: return
+        val distress = mapDataViewModel.distressLocations.value
+            .firstOrNull { (it.id ?: it.personId) == selectedId }
+        val lat = distress?.latitude
+        val lng = distress?.longitude
+        if (lat != null && lng != null && mMapInitialized) {
+            mapOverlay?.focusOnDistress(selectedId, lat, lng)
         }
     }
 

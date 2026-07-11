@@ -108,6 +108,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.firebase.database)
+    implementation(libs.firebase.storage)
     implementation(libs.geofire.android)
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.appcheck.playintegrity)

@@ -9,6 +9,7 @@ import com.wim4you.intervene.AppPreferences
 import com.wim4you.intervene.R
 import com.wim4you.intervene.ThemePreferences
 import com.wim4you.intervene.databinding.FragmentSettingsBinding
+import com.wim4you.intervene.profilepicture.ProfilePictureSettingsBinder
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -36,6 +37,7 @@ class SettingsFragment : Fragment() {
 
         bindThemeSwitches()
         bindNotificationSwitches()
+        ProfilePictureSettingsBinder.bind(this, binding.profilePictureSection.root)
     }
 
     private fun bindThemeSwitches() {

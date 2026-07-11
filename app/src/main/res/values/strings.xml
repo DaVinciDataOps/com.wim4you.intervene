@@ -124,6 +124,21 @@
     <string name="settings_anonymous_auth_notice">This app uses anonymous sign-in. Reinstalling the app creates a new identity and cannot restore your previous account.</string>
     <string name="settings_api_key_notice">Restrict your Google Maps and Directions API keys in Google Cloud Console to this app\'s package name and signing certificate.</string>
 
+    <string name="settings_profile_picture">Profile picture</string>
+    <string name="profile_picture_summary">Take a photo of yourself before a trip or patrol. Optional — you can turn sharing off anytime.</string>
+    <string name="profile_picture_preview">Profile picture</string>
+    <string name="profile_picture_take_photo">Take photo with camera</string>
+    <string name="profile_picture_rotate">Rotate photo</string>
+    <string name="profile_picture_remove">Remove photo</string>
+    <string name="profile_picture_share_nearby">Share photo with patrol groups within 2 km</string>
+    <string name="profile_picture_saved">Profile picture saved</string>
+    <string name="profile_picture_removed">Profile picture removed</string>
+    <string name="profile_picture_save_failed">Could not save profile picture</string>
+    <string name="profile_picture_upload_failed">Photo saved locally but could not upload for sharing</string>
+    <string name="profile_picture_share_failed">Could not update photo sharing</string>
+    <string name="profile_picture_rotate_failed">Could not rotate profile picture</string>
+    <string name="profile_picture_camera_permission_denied">Camera permission is required to take a profile picture</string>
+
     <string name="menu_proximity_chat">Nearby Chat</string>
     <string name="chat_proximity_radius">People within %1$.0f km</string>
     <string name="chat_active_chats">Active chats</string>

@@ -50,7 +50,6 @@ class DistressListFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         adapter = DistressCallAdapter(
-            isVerified = { distressId -> mapDataViewModel.isDistressVerified(distressId) },
             isIntervening = { distressId -> mapDataViewModel.isIntervening(distressId) },
             onItemClick = { item -> handleDistressCallSelected(item.call) },
             onRespondClick = { item -> handleDistressCallSelected(item.call) },
@@ -75,11 +74,6 @@ class DistressListFragment : Fragment() {
                     }
                 }
                 launch {
-                    mapDataViewModel.verifiedDistressIds.collectLatest {
-                        adapter.notifyDataSetChanged()
-                    }
-                }
-                launch {
                     mapDataViewModel.interveningDistressIds.collectLatest {
                         adapter.notifyDataSetChanged()
                     }
@@ -87,14 +81,6 @@ class DistressListFragment : Fragment() {
                 launch {
                     mapDataViewModel.interventionMessage.collectLatest { messageKey ->
                         when (messageKey) {
-                            "safe_word_incorrect" -> {
-                                Toast.makeText(
-                                    requireContext(),
-                                    R.string.safe_word_incorrect,
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                                mapDataViewModel.clearInterventionMessage()
-                            }
                             "intervention_failed" -> {
                                 Toast.makeText(
                                     requireContext(),
@@ -131,40 +117,23 @@ class DistressListFragment : Fragment() {
             return
         }
 
-        if (mapDataViewModel.isDistressVerified(distressId)) {
-            mapDataViewModel.focusDistress(distressId)
-            findNavController().navigate(R.id.nav_home)
-            return
-        }
-
-        SafeWordDialog.show(
-            context = requireContext(),
-            title = getString(R.string.safe_word_dialog_title),
-            message = getString(R.string.safe_word_dialog_message, distressCall.alias.orEmpty()),
-        ) { safeWord ->
-            if (safeWord.isBlank()) {
-                Toast.makeText(requireContext(), R.string.safe_word_required, Toast.LENGTH_SHORT).show()
-                return@show
+        lifecycleScope.launch {
+            val vigilante = AppModeController.vigilante ?: vigilanteStore.fetch()
+            if (vigilante == null) {
+                Toast.makeText(requireContext(), R.string.register_vigilante_before_patrol, Toast.LENGTH_SHORT).show()
+                return@launch
             }
-            lifecycleScope.launch {
-                val vigilante = AppModeController.vigilante ?: vigilanteStore.fetch()
-                if (vigilante == null) {
-                    Toast.makeText(requireContext(), R.string.register_vigilante_before_patrol, Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-                AppModeController.vigilante = vigilante
-                mapDataViewModel.verifyAndIntervene(
-                    distressCall = distressCall,
-                    safeWord = safeWord,
-                    vigilante = vigilante,
-                ) {
-                    findNavController().navigate(R.id.nav_home)
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.intervention_registered, distressCall.alias.orEmpty()),
-                        Toast.LENGTH_LONG,
-                    ).show()
-                }
+            AppModeController.vigilante = vigilante
+            mapDataViewModel.intervene(
+                distressCall = distressCall,
+                vigilante = vigilante,
+            ) {
+                findNavController().navigate(R.id.nav_home)
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.intervention_registered, distressCall.alias.orEmpty()),
+                    Toast.LENGTH_LONG,
+                ).show()
             }
         }
     }

@@ -26,6 +26,7 @@ import com.wim4you.intervene.dao.DatabaseProvider
 import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.fbdata.PatrolLocationData
 import com.wim4you.intervene.helpers.LocationProvider
+import com.wim4you.intervene.profilepicture.ProfilePictureSharingCoordinator
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -152,15 +153,17 @@ class PatrolService : Service() {
         patrolLocationData.l = listOf(geoLocation.latitude, geoLocation.longitude)
         patrolLocationData.g = GeoFireUtils.getGeoHashForLocation(geoLocation)
 
-        val patrolDataMap = mapOf(
-            "l" to listOf(geoLocation.latitude, geoLocation.longitude),
-            "g" to GeoFireUtils.getGeoHashForLocation(geoLocation),
-            "vigilanteId" to patrolLocationData.vigilanteId,
-            "name" to patrolLocationData.name,
-            "time" to patrolLocationData.time,
-            "active" to patrolLocationData.isActive,
-            "fcmToken" to patrolLocationData.fcmToken
-        )
+        val profilePictureUrl = ProfilePictureSharingCoordinator.getPublishedUrl(attributedContext)
+        val patrolDataMap = buildMap<String, Any?> {
+            put("l", listOf(geoLocation.latitude, geoLocation.longitude))
+            put("g", GeoFireUtils.getGeoHashForLocation(geoLocation))
+            put("vigilanteId", patrolLocationData.vigilanteId)
+            put("name", patrolLocationData.name)
+            put("time", patrolLocationData.time)
+            put("active", patrolLocationData.isActive)
+            put("fcmToken", patrolLocationData.fcmToken)
+            put("photoUrl", profilePictureUrl)
+        }
 
         database.child("patrols").child(firebaseUid).
         updateChildren(patrolDataMap)

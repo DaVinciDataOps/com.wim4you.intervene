@@ -51,17 +51,11 @@ class MapDataViewModel @Inject constructor(
     private val _selectedDistressId = MutableStateFlow<String?>(null)
     val selectedDistressId: StateFlow<String?> = _selectedDistressId.asStateFlow()
 
-    private val _verifiedDistressIds = MutableStateFlow<Set<String>>(emptySet())
-    val verifiedDistressIds: StateFlow<Set<String>> = _verifiedDistressIds.asStateFlow()
-
     private val _interveningDistressIds = MutableStateFlow<Set<String>>(emptySet())
     val interveningDistressIds: StateFlow<Set<String>> = _interveningDistressIds.asStateFlow()
 
     private val _interventionMessage = MutableStateFlow<String?>(null)
     val interventionMessage: StateFlow<String?> = _interventionMessage.asStateFlow()
-
-    fun isDistressVerified(distressId: String): Boolean =
-        distressId in _verifiedDistressIds.value
 
     fun isIntervening(distressId: String): Boolean =
         distressId in _interveningDistressIds.value
@@ -78,26 +72,23 @@ class MapDataViewModel @Inject constructor(
         _interventionMessage.value = null
     }
 
-    fun verifyAndIntervene(
+    fun intervene(
         distressCall: DistressCallData,
-        safeWord: String,
         vigilante: VigilanteData,
-        onVerified: () -> Unit,
+        onSuccess: () -> Unit,
     ) {
         val distressId = distressCall.id ?: return
         viewModelScope.launch {
-            val verified = interveningRepository.verifySafeWord(distressId, safeWord)
-            if (!verified) {
-                _interventionMessage.value = "safe_word_incorrect"
+            if (distressId in _interveningDistressIds.value) {
+                _selectedDistressId.value = distressId
+                onSuccess()
                 return@launch
             }
-            _verifiedDistressIds.value = _verifiedDistressIds.value + distressId
             val result = interveningRepository.registerIntervention(distressId, vigilante)
             if (result.isSuccess) {
                 _interveningDistressIds.value = _interveningDistressIds.value + distressId
                 _selectedDistressId.value = distressId
-                _interventionMessage.value = "intervention_registered"
-                onVerified()
+                onSuccess()
             } else {
                 _interventionMessage.value = "intervention_failed"
             }

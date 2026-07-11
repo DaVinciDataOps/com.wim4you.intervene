@@ -10,10 +10,14 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.imageview.ShapeableImageView
 import com.wim4you.intervene.R
 import com.wim4you.intervene.helpers.DistanceUtils
+import com.wim4you.intervene.profilepicture.ProfilePictureImageLoader
+import kotlinx.coroutines.CoroutineScope
 
 class NearbyChatUserAdapter(
+    private val imageScope: CoroutineScope,
     private val onUserClick: (NearbyChatUser) -> Unit,
     private val onUserLongClick: (NearbyChatUser) -> Unit,
 ) : ListAdapter<NearbyChatUser, NearbyChatUserAdapter.ViewHolder>(DiffCallback()) {
@@ -26,6 +30,7 @@ class NearbyChatUserAdapter(
         }
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val avatar: ShapeableImageView = itemView.findViewById(R.id.ivNearbyAvatar)
         val alias: TextView = itemView.findViewById(R.id.tvNearbyAlias)
         val distance: TextView = itemView.findViewById(R.id.tvNearbyDistance)
         val checkbox: CheckBox = itemView.findViewById(R.id.cbNearbySelect)
@@ -80,6 +85,7 @@ class NearbyChatUserAdapter(
                 ?: context.getString(R.string.chat_distance_unknown)
             holder.bell.isVisible = user.hasUnreadIndicator
             holder.bell.contentDescription = context.getString(R.string.chat_unread_label)
+            ProfilePictureImageLoader.bind(holder.avatar, user.profilePictureUrl, imageScope)
         }
         bindSelectionUi(holder, user)
     }

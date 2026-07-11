@@ -1,15 +1,18 @@
 package com.wim4you.intervene.proximitychat
 
+import android.content.Context
 import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.FirebaseAuthManager
 import com.wim4you.intervene.SecureLog
+import com.wim4you.intervene.profilepicture.ProfilePictureSharingCoordinator
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.ProximityChatRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +39,7 @@ data class ProximityChatRoomListUiState(
 
 @HiltViewModel
 class ProximityChatRoomListViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val chatRepository: ProximityChatRepository,
     private val personDataRepository: PersonDataRepository,
     private val vigilanteDataRepository: VigilanteDataRepository,
@@ -116,7 +120,13 @@ class ProximityChatRoomListViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
-                chatRepository.updatePresence(uid, state.myAlias, location.latitude, location.longitude)
+                chatRepository.updatePresence(
+                    uid,
+                    state.myAlias,
+                    location.latitude,
+                    location.longitude,
+                    ProfilePictureSharingCoordinator.getPublishedUrl(appContext),
+                )
             } catch (exception: Exception) {
                 SecureLog.e(TAG, "Failed to refresh chat presence", exception)
                 _uiState.update { it.copy(errorMessage = "presence_failed") }
@@ -262,7 +272,13 @@ class ProximityChatRoomListViewModel @Inject constructor(
                 val lng = lastLongitude
                 if (lat != null && lng != null) {
                     try {
-                        chatRepository.updatePresence(uid, alias, lat, lng)
+                        chatRepository.updatePresence(
+                            uid,
+                            alias,
+                            lat,
+                            lng,
+                            ProfilePictureSharingCoordinator.getPublishedUrl(appContext),
+                        )
                     } catch (exception: Exception) {
                         SecureLog.e(TAG, "Failed to update chat presence", exception)
                     }

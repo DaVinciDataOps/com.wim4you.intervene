@@ -247,6 +247,7 @@ class MainActivity : AppCompatActivity() {
                 vigilante = vigilante,
                 latitude = latLng.latitude,
                 longitude = latLng.longitude,
+                context = applicationContext,
             )
             Log.i(TAG, "Patrol registered in Firebase for vigilante ${vigilante.id}")
         } catch (exception: Exception) {

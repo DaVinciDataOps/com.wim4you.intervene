@@ -52,6 +52,7 @@ class ProximityChatRoomListFragment : Fragment() {
             onRoomDeleteClick = { room -> showRemoveChatDialog(room) },
         )
         nearbyAdapter = NearbyChatUserAdapter(
+            imageScope = viewLifecycleOwner.lifecycleScope,
             onUserClick = { user ->
                 viewLifecycleOwner.lifecycleScope.launch {
                     val roomId = viewModel.openDirectChat(user)

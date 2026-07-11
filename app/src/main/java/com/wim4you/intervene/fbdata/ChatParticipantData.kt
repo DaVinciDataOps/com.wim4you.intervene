@@ -16,6 +16,8 @@ data class ChatParticipantData(
     var time: Long? = null,
     @PropertyName("active")
     var isActive: Boolean? = false,
+    @PropertyName("photoUrl")
+    var profilePictureUrl: String? = null,
 ) : Parcelable {
-    constructor() : this(null, null, null, null, false)
+    constructor() : this(null, null, null, null, false, null)
 }

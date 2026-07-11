@@ -124,6 +124,21 @@
     <string name="settings_anonymous_auth_notice">Deze app gebruikt anonieme aanmelding. Bij herinstallatie krijg je een nieuwe identiteit en je vorige account kan niet worden hersteld.</string>
     <string name="settings_api_key_notice">Beperk je Google Maps- en Directions API-sleutels in Google Cloud Console tot de pakketnaam en het ondertekeningscertificaat van deze app.</string>
 
+    <string name="settings_profile_picture">Profielfoto</string>
+    <string name="profile_picture_summary">Maak een foto van jezelf voor een trip of patrouille. Optioneel — je kunt delen altijd uitzetten.</string>
+    <string name="profile_picture_preview">Profielfoto</string>
+    <string name="profile_picture_take_photo">Foto maken met camera</string>
+    <string name="profile_picture_rotate">Foto draaien</string>
+    <string name="profile_picture_remove">Foto verwijderen</string>
+    <string name="profile_picture_share_nearby">Deel foto met patrouillegroepen binnen 2 km</string>
+    <string name="profile_picture_saved">Profielfoto opgeslagen</string>
+    <string name="profile_picture_removed">Profielfoto verwijderd</string>
+    <string name="profile_picture_save_failed">Profielfoto kon niet worden opgeslagen</string>
+    <string name="profile_picture_upload_failed">Foto lokaal opgeslagen maar upload voor delen mislukt</string>
+    <string name="profile_picture_share_failed">Foto delen kon niet worden bijgewerkt</string>
+    <string name="profile_picture_rotate_failed">Profielfoto kon niet worden gedraaid</string>
+    <string name="profile_picture_camera_permission_denied">Cameratoegang is nodig om een profielfoto te maken</string>
+
     <string name="menu_proximity_chat">Chat in de buurt</string>
     <string name="chat_proximity_radius">Mensen binnen %1$.0f km</string>
     <string name="chat_active_chats">Actieve chats</string>

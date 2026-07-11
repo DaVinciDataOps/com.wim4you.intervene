@@ -14,7 +14,6 @@ import com.wim4you.intervene.helpers.DistanceUtils
 import com.wim4you.intervene.helpers.ElapsedTimeFormatter
 
 class DistressCallAdapter(
-    private val isVerified: (String) -> Boolean,
     private val isIntervening: (String) -> Boolean,
     private val onItemClick: (DistressCallItem) -> Unit,
     private val onRespondClick: (DistressCallItem) -> Unit,
@@ -44,16 +43,11 @@ class DistressCallAdapter(
         val item = getItem(position)
         val call = item.call
         val distressId = call.id
-        val verified = distressId != null && isVerified(distressId)
         val intervening = distressId != null && isIntervening(distressId)
         val context = holder.itemView.context
 
         holder.tvAlias.text = call.alias
-        holder.tvAddress.text = if (verified) {
-            call.address ?: context.getString(R.string.distress_address_unknown)
-        } else {
-            context.getString(R.string.distress_address_hidden)
-        }
+        holder.tvAddress.text = call.address ?: context.getString(R.string.distress_address_unknown)
 
         val distanceLabel = item.distanceMeters?.let { DistanceUtils.formatDistanceMeters(it) }
             ?: context.getString(R.string.distress_distance_unknown)
@@ -71,12 +65,6 @@ class DistressCallAdapter(
                     ContextCompat.getColor(context, R.color.color_success),
                 )
                 holder.btnDistressCall.setImageResource(R.mipmap.ic_vigilantes_patrolling)
-            }
-            verified -> {
-                holder.itemView.setBackgroundColor(
-                    ContextCompat.getColor(context, R.color.color_warning),
-                )
-                holder.btnDistressCall.setImageResource(R.mipmap.ic_launcher_round)
             }
             else -> {
                 holder.itemView.setBackgroundResource(android.R.color.transparent)

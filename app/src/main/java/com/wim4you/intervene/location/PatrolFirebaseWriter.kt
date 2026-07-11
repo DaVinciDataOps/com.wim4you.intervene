@@ -7,6 +7,7 @@ import com.wim4you.intervene.FirebaseDatabaseProvider
 import com.wim4you.intervene.FirebaseUtils
 import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.data.VigilanteData
+import com.wim4you.intervene.profilepicture.ProfilePictureSharingCoordinator
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -19,18 +20,21 @@ object PatrolFirebaseWriter {
         vigilante: VigilanteData,
         latitude: Double,
         longitude: Double,
+        context: android.content.Context,
     ) {
         val firebaseUid = FirebaseUtils.ensureReady()
         val geoLocation = GeoLocation(latitude, longitude)
-        val patrolDataMap = mapOf(
-            "l" to listOf(geoLocation.latitude, geoLocation.longitude),
-            "g" to GeoFireUtils.getGeoHashForLocation(geoLocation),
-            "vigilanteId" to vigilante.id,
-            "name" to vigilante.name,
-            "time" to System.currentTimeMillis(),
-            "active" to true,
-            "fcmToken" to null,
-        )
+        val profilePictureUrl = ProfilePictureSharingCoordinator.getPublishedUrl(context)
+        val patrolDataMap = buildMap<String, Any?> {
+            put("l", listOf(geoLocation.latitude, geoLocation.longitude))
+            put("g", GeoFireUtils.getGeoHashForLocation(geoLocation))
+            put("vigilanteId", vigilante.id)
+            put("name", vigilante.name)
+            put("time", System.currentTimeMillis())
+            put("active", true)
+            put("fcmToken", null)
+            put("photoUrl", profilePictureUrl)
+        }
         FirebaseDatabaseProvider.reference()
             .child("patrols")
             .child(firebaseUid)

@@ -6,6 +6,7 @@ data class NearbyChatUser(
     val distanceMeters: Double?,
     val latitude: Double?,
     val longitude: Double?,
+    val profilePictureUrl: String? = null,
     val hasUnreadIndicator: Boolean = false,
     val isSelected: Boolean = false,
 )

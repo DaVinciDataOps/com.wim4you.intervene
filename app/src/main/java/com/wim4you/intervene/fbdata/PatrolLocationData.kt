@@ -24,7 +24,9 @@ data class PatrolLocationData (
     @PropertyName("active")
     var isActive: Boolean? = false,
     @PropertyName("fcmToken")
-    var fcmToken: String? = null
+    var fcmToken: String? = null,
+    @PropertyName("photoUrl")
+    var profilePictureUrl: String? = null,
 ): Parcelable{
-    constructor() : this("", "", null, null, null, null, null, null)
+    constructor() : this("", "", null, null, null, null, null, null, null)
 }

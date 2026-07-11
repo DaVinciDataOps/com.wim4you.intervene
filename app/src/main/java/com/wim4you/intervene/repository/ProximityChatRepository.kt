@@ -61,7 +61,13 @@ class ProximityChatRepository @Inject constructor() {
         }
     }
 
-    suspend fun updatePresence(uid: String, alias: String, latitude: Double, longitude: Double) {
+    suspend fun updatePresence(
+        uid: String,
+        alias: String,
+        latitude: Double,
+        longitude: Double,
+        profilePictureUrl: String? = null,
+    ) {
         val geoHash = GeoFireUtils.getGeoHashForLocation(GeoLocation(latitude, longitude))
         val participant = ChatParticipantData(
             alias = alias,
@@ -69,6 +75,7 @@ class ProximityChatRepository @Inject constructor() {
             l = listOf(latitude, longitude),
             time = System.currentTimeMillis(),
             isActive = true,
+            profilePictureUrl = profilePictureUrl,
         )
         database.child(ProximityChatConstants.PRESENCE_PATH)
             .child(uid)
@@ -113,6 +120,7 @@ class ProximityChatRepository @Inject constructor() {
                     distanceMeters = distance,
                     latitude = location.latitude,
                     longitude = location.longitude,
+                    profilePictureUrl = participant.profilePictureUrl?.takeIf { it.isNotBlank() },
                 )
                 trySend(participants.values.sortedBy { it.distanceMeters ?: Double.MAX_VALUE })
             }

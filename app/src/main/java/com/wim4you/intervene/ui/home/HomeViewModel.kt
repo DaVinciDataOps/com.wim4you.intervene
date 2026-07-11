@@ -180,4 +180,31 @@ class HomeViewModel @Inject constructor(
     fun clearRoute() {
         _routeState.value = RouteState.Idle
     }
+
+    fun planPatrolRouteToDistress(origin: LatLng, destination: LatLng, isOnline: Boolean) {
+        if (!AppModeController.isPatrolling) return
+
+        viewModelScope.launch {
+            if (!isOnline) {
+                _routeState.value = RouteState.Error(UiMessage.Resource(R.string.error_no_network_route))
+                return@launch
+            }
+
+            _routeState.value = RouteState.Loading
+
+            routeRepository.fetchRoute(origin, destination)
+                .onSuccess { route ->
+                    _routeState.value = RouteState.Success(
+                        points = route.points,
+                        destination = route.destination,
+                        summary = "${route.durationText} · ${route.distanceText}",
+                    )
+                }
+                .onFailure {
+                    _routeState.value = RouteState.Error(
+                        UiMessage.Resource(R.string.route_fetch_failed),
+                    )
+                }
+        }
+    }
 }
