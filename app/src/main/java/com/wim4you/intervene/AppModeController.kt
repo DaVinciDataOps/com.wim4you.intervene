@@ -11,6 +11,7 @@ import com.wim4you.intervene.distress.DistressMessagingManager
 import com.wim4you.intervene.distress.DistressService
 import com.wim4you.intervene.distress.DistressSoundService
 import com.wim4you.intervene.helpers.ServiceUtils
+import com.wim4you.intervene.location.PatrolFirebaseWriter
 import com.wim4you.intervene.location.PatrolService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -88,11 +89,30 @@ object AppModeController {
         return true
     }
 
-    fun stopPatrol(context: Context) {
+    suspend fun stopPatrol(context: Context) {
         isPatrolling = false
         persistState()
         stopPatrolService(context)
         DistressMessagingManager.unsubscribeFromTopic(context.applicationContext)
+        // Clear after stopping the service so in-flight patrol writes cannot
+        // overwrite the inactive state and leave maps showing stale markers.
+        clearPatrolInFirebase(context)
+    }
+
+    private suspend fun clearPatrolInFirebase(context: Context) {
+        withContext(Dispatchers.IO) {
+            val firebaseUid = try {
+                FirebaseAuthManager.ensureSignedIn()
+            } catch (exception: Exception) {
+                Log.e(TAG, "Failed to authenticate before clearing patrol", exception)
+                return@withContext
+            }
+            try {
+                PatrolFirebaseWriter.markPatrolInactive(firebaseUid)
+            } catch (exception: Exception) {
+                Log.e(TAG, "Failed to mark patrol inactive", exception)
+            }
+        }
     }
 
     fun activateDistress(context: Context) {

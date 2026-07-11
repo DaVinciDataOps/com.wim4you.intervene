@@ -149,6 +149,8 @@ class PatrolService : Service() {
         firebaseUid: String,
         geoLocation: GeoLocation,
     ) {
+        if (!AppModeController.isPatrolling) return
+
         patrolLocationData.id = patrolLocationData.vigilanteId
         patrolLocationData.l = listOf(geoLocation.latitude, geoLocation.longitude)
         patrolLocationData.g = GeoFireUtils.getGeoHashForLocation(geoLocation)
@@ -165,9 +167,13 @@ class PatrolService : Service() {
             put("photoUrl", profilePictureUrl)
         }
 
-        database.child("patrols").child(firebaseUid).
-        updateChildren(patrolDataMap)
+        database.child("patrols").child(firebaseUid)
+            .updateChildren(patrolDataMap)
             .addOnSuccessListener {
+                if (!AppModeController.isPatrolling) {
+                    sendStopPatrolToFirebase(firebaseUid)
+                    return@addOnSuccessListener
+                }
                 SecureLog.i("PatrolService", "Patrol location updated")
             }
             .addOnFailureListener { exception ->
@@ -176,17 +182,11 @@ class PatrolService : Service() {
             }
     }
 
-    private fun sendToFirebase(firebaseUid: String, active: Boolean) {
-        database.child("patrols").child(firebaseUid)
-            .updateChildren(mapOf("active" to active))
-            .addOnSuccessListener {
-                SecureLog.i("PatrolService", "Patrol marked inactive")
-            }
-            .addOnFailureListener { exception ->
-                SecureLog.e("PatrolService", "Failed to mark patrol inactive", exception)
-                AppModeController.reportBackgroundFailure("Could not mark patrol as stopped in cloud.")
-            }
-   }
+    private fun sendStopPatrolToFirebase(firebaseUid: String) {
+        PatrolFirebaseWriter.markPatrolInactiveAsync(firebaseUid) {
+            AppModeController.reportBackgroundFailure("Could not mark patrol as stopped in cloud.")
+        }
+    }
 
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
@@ -209,7 +209,7 @@ class PatrolService : Service() {
                     AppModeController.reportBackgroundFailure("Could not authenticate to stop patrol cleanly.")
                     return@launch
                 }
-                sendToFirebase(firebaseUid, false)
+                sendStopPatrolToFirebase(firebaseUid)
             }
         }
         patrolJob?.cancel()

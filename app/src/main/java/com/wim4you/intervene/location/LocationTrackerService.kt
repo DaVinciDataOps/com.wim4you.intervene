@@ -60,6 +60,7 @@ class LocationTrackerService : Service() {
     private val patrolLocationDataList = mutableListOf<PatrolLocationData>()
     private val distressLocationDataList = mutableListOf<DistressLocationData>()
     private val distressDetailListeners = mutableMapOf<String, ValueEventListener>()
+    private val patrolDetailListeners = mutableMapOf<String, ValueEventListener>()
     private lateinit var attributedContext: Context
 
     private var lastPatrolQueryCenter: GeoLocation? = null
@@ -85,8 +86,8 @@ class LocationTrackerService : Service() {
         }
 
         override fun onDataExited(dataSnapshot: DataSnapshot) {
-            patrolLocationDataList.removeAll { it.id == dataSnapshot.key }
-            broadcastPatrolUpdate(patrolLocationDataList)
+            detachPatrolDetailListener(dataSnapshot.key)
+            removePatrolByKey(dataSnapshot.key)
         }
 
         override fun onDataMoved(dataSnapshot: DataSnapshot, location: GeoLocation) {
@@ -215,6 +216,8 @@ class LocationTrackerService : Service() {
                     userLocation.longitude,
                 )
             }
+        } else {
+            mapLocationRepository.clearOwnPatrol()
         }
         if (AppModeController.isDistressActive) {
             val person = AppModeController.person
@@ -272,6 +275,7 @@ class LocationTrackerService : Service() {
         if (patrolListenersAttached && ::geoQueryPatrols.isInitialized) {
             geoQueryPatrols.removeAllListeners()
         }
+        detachAllPatrolDetailListeners()
         patrolLocationDataList.clear()
         broadcastPatrolUpdate(patrolLocationDataList)
         lastPatrolQueryCenter = location
@@ -376,7 +380,10 @@ class LocationTrackerService : Service() {
 
     private fun handlePatrolSnapshot(dataSnapshot: DataSnapshot, location: GeoLocation) {
         val patrolLocationData = dataSnapshot.getValue<PatrolLocationData>()
-        if (!validData(patrolLocationData)) return
+        if (!validData(patrolLocationData)) {
+            removePatrolByKey(dataSnapshot.key)
+            return
+        }
         patrolLocationData?.let { patrol ->
             patrol.id = dataSnapshot.key
             patrol.l = listOf(location.latitude, location.longitude)
@@ -386,12 +393,52 @@ class LocationTrackerService : Service() {
             } else {
                 patrolLocationDataList[index] = patrol
             }
+            attachPatrolDetailListener(dataSnapshot.key)
             broadcastPatrolUpdate(patrolLocationDataList)
         }
     }
 
+    private fun attachPatrolDetailListener(key: String?) {
+        if (key.isNullOrBlank() || key in patrolDetailListeners) return
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val active = snapshot.child("active").getValue(Boolean::class.java) ?: false
+                val hasGeoHash = !snapshot.child("g").getValue(String::class.java).isNullOrBlank()
+                if (!active || !hasGeoHash) {
+                    removePatrolByKey(snapshot.key)
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("LocationTrackerService", "Patrol detail listener cancelled: ${error.message}")
+            }
+        }
+        patrolDetailListeners[key] = listener
+        FirebaseDatabaseProvider.reference().child("patrols").child(key)
+            .addValueEventListener(listener)
+    }
+
+    private fun detachPatrolDetailListener(key: String?) {
+        if (key.isNullOrBlank()) return
+        val listener = patrolDetailListeners.remove(key) ?: return
+        FirebaseDatabaseProvider.reference().child("patrols").child(key)
+            .removeEventListener(listener)
+    }
+
+    private fun detachAllPatrolDetailListeners() {
+        patrolDetailListeners.keys.toList().forEach(::detachPatrolDetailListener)
+    }
+
     private fun broadcastPatrolUpdate(patrolLocationDataList: List<PatrolLocationData>) {
         mapLocationRepository.updatePatrolLocations(patrolLocationDataList)
+    }
+
+    private fun removePatrolByKey(key: String?) {
+        if (key == null) return
+        detachPatrolDetailListener(key)
+        if (patrolLocationDataList.removeAll { it.id == key }) {
+            broadcastPatrolUpdate(patrolLocationDataList)
+        }
     }
 
     private fun removeDistressByKey(key: String?) {
@@ -414,6 +461,7 @@ class LocationTrackerService : Service() {
         if (::geoQueryDistress.isInitialized) {
             geoQueryDistress.removeAllListeners()
         }
+        detachAllPatrolDetailListeners()
         detachAllDistressDetailListeners()
         if (::locationCallback.isInitialized) {
             fusedLocationClient.removeLocationUpdates(locationCallback)

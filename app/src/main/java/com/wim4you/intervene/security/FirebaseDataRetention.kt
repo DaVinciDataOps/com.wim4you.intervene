@@ -8,6 +8,7 @@ import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.FirebaseAuthManager
 import com.wim4you.intervene.FirebaseDatabaseProvider
 import com.wim4you.intervene.distress.DistressFirebaseWriter
+import com.wim4you.intervene.location.PatrolFirebaseWriter
 import com.wim4you.intervene.SecureLog
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -77,7 +78,7 @@ object FirebaseDataRetention {
         if (path == "distress") {
             DistressFirebaseWriter.markDistressInactive(uid)
         } else {
-            database.child(path).child(uid).child("active").setValueOnce(false)
+            PatrolFirebaseWriter.markPatrolInactive(uid)
         }
     }
 

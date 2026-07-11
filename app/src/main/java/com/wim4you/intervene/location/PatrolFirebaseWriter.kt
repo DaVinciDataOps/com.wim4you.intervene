@@ -1,5 +1,6 @@
 package com.wim4you.intervene.location
 
+import com.firebase.geofire.GeoFire
 import com.firebase.geofire.GeoFireUtils
 import com.firebase.geofire.GeoLocation
 import android.util.Log
@@ -15,6 +16,68 @@ import kotlin.coroutines.resumeWithException
 object PatrolFirebaseWriter {
 
     private const val TAG = "PatrolFirebaseWriter"
+
+    fun inactiveUpdateMap(): Map<String, Any?> = mapOf(
+        "active" to false,
+        "g" to null,
+        "l" to null,
+    )
+
+    suspend fun markPatrolInactive(firebaseUid: String) {
+        val database = FirebaseDatabaseProvider.reference()
+        val patrolRef = database.child("patrols").child(firebaseUid)
+        patrolRef.updateChildren(inactiveUpdateMap()).awaitTask()
+        removeFromGeoIndex(database, firebaseUid)
+        SecureLog.i(TAG, "Patrol marked inactive for $firebaseUid")
+    }
+
+    fun markPatrolInactiveAsync(
+        firebaseUid: String,
+        onFailure: ((Exception) -> Unit)? = null,
+    ) {
+        val database = FirebaseDatabaseProvider.reference()
+        val patrolRef = database.child("patrols").child(firebaseUid)
+        patrolRef.updateChildren(inactiveUpdateMap())
+            .addOnSuccessListener {
+                removeFromGeoIndex(
+                    database = database,
+                    firebaseUid = firebaseUid,
+                    onFailure = onFailure,
+                )
+            }
+            .addOnFailureListener { exception ->
+                SecureLog.e(TAG, "Failed to mark patrol inactive for $firebaseUid", exception)
+                onFailure?.invoke(exception)
+            }
+    }
+
+    private fun removeFromGeoIndex(
+        database: com.google.firebase.database.DatabaseReference,
+        firebaseUid: String,
+        onFailure: ((Exception) -> Unit)? = null,
+    ) {
+        GeoFire(database.child("patrols")).removeLocation(firebaseUid) { _, error ->
+            if (error != null) {
+                SecureLog.e(TAG, "Failed to remove patrol from geo index for $firebaseUid", error.toException())
+                onFailure?.invoke(error.toException())
+            }
+        }
+    }
+
+    private suspend fun removeFromGeoIndex(
+        database: com.google.firebase.database.DatabaseReference,
+        firebaseUid: String,
+    ) {
+        suspendCancellableCoroutine { continuation ->
+            GeoFire(database.child("patrols")).removeLocation(firebaseUid) { _, error ->
+                if (error != null) {
+                    continuation.resumeWithException(error.toException())
+                } else {
+                    continuation.resume(Unit)
+                }
+            }
+        }
+    }
 
     suspend fun pushPatrol(
         vigilante: VigilanteData,
