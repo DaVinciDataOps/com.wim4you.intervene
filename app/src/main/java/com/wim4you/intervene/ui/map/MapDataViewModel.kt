@@ -10,10 +10,8 @@ import com.wim4you.intervene.repository.InterveningRepository
 import com.wim4you.intervene.repository.MapLocationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -27,26 +25,23 @@ class MapDataViewModel @Inject constructor(
     private val interveningRepository: InterveningRepository,
 ) : ViewModel() {
 
-    val patrolLocations: StateFlow<List<PatrolLocationData>> =
-        mapLocationRepository.patrolLocations.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptyList(),
-        )
+    init {
+        viewModelScope.launch {
+            mapLocationRepository.distressLocations.collect { locations ->
+                val selectedId = _selectedDistressId.value ?: return@collect
+                val stillPresent = locations.any { (it.id ?: it.personId) == selectedId }
+                if (!stillPresent) {
+                    _selectedDistressId.value = null
+                }
+            }
+        }
+    }
 
-    val distressLocations: StateFlow<List<DistressLocationData>> =
-        mapLocationRepository.distressLocations.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptyList(),
-        )
+    val patrolLocations: StateFlow<List<PatrolLocationData>> = mapLocationRepository.patrolLocations
 
-    val distressCalls: StateFlow<List<DistressCallData>> =
-        mapLocationRepository.distressCalls.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptyList(),
-        )
+    val distressLocations: StateFlow<List<DistressLocationData>> = mapLocationRepository.distressLocations
+
+    val distressCalls: StateFlow<List<DistressCallData>> = mapLocationRepository.distressCalls
 
     private val _selectedDistressId = MutableStateFlow<String?>(null)
     val selectedDistressId: StateFlow<String?> = _selectedDistressId.asStateFlow()

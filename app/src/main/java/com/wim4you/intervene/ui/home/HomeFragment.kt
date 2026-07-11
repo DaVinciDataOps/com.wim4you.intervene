@@ -102,6 +102,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
         updateGuidedTripUi()
         updateStatusBanner()
         centerMapOnUserIfNeeded()
+        syncMapMarkers()
     }
 
     override fun onForegroundLocationGranted() {

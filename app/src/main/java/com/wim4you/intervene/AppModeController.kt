@@ -6,6 +6,7 @@ import android.os.Build
 import android.util.Log
 import com.wim4you.intervene.data.PersonData
 import com.wim4you.intervene.data.VigilanteData
+import com.wim4you.intervene.distress.DistressFirebaseWriter
 import com.wim4you.intervene.distress.DistressMessagingManager
 import com.wim4you.intervene.distress.DistressService
 import com.wim4you.intervene.distress.DistressSoundService
@@ -117,14 +118,11 @@ object AppModeController {
                 Log.e(TAG, "Failed to authenticate before clearing distress", exception)
                 return@withContext
             }
-            FirebaseDatabaseProvider.reference().child("distress").child(firebaseUid)
-                .updateChildren(mapOf("active" to false))
-                .addOnSuccessListener {
-                    Log.i(TAG, "Distress marked inactive in Firebase")
-                }
-                .addOnFailureListener { exception ->
-                    Log.e(TAG, "Failed to mark distress inactive", exception)
-                }
+            try {
+                DistressFirebaseWriter.markDistressInactive(firebaseUid)
+            } catch (exception: Exception) {
+                Log.e(TAG, "Failed to mark distress inactive", exception)
+            }
         }
     }
 

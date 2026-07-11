@@ -75,7 +75,7 @@ class MapLocationRepository @Inject constructor() {
     }
 
     fun updateDistressLocations(locations: List<DistressLocationData>) {
-        remoteDistress = locations
+        remoteDistress = locations.filter { it.isActive == true }
         publishMergedDistress()
     }
 
@@ -123,12 +123,13 @@ class MapLocationRepository @Inject constructor() {
     }
 
     private fun publishMergedDistress() {
-        val own = ownDistress
+        val own = ownDistress?.takeIf { it.isActive == true }
+        val activeRemote = remoteDistress.filter { it.isActive == true }
         val merged = if (own == null) {
-            remoteDistress
+            activeRemote
         } else {
             val ownId = own.id ?: own.personId
-            remoteDistress.filter { (it.id ?: it.personId) != ownId } + own
+            activeRemote.filter { (it.id ?: it.personId) != ownId } + own
         }
         _distressLocations.value = merged
         _distressCalls.value = merged.map { it.toDistressCallData() }

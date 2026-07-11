@@ -15,6 +15,38 @@ object DistressFirebaseWriter {
 
     private const val TAG = "DistressFirebaseWriter"
 
+    fun inactiveUpdateMap(): Map<String, Any?> = mapOf(
+        "active" to false,
+        "g" to null,
+        "l" to null,
+    )
+
+    suspend fun markDistressInactive(firebaseUid: String) {
+        FirebaseDatabaseProvider.reference()
+            .child("distress")
+            .child(firebaseUid)
+            .updateChildren(inactiveUpdateMap())
+            .awaitTask()
+        SecureLog.i(TAG, "Distress marked inactive for $firebaseUid")
+    }
+
+    fun markDistressInactiveAsync(
+        firebaseUid: String,
+        onFailure: ((Exception) -> Unit)? = null,
+    ) {
+        FirebaseDatabaseProvider.reference()
+            .child("distress")
+            .child(firebaseUid)
+            .updateChildren(inactiveUpdateMap())
+            .addOnSuccessListener {
+                SecureLog.i(TAG, "Distress marked inactive for $firebaseUid")
+            }
+            .addOnFailureListener { exception ->
+                SecureLog.e(TAG, "Failed to mark distress inactive for $firebaseUid", exception)
+                onFailure?.invoke(exception)
+            }
+    }
+
     suspend fun pushDistress(
         personData: PersonData,
         latitude: Double,

@@ -220,15 +220,9 @@ class DistressService : Service() {
     }
 
     private fun sendStopDistressToFirebase(firebaseUid: String) {
-        database.child("distress").child(firebaseUid)
-            .updateChildren(mapOf("active" to false))
-            .addOnSuccessListener {
-                SecureLog.i("DistressService", "Distress marked inactive")
-            }
-            .addOnFailureListener { exception ->
-                SecureLog.e("DistressService", "Failed to mark distress inactive", exception)
-                AppModeController.reportBackgroundFailure("Could not mark distress as stopped in cloud.")
-            }
+        DistressFirebaseWriter.markDistressInactiveAsync(firebaseUid) {
+            AppModeController.reportBackgroundFailure("Could not mark distress as stopped in cloud.")
+        }
     }
 
     private fun createNotificationChannel() {

@@ -27,6 +27,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
 import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.Constants
@@ -58,6 +59,7 @@ class LocationTrackerService : Service() {
 
     private val patrolLocationDataList = mutableListOf<PatrolLocationData>()
     private val distressLocationDataList = mutableListOf<DistressLocationData>()
+    private val distressDetailListeners = mutableMapOf<String, ValueEventListener>()
     private lateinit var attributedContext: Context
 
     private var lastPatrolQueryCenter: GeoLocation? = null
@@ -108,8 +110,8 @@ class LocationTrackerService : Service() {
         }
 
         override fun onDataExited(dataSnapshot: DataSnapshot) {
-            distressLocationDataList.removeAll { it.id == dataSnapshot.key }
-            broadcastDistressUpdate(distressLocationDataList)
+            detachDistressDetailListener(dataSnapshot.key)
+            removeDistressByKey(dataSnapshot.key)
         }
 
         override fun onDataMoved(dataSnapshot: DataSnapshot, location: GeoLocation) {
@@ -286,6 +288,7 @@ class LocationTrackerService : Service() {
         if (distressListenersAttached && ::geoQueryDistress.isInitialized) {
             geoQueryDistress.removeAllListeners()
         }
+        detachAllDistressDetailListeners()
         distressLocationDataList.clear()
         broadcastDistressUpdate(distressLocationDataList)
         lastDistressQueryCenter = location
@@ -311,11 +314,44 @@ class LocationTrackerService : Service() {
         } else {
             distressLocationDataList[index] = distress
         }
+        attachDistressDetailListener(dataSnapshot.key)
         broadcastDistressUpdate(distressLocationDataList)
     }
 
+    private fun attachDistressDetailListener(key: String?) {
+        if (key.isNullOrBlank() || key in distressDetailListeners) return
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val active = snapshot.child("active").getValue(Boolean::class.java) ?: false
+                if (!active) {
+                    removeDistressByKey(snapshot.key)
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("LocationTrackerService", "Distress detail listener cancelled: ${error.message}")
+            }
+        }
+        distressDetailListeners[key] = listener
+        FirebaseDatabaseProvider.reference().child("distress").child(key)
+            .addValueEventListener(listener)
+    }
+
+    private fun detachDistressDetailListener(key: String?) {
+        if (key.isNullOrBlank()) return
+        val listener = distressDetailListeners.remove(key) ?: return
+        FirebaseDatabaseProvider.reference().child("distress").child(key)
+            .removeEventListener(listener)
+    }
+
+    private fun detachAllDistressDetailListeners() {
+        distressDetailListeners.keys.toList().forEach(::detachDistressDetailListener)
+    }
+
     private fun parseDistressSnapshot(snapshot: DataSnapshot): DistressLocationData? {
-        snapshot.getValue(DistressLocationData::class.java)?.let { return it }
+        snapshot.getValue(DistressLocationData::class.java)?.let { parsed ->
+            return if (parsed.isActive == true) parsed else null
+        }
         val active = snapshot.child("active").getValue(Boolean::class.java) ?: false
         if (!active) return null
         val coordinates = snapshot.child("l").children.mapNotNull { it.getValue(Double::class.java) }
@@ -359,13 +395,14 @@ class LocationTrackerService : Service() {
 
     private fun removeDistressByKey(key: String?) {
         if (key == null) return
+        detachDistressDetailListener(key)
         if (distressLocationDataList.removeAll { it.id == key }) {
             broadcastDistressUpdate(distressLocationDataList)
         }
     }
 
     private fun broadcastDistressUpdate(distressLocationDataList: List<DistressLocationData>) {
-        mapLocationRepository.updateDistressLocations(distressLocationDataList)
+        mapLocationRepository.updateDistressLocations(distressLocationDataList.toList())
     }
 
     override fun onDestroy() {
@@ -376,6 +413,7 @@ class LocationTrackerService : Service() {
         if (::geoQueryDistress.isInitialized) {
             geoQueryDistress.removeAllListeners()
         }
+        detachAllDistressDetailListeners()
         if (::locationCallback.isInitialized) {
             fusedLocationClient.removeLocationUpdates(locationCallback)
         } else {
