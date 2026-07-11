@@ -49,6 +49,10 @@ class HomeViewModel @Inject constructor(
     private val _destinationSuggestions = MutableStateFlow<List<DestinationSuggestion>>(emptyList())
     val destinationSuggestions: StateFlow<List<DestinationSuggestion>> = _destinationSuggestions.asStateFlow()
 
+    private var routeDismissedForDistressId: String? = null
+    private var guidedTripRouteDismissed = false
+    private var pendingRouteToDistressId: String? = null
+
     private var panicButtonPressCount = 0
     private val panicButtonPressWindowMs = 5000L
     private var lastPressTime = 0L
@@ -140,6 +144,7 @@ class HomeViewModel @Inject constructor(
         if (!AppModeController.isGuidedTrip) return
 
         viewModelScope.launch {
+            guidedTripRouteDismissed = false
             if (!isOnline) {
                 _routeState.value = RouteState.Error(UiMessage.Resource(R.string.error_no_network_route))
                 return@launch
@@ -177,14 +182,38 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun clearRoute() {
+    fun clearRoute(activeDistressId: String? = null) {
+        routeDismissedForDistressId = activeDistressId
+        if (AppModeController.isGuidedTrip) {
+            guidedTripRouteDismissed = true
+        }
         _routeState.value = RouteState.Idle
     }
+
+    fun shouldAutoPlanRouteToDistress(distressId: String): Boolean =
+        routeDismissedForDistressId != distressId
+
+    fun shouldRestoreGuidedTripRoute(): Boolean = !guidedTripRouteDismissed
+
+    fun requestRouteToDistress(distressId: String) {
+        routeDismissedForDistressId = null
+        pendingRouteToDistressId = distressId
+    }
+
+    fun consumePendingRouteToDistressRequest(): String? {
+        val distressId = pendingRouteToDistressId ?: return null
+        pendingRouteToDistressId = null
+        return distressId
+    }
+
+    fun hasPendingRouteToDistress(distressId: String): Boolean =
+        pendingRouteToDistressId == distressId
 
     fun planPatrolRouteToDistress(origin: LatLng, destination: LatLng, isOnline: Boolean) {
         if (!AppModeController.isPatrolling) return
 
         viewModelScope.launch {
+            routeDismissedForDistressId = null
             if (!isOnline) {
                 _routeState.value = RouteState.Error(UiMessage.Resource(R.string.error_no_network_route))
                 return@launch

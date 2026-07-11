@@ -20,6 +20,7 @@ import com.wim4you.intervene.data.DistressCallData
 import com.wim4you.intervene.databinding.FragmentDistressListBinding
 import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.repository.VigilanteDataRepository
+import com.wim4you.intervene.ui.home.HomeViewModel
 import com.wim4you.intervene.ui.map.MapDataViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
@@ -32,6 +33,7 @@ class DistressListFragment : Fragment() {
     @Inject lateinit var vigilanteStore: VigilanteDataRepository
 
     private val mapDataViewModel: MapDataViewModel by activityViewModels()
+    private val homeViewModel: HomeViewModel by activityViewModels()
     private val listViewModel: DistressListViewModel by viewModels()
     private lateinit var adapter: DistressCallAdapter
     private var _binding: FragmentDistressListBinding? = null
@@ -128,6 +130,7 @@ class DistressListFragment : Fragment() {
                 distressCall = distressCall,
                 vigilante = vigilante,
             ) {
+                homeViewModel.requestRouteToDistress(distressId)
                 findNavController().navigate(R.id.nav_home)
                 Toast.makeText(
                     requireContext(),

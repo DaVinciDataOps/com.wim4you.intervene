@@ -14,7 +14,7 @@ import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -45,7 +45,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: HomeViewModel by viewModels()
+    private val viewModel: HomeViewModel by activityViewModels()
     private val mapDataViewModel: MapDataViewModel by activityViewModels()
 
     private var mapOverlay: HomeMapOverlay? = null
@@ -83,13 +83,21 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
     override fun onResume() {
         super.onResume()
         if (AppModeController.isGuidedTrip) {
-            restoreRouteOnMap()
-        } else if (mapDataViewModel.selectedDistressId.value == null) {
-            isDestinationPanelOpen = false
-            viewModel.clearRoute()
-            mapOverlay?.clearRoute()
+            if (viewModel.shouldRestoreGuidedTripRoute()) {
+                restoreRouteOnMap()
+            }
         } else {
-            restoreRouteOnMap()
+            viewModel.consumePendingRouteToDistressRequest()?.let { distressId ->
+                planRouteToSelectedDistress(distressId)
+            } ?: when {
+                mapDataViewModel.selectedDistressId.value == null -> {
+                    isDestinationPanelOpen = false
+                    viewModel.clearRoute()
+                    mapOverlay?.clearRoute()
+                }
+                viewModel.routeState.value is RouteState.Success -> restoreRouteOnMap()
+                else -> restoreSelectedDistressMarker()
+            }
         }
         updateGuidedTripUi()
         updateStatusBanner()
@@ -117,12 +125,22 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
         mMapInitialized = true
         centerMapOnUserIfNeeded()
 
+        syncMapMarkers()
         val currentRoute = viewModel.routeState.value
         if (currentRoute is RouteState.Success) {
-            mapOverlay?.drawRoute(currentRoute)
+            val isPatrolDistressRoute = AppModeController.isPatrolling &&
+                mapDataViewModel.selectedDistressId.value != null
+            mapOverlay?.drawRoute(
+                currentRoute,
+                skipDestinationMarker = isPatrolDistressRoute,
+            )
         }
-        mapDataViewModel.selectedDistressId.value?.let { selectedId ->
-            planRouteToSelectedDistress(selectedId)
+        viewModel.consumePendingRouteToDistressRequest()?.let { distressId ->
+            planRouteToSelectedDistress(distressId)
+        } ?: mapDataViewModel.selectedDistressId.value?.let { selectedId ->
+            if (viewModel.shouldAutoPlanRouteToDistress(selectedId)) {
+                planRouteToSelectedDistress(selectedId)
+            }
         }
     }
 
@@ -204,6 +222,8 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
                 launch {
                     mapDataViewModel.selectedDistressId.collectLatest { selectedId ->
                         if (selectedId == null) return@collectLatest
+                        if (viewModel.hasPendingRouteToDistress(selectedId)) return@collectLatest
+                        if (!viewModel.shouldAutoPlanRouteToDistress(selectedId)) return@collectLatest
                         val distress = mapDataViewModel.distressLocations.value
                             .firstOrNull { (it.id ?: it.personId) == selectedId }
                         val lat = distress?.latitude
@@ -231,8 +251,12 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
             RouteState.Idle -> {
                 binding.showRouteButton.isEnabled = true
                 binding.routeSummary.visibility = View.GONE
-                if (!AppModeController.isGuidedTrip && !isPatrolDistressRoute) {
-                    mapOverlay?.clearRoute()
+                mapOverlay?.clearRoute()
+                if (AppModeController.isGuidedTrip) {
+                    binding.destinationInput.text?.clear()
+                    updateGuidedTripUi()
+                } else if (isPatrolDistressRoute) {
+                    restoreSelectedDistressMarker()
                 }
             }
             RouteState.Loading -> {
@@ -251,7 +275,16 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
                     updateGuidedTripUi()
                 }
                 if (mMapInitialized) {
-                    mapOverlay?.drawRoute(state)
+                    if (isPatrolDistressRoute) {
+                        mapOverlay?.updateDistressMarkers(
+                            mapDataViewModel.distressLocations.value,
+                            mapDataViewModel.selectedDistressId.value,
+                        )
+                    }
+                    mapOverlay?.drawRoute(
+                        state,
+                        skipDestinationMarker = isPatrolDistressRoute,
+                    )
                 }
             }
             is RouteState.Error -> {
@@ -305,6 +338,25 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
         }
     }
 
+    private fun restoreSelectedDistressMarker() {
+        if (!mMapInitialized) return
+        val selectedId = mapDataViewModel.selectedDistressId.value ?: return
+        mapOverlay?.updateDistressMarkers(
+            mapDataViewModel.distressLocations.value,
+            selectedId,
+        )
+        focusSelectedDistressOnMap()
+    }
+
+    private fun syncMapMarkers() {
+        if (!mMapInitialized) return
+        mapOverlay?.updatePatrolMarkers(mapDataViewModel.patrolLocations.value)
+        mapOverlay?.updateDistressMarkers(
+            mapDataViewModel.distressLocations.value,
+            mapDataViewModel.selectedDistressId.value,
+        )
+    }
+
     private fun updateStatusBanner() {
         val context = requireContext()
         val message = when {
@@ -339,7 +391,12 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
     private fun restoreRouteOnMap() {
         val currentRoute = viewModel.routeState.value
         if (currentRoute is RouteState.Success && mMapInitialized) {
-            mapOverlay?.drawRoute(currentRoute)
+            val isPatrolDistressRoute = AppModeController.isPatrolling &&
+                mapDataViewModel.selectedDistressId.value != null
+            mapOverlay?.drawRoute(
+                currentRoute,
+                skipDestinationMarker = isPatrolDistressRoute,
+            )
         }
     }
 

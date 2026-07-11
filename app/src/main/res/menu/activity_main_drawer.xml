@@ -22,6 +22,12 @@
             android:title="@string/nav_startstop_guided_trip" />
 
         <item
+            android:id="@+id/nav_clear_route"
+            android:icon="@drawable/ic_delete"
+            android:title="@string/route_clear"
+            android:visible="false" />
+
+        <item
             android:id="@+id/nav_startstop_patrolling"
             android:icon="@drawable/ic_startstop_patrolling"
             android:title="@string/nav_startstop_patrolling" />

@@ -15,11 +15,14 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.ActionMenuView
 import androidx.appcompat.widget.Toolbar
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
@@ -40,8 +43,12 @@ import com.wim4you.intervene.repository.MapLocationRepository
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import com.wim4you.intervene.ui.distresscall.SafeWordDialog
+import com.wim4you.intervene.ui.home.HomeViewModel
+import com.wim4you.intervene.ui.home.RouteState
+import com.wim4you.intervene.ui.map.MapDataViewModel
 import com.wim4you.intervene.security.FirebaseDataRetention
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -53,6 +60,9 @@ class MainActivity : AppCompatActivity() {
     @Inject lateinit var personStore: PersonDataRepository
     @Inject lateinit var vigilanteStore: VigilanteDataRepository
     @Inject lateinit var mapLocationRepository: MapLocationRepository
+
+    private val homeViewModel: HomeViewModel by viewModels()
+    private val mapDataViewModel: MapDataViewModel by viewModels()
 
     private var overflowPopup: PopupWindow? = null
     private var reopenOverflowPopup = false
@@ -118,6 +128,14 @@ class MainActivity : AppCompatActivity() {
 
         refreshDrawerMenu(navView)
 
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                homeViewModel.routeState.collectLatest {
+                    refreshDrawerMenu(navView)
+                }
+            }
+        }
+
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
@@ -147,6 +165,11 @@ class MainActivity : AppCompatActivity() {
             when (menuItem.itemId) {
                 R.id.nav_startstop_guided_trip -> {
                     lifecycleScope.launch { toggleGuidedTrip(navView, navController) }
+                    true
+                }
+                R.id.nav_clear_route -> {
+                    homeViewModel.clearRoute(mapDataViewModel.selectedDistressId.value)
+                    navController.navigate(R.id.nav_home)
                     true
                 }
                 R.id.nav_startstop_patrolling -> {
@@ -185,6 +208,7 @@ class MainActivity : AppCompatActivity() {
     private suspend fun toggleGuidedTrip(navView: NavigationView, navController: androidx.navigation.NavController) {
         if (AppModeController.isGuidedTrip) {
             AppModeController.stopGuidedTrip(this)
+            homeViewModel.clearRoute(mapDataViewModel.selectedDistressId.value)
             mapLocationRepository.clearOwnDistress()
             updateScreenKeepOn(false)
         } else {
@@ -204,6 +228,8 @@ class MainActivity : AppCompatActivity() {
     private suspend fun togglePatrol(navView: NavigationView, navController: androidx.navigation.NavController) {
         if (AppModeController.isPatrolling) {
             AppModeController.stopPatrol(this)
+            homeViewModel.clearRoute(mapDataViewModel.selectedDistressId.value)
+            mapDataViewModel.clearFocusedDistress()
             mapLocationRepository.clearOwnPatrol()
             updateScreenKeepOn(false)
         } else {
@@ -311,6 +337,9 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.nav_startstop_guided_trip)
         }
         menuTrip.isVisible = !AppModeController.isPatrolling
+
+        val menuClearRoute = navView.menu.findItem(R.id.nav_clear_route)
+        menuClearRoute.isVisible = homeViewModel.routeState.value is RouteState.Success
     }
 
     private fun startLocationTrackerService(activity: Activity) {
