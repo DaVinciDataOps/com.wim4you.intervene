@@ -42,7 +42,7 @@ class HomeMapOverlay(
             ?.let(map::setMapStyle)
     }
 
-    fun drawRoute(state: RouteState.Success) {
+    fun drawRoute(state: RouteState.Success, skipDestinationMarker: Boolean = false) {
         clearRoute()
         routePolyline = map.addPolyline(
             PolylineOptions()
@@ -50,11 +50,13 @@ class HomeMapOverlay(
                 .color(ContextCompat.getColor(context, R.color.route_polyline))
                 .width(12f),
         )
-        destinationMarker = map.addMarker(
-            MarkerOptions()
-                .position(state.destination)
-                .title(context.getString(R.string.route_destination_marker)),
-        )
+        if (!skipDestinationMarker && !isDistressDestination(state.destination)) {
+            destinationMarker = map.addMarker(
+                MarkerOptions()
+                    .position(state.destination)
+                    .title(context.getString(R.string.route_destination_marker)),
+            )
+        }
         val boundsBuilder = LatLngBounds.Builder()
         state.points.forEach(boundsBuilder::include)
         map.animateCamera(CameraUpdateFactory.newLatLngBounds(boundsBuilder.build(), 120))
@@ -63,8 +65,19 @@ class HomeMapOverlay(
     fun clearRoute() {
         routePolyline?.remove()
         routePolyline = null
-        destinationMarker?.remove()
+        destinationMarker?.let { marker ->
+            if (marker !in distressMarkers.values) {
+                marker.remove()
+            }
+        }
         destinationMarker = null
+    }
+
+    private fun isDistressDestination(destination: LatLng): Boolean {
+        val distressId = highlightedDistressId ?: return false
+        val distressMarker = distressMarkers[distressId] ?: return false
+        return distressMarker.position.latitude == destination.latitude &&
+            distressMarker.position.longitude == destination.longitude
     }
 
     fun updatePatrolMarkers(patrolLocationDataList: List<PatrolLocationData>) {

@@ -295,8 +295,11 @@ class LocationTrackerService : Service() {
     }
 
     private fun handleDistressSnapshot(dataSnapshot: DataSnapshot, location: GeoLocation) {
-        val distress = parseDistressSnapshot(dataSnapshot) ?: return
-        if (!validData(distress)) return
+        val distress = parseDistressSnapshot(dataSnapshot)
+        if (distress == null || !validData(distress)) {
+            removeDistressByKey(dataSnapshot.key)
+            return
+        }
         distress.id = dataSnapshot.key
         if (distress.personId.isNullOrBlank()) {
             distress.personId = dataSnapshot.key
@@ -352,6 +355,13 @@ class LocationTrackerService : Service() {
 
     private fun broadcastPatrolUpdate(patrolLocationDataList: List<PatrolLocationData>) {
         mapLocationRepository.updatePatrolLocations(patrolLocationDataList)
+    }
+
+    private fun removeDistressByKey(key: String?) {
+        if (key == null) return
+        if (distressLocationDataList.removeAll { it.id == key }) {
+            broadcastDistressUpdate(distressLocationDataList)
+        }
     }
 
     private fun broadcastDistressUpdate(distressLocationDataList: List<DistressLocationData>) {
