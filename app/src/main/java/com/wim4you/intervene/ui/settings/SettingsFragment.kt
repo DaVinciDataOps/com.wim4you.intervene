@@ -5,10 +5,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.AppPreferences
 import com.wim4you.intervene.R
 import com.wim4you.intervene.ThemePreferences
 import com.wim4you.intervene.databinding.FragmentSettingsBinding
+import com.wim4you.intervene.distress.DistressSoundService
 import com.wim4you.intervene.profilepicture.ProfilePictureSettingsBinder
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -78,6 +80,19 @@ class SettingsFragment : Fragment() {
     }
 
     private fun bindNotificationSwitches() {
+        binding.switchDistressSirenSound.isChecked =
+            AppPreferences.isDistressSirenSoundEnabled(requireContext())
+        binding.switchDistressSirenSound.setOnCheckedChangeListener { _, isChecked ->
+            AppPreferences.setDistressSirenSoundEnabled(requireContext(), isChecked)
+            if (AppModeController.isDistressActive) {
+                if (isChecked) {
+                    DistressSoundService.start(requireContext())
+                } else {
+                    DistressSoundService.stop(requireContext())
+                }
+            }
+        }
+
         binding.switchPatrolAlertSound.isChecked =
             AppPreferences.isPatrolAlertSoundEnabled(requireContext())
         binding.switchPatrolAlertSound.setOnCheckedChangeListener { _, isChecked ->

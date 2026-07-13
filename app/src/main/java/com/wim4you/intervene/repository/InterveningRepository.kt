@@ -52,10 +52,27 @@ class InterveningRepository @Inject constructor() {
                 .child(distressFirebaseUid)
                 .child(vigilanteFirebaseUid)
                 .setValueOnce(interventionMap)
+            registerStreamViewerBestEffort(distressFirebaseUid, vigilanteFirebaseUid)
             Result.success(Unit)
         } catch (exception: Exception) {
             SecureLog.e(TAG, "Failed to register intervention", exception)
             Result.failure(exception)
+        }
+    }
+
+    private suspend fun registerStreamViewerBestEffort(
+        distressFirebaseUid: String,
+        vigilanteFirebaseUid: String,
+    ) {
+        try {
+            com.wim4you.intervene.distressstream.DistressStreamFirebase.registerViewer(
+                distressUid = distressFirebaseUid,
+                patrolUid = vigilanteFirebaseUid,
+            )
+        } catch (exception: Exception) {
+            // Stream viewer registration is optional; intervention must still succeed
+            // when distress_streams rules are not deployed yet.
+            SecureLog.e(TAG, "Could not register distress stream viewer", exception)
         }
     }
 

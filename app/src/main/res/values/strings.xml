@@ -116,6 +116,7 @@
     <string name="distress_meta_format">%1$s · %2$s</string>
     <string name="settings_appearance">Appearance</string>
     <string name="settings_notifications">Notifications</string>
+    <string name="settings_distress_siren_sound">Play siren sound during distress call</string>
     <string name="settings_patrol_alert_sound">Play sound for new distress calls while patrolling</string>
     <string name="settings_chat_ringing_sound">Play sound for nearby chat invites and messages</string>
     <string name="settings_about">About</string>
@@ -201,6 +202,56 @@
     <string name="chat_clear_all_message">Remove all active chats and delete their message history? This cannot be undone.</string>
     <string name="chat_clear_all_confirm">Clear all</string>
     <string name="chat_error_clear_all">Could not clear all chats</string>
+
+    <string name="nav_start_live_recording">Start live recording</string>
+    <string name="nav_stop_live_recording">Stop live recording</string>
+    <string name="nav_recordings">Recordings</string>
+    <string name="recording_list_empty">No recordings yet</string>
+    <string name="recording_meta_single">%1$s · %2$s</string>
+    <string name="recording_meta_distress">%1$s · %2$d clips</string>
+    <string name="live_recording_guided_trip_required">Start a guided trip before recording video</string>
+    <string name="live_recording_permission_required">Camera and microphone access are required to record video</string>
+    <string name="live_recording_started">Live recording started</string>
+    <string name="live_recording_stopped">Live recording stopped</string>
+    <string name="live_recording_list_empty">No recorded videos yet</string>
+    <string name="live_recording_player_title">Recording</string>
+    <string name="live_recording_not_found">Recording not found</string>
+    <string name="live_recording_delete_title">Delete recording?</string>
+    <string name="live_recording_delete_message">This recording will be permanently removed from your device.</string>
+    <string name="live_recording_delete_confirm">Delete</string>
+    <string name="live_recording_delete_action">Delete recording</string>
+    <string name="live_recording_notification_title">InterVene</string>
+    <string name="live_recording_notification_text">Recording surroundings during guided trip</string>
+    <string name="live_recording_channel_name">Live recording</string>
+    <string name="tag_live_recording_service">Live Recording Service</string>
+    <string name="live_recording_capture_title">Live recording</string>
+    <string name="live_recording_recording_indicator">REC</string>
+    <string name="live_recording_switch_camera">Switch camera</string>
+    <string name="live_recording_stop_button">Stop recording</string>
+    <string name="live_recording_start_failed">Could not start live recording</string>
+
+    <string name="distress_stream_watch">Watch live stream</string>
+    <string name="distress_stream_viewer_label">Distress stream</string>
+    <string name="distress_stream_viewer_title">Live stream: %1$s</string>
+    <string name="distress_stream_unknown_person">Unknown person</string>
+    <string name="distress_stream_live_indicator">LIVE</string>
+    <string name="distress_stream_waiting">Waiting for video from distressed person…</string>
+    <string name="distress_stream_last_modified">Last updated: %1$s</string>
+    <string name="distress_stream_expired">Live video is no longer available (older than 10 minutes)</string>
+    <string name="distress_stream_playback_failed">Could not play distress stream video</string>
+    <string name="distress_stream_not_available">Distress stream is not available</string>
+    <string name="distress_stream_access_denied">You must pick up this distress call before watching the stream</string>
+    <string name="distress_stream_pickup_required">Pick up this distress call first</string>
+    <string name="distress_stream_start_failed">Could not start distress stream</string>
+    <string name="nav_distress_recordings">Distress recordings</string>
+    <string name="distress_recording_list_empty">No saved distress recordings yet</string>
+    <string name="distress_recording_meta">%1$s · %2$d clips</string>
+    <string name="distress_recording_delete_title">Delete distress recording?</string>
+    <string name="distress_recording_delete_message">This saved distress recording will be permanently removed from your device.</string>
+    <string name="distress_recording_delete_action">Delete distress recording</string>
+    <string name="distress_recording_not_found">Distress recording not found</string>
+    <string name="distress_recording_player_title">Distress recording</string>
+    <string name="distress_recording_player_clip">Clip %1$d of %2$d</string>
 
 
     <string-array name="gender_options">

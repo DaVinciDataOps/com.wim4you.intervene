@@ -38,6 +38,8 @@ import com.wim4you.intervene.databinding.ActivityMainBinding
 import com.wim4you.intervene.data.PersonData
 import com.wim4you.intervene.data.VigilanteData
 import com.wim4you.intervene.helpers.NetworkUtils
+import com.wim4you.intervene.liverecording.LiveRecordingController
+import com.wim4you.intervene.liverecording.LiveRecordingPermissions
 import com.wim4you.intervene.location.LocationTrackerService
 import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.location.PatrolFirebaseWriter
@@ -87,6 +89,22 @@ class MainActivity : AppCompatActivity() {
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { _ ->
         // Background location is optional; foreground tracking already works.
+    }
+
+    private val liveRecordingPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { results ->
+        val granted = LiveRecordingPermissions.requiredPermissions().all { permission ->
+            results[permission] == true
+        }
+        if (granted) {
+            openLiveRecordingCapture(
+                binding.navView,
+                findNavController(R.id.nav_host_fragment_content_main),
+            )
+        } else {
+            Toast.makeText(this, R.string.live_recording_permission_required, Toast.LENGTH_SHORT).show()
+        }
     }
 
     fun addLocationPermissionListener(listener: OnLocationPermissionGrantedListener) {
@@ -198,6 +216,14 @@ class MainActivity : AppCompatActivity() {
                     confirmCancelDistress(navController)
                     true
                 }
+                R.id.nav_startstop_live_recording -> {
+                    toggleLiveRecording(navView)
+                    true
+                }
+                R.id.nav_recordings -> {
+                    navController.navigate(menuItem.itemId)
+                    true
+                }
                 else -> {
                     navController.navigate(menuItem.itemId)
                     true
@@ -237,6 +263,38 @@ class MainActivity : AppCompatActivity() {
         }
         refreshDrawerMenu(navView)
         navController.navigate(R.id.nav_home)
+    }
+
+    private fun toggleLiveRecording(navView: NavigationView) {
+        val navController = findNavController(R.id.nav_host_fragment_content_main)
+
+        if (LiveRecordingController.isRecording ||
+            navController.currentDestination?.id == R.id.nav_live_recording_capture
+        ) {
+            LiveRecordingController.stopRecording(this)
+            if (navController.currentDestination?.id == R.id.nav_live_recording_capture) {
+                navController.popBackStack()
+            }
+            Toast.makeText(this, R.string.live_recording_stopped, Toast.LENGTH_SHORT).show()
+            refreshDrawerMenu(navView)
+            return
+        }
+
+        if (!AppModeController.isGuidedTrip) {
+            Toast.makeText(this, R.string.live_recording_guided_trip_required, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (LiveRecordingPermissions.hasAllPermissions(this)) {
+            openLiveRecordingCapture(navView, navController)
+        } else {
+            liveRecordingPermissionLauncher.launch(LiveRecordingPermissions.requiredPermissions())
+        }
+    }
+
+    private fun openLiveRecordingCapture(navView: NavigationView, navController: androidx.navigation.NavController) {
+        navController.navigate(R.id.nav_live_recording_capture)
+        refreshDrawerMenu(navView)
     }
 
     private suspend fun togglePatrol(navView: NavigationView, navController: androidx.navigation.NavController) {
@@ -354,6 +412,15 @@ class MainActivity : AppCompatActivity() {
 
         val menuClearRoute = navView.menu.findItem(R.id.nav_clear_route)
         menuClearRoute.isVisible = homeViewModel.routeState.value is RouteState.Success
+
+        val menuLiveRecording = navView.menu.findItem(R.id.nav_startstop_live_recording)
+        menuLiveRecording.title = if (LiveRecordingController.isRecording) {
+            getString(R.string.nav_stop_live_recording)
+        } else {
+            getString(R.string.nav_start_live_recording)
+        }
+        menuLiveRecording.isVisible = AppModeController.isGuidedTrip ||
+            LiveRecordingController.isRecording
     }
 
     private fun startLocationTrackerService(activity: Activity) {

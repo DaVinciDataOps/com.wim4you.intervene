@@ -116,6 +116,7 @@
     <string name="distress_meta_format">%1$s · %2$s</string>
     <string name="settings_appearance">Weergave</string>
     <string name="settings_notifications">Meldingen</string>
+    <string name="settings_distress_siren_sound">Sirene afspelen tijdens noodoproep</string>
     <string name="settings_patrol_alert_sound">Geluid afspelen bij nieuwe noodoproepen tijdens patrouille</string>
     <string name="settings_chat_ringing_sound">Geluid afspelen bij nabije chat-uitnodigingen en berichten</string>
     <string name="settings_about">Over</string>
@@ -197,6 +198,56 @@
     <string name="chat_clear_all_message">Alle actieve chats verwijderen en de berichtgeschiedenis wissen? Dit kan niet ongedaan worden gemaakt.</string>
     <string name="chat_clear_all_confirm">Alles wissen</string>
     <string name="chat_error_clear_all">Kon niet alle chats wissen</string>
+
+    <string name="nav_start_live_recording">Live-opname starten</string>
+    <string name="nav_stop_live_recording">Live-opname stoppen</string>
+    <string name="nav_recordings">Opnames</string>
+    <string name="recording_list_empty">Nog geen opnames</string>
+    <string name="recording_meta_single">%1$s · %2$s</string>
+    <string name="recording_meta_distress">%1$s · %2$d clips</string>
+    <string name="live_recording_guided_trip_required">Start eerst een begeleide reis voordat je video opneemt</string>
+    <string name="live_recording_permission_required">Camera- en microfoontoegang zijn nodig om video op te nemen</string>
+    <string name="live_recording_started">Live-opname gestart</string>
+    <string name="live_recording_stopped">Live-opname gestopt</string>
+    <string name="live_recording_list_empty">Nog geen opgenomen video\'s</string>
+    <string name="live_recording_player_title">Opname</string>
+    <string name="live_recording_not_found">Opname niet gevonden</string>
+    <string name="live_recording_delete_title">Opname verwijderen?</string>
+    <string name="live_recording_delete_message">Deze opname wordt permanent van je apparaat verwijderd.</string>
+    <string name="live_recording_delete_confirm">Verwijderen</string>
+    <string name="live_recording_delete_action">Opname verwijderen</string>
+    <string name="live_recording_notification_title">InterVene</string>
+    <string name="live_recording_notification_text">Omgeving opnemen tijdens begeleide reis</string>
+    <string name="live_recording_channel_name">Live-opname</string>
+    <string name="tag_live_recording_service">Live-opname service</string>
+    <string name="live_recording_capture_title">Live-opname</string>
+    <string name="live_recording_recording_indicator">OPN</string>
+    <string name="live_recording_switch_camera">Camera wisselen</string>
+    <string name="live_recording_stop_button">Opname stoppen</string>
+    <string name="live_recording_start_failed">Kon live-opname niet starten</string>
+
+    <string name="distress_stream_watch">Livestream bekijken</string>
+    <string name="distress_stream_viewer_label">Noodstream</string>
+    <string name="distress_stream_viewer_title">Livestream: %1$s</string>
+    <string name="distress_stream_unknown_person">Onbekende persoon</string>
+    <string name="distress_stream_live_indicator">LIVE</string>
+    <string name="distress_stream_waiting">Wachten op video van persoon in nood…</string>
+    <string name="distress_stream_last_modified">Laatst bijgewerkt: %1$s</string>
+    <string name="distress_stream_expired">Livevideo is niet meer beschikbaar (ouder dan 10 minuten)</string>
+    <string name="distress_stream_playback_failed">Kon noodstreamvideo niet afspelen</string>
+    <string name="distress_stream_not_available">Noodstream is niet beschikbaar</string>
+    <string name="distress_stream_access_denied">Je moet deze noodoproep eerst oppakken voordat je de stream kunt bekijken</string>
+    <string name="distress_stream_pickup_required">Pak eerst deze noodoproep op</string>
+    <string name="distress_stream_start_failed">Kon noodstream niet starten</string>
+    <string name="nav_distress_recordings">Noodopnames</string>
+    <string name="distress_recording_list_empty">Nog geen opgeslagen noodopnames</string>
+    <string name="distress_recording_meta">%1$s · %2$d clips</string>
+    <string name="distress_recording_delete_title">Noodopname verwijderen?</string>
+    <string name="distress_recording_delete_message">Deze opgeslagen noodopname wordt permanent van je apparaat verwijderd.</string>
+    <string name="distress_recording_delete_action">Noodopname verwijderen</string>
+    <string name="distress_recording_not_found">Noodopname niet gevonden</string>
+    <string name="distress_recording_player_title">Noodopname</string>
+    <string name="distress_recording_player_clip">Clip %1$d van %2$d</string>
 
 
     <string-array name="gender_options">

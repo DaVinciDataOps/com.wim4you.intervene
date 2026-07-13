@@ -17,12 +17,14 @@ class DistressCallAdapter(
     private val isIntervening: (String) -> Boolean,
     private val onItemClick: (DistressCallItem) -> Unit,
     private val onRespondClick: (DistressCallItem) -> Unit,
+    private val onWatchStreamClick: (DistressCallItem) -> Unit,
 ) : ListAdapter<DistressCallItem, DistressCallAdapter.ViewHolder>(DistressCallDiffCallback()) {
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val tvAlias: TextView = itemView.findViewById(R.id.tvAlias)
         val tvAddress: TextView = itemView.findViewById(R.id.tvAddress)
         val tvMeta: TextView = itemView.findViewById(R.id.tvMeta)
+        val btnWatchStream: ImageButton = itemView.findViewById(R.id.btnWatchStream)
         val btnDistressCall: ImageButton = itemView.findViewById(R.id.ibDistress)
     }
 
@@ -65,14 +67,17 @@ class DistressCallAdapter(
                     ContextCompat.getColor(context, R.color.color_success),
                 )
                 holder.btnDistressCall.setImageResource(R.mipmap.ic_vigilantes_patrolling)
+                holder.btnWatchStream.visibility = View.VISIBLE
             }
             else -> {
                 holder.itemView.setBackgroundResource(android.R.color.transparent)
                 holder.btnDistressCall.setImageResource(R.mipmap.ic_launcher_round)
+                holder.btnWatchStream.visibility = View.GONE
             }
         }
 
         holder.btnDistressCall.setOnClickListener { onRespondClick(item) }
+        holder.btnWatchStream.setOnClickListener { onWatchStreamClick(item) }
     }
 
     fun updateItems(newList: List<DistressCallItem>) {

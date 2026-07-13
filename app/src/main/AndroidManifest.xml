@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -20,6 +22,7 @@
     <attribution android:label="@string/tag_distress_alarm" android:tag="distress_alarm" />
     <attribution android:label="@string/tag_tracker_service" android:tag="tracker_service" />
     <attribution android:label="@string/tag_distress_notification_service" android:tag="distress_messaging_service" />
+    <attribution android:label="@string/tag_live_recording_service" android:tag="live_recording_service" />
 
     <application
         android:name=".InterVeneApplication"
@@ -61,6 +64,11 @@
             android:exported="false"
             android:foregroundServiceType="mediaPlayback"
             android:attributionTags="distress_alarm" />
+        <service
+            android:name=".liverecording.LiveRecordingService"
+            android:exported="false"
+            android:foregroundServiceType="camera|microphone"
+            android:attributionTags="live_recording_service" />
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${google_maps_api_key}" />

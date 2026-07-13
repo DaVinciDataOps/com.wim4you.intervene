@@ -13,6 +13,7 @@ import com.wim4you.intervene.distress.DistressSoundService
 import com.wim4you.intervene.helpers.ServiceUtils
 import com.wim4you.intervene.location.PatrolFirebaseWriter
 import com.wim4you.intervene.location.PatrolService
+import com.wim4you.intervene.liverecording.LiveRecordingController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -77,6 +78,7 @@ object AppModeController {
     suspend fun stopGuidedTrip(context: Context) {
         isGuidedTrip = false
         persistState()
+        LiveRecordingController.stopIfGuidedTripEnded(context)
         deactivateDistress(context)
     }
 
@@ -119,7 +121,9 @@ object AppModeController {
         isDistressActive = true
         persistState()
         startDistressService(context)
-        DistressSoundService.start(context)
+        if (AppPreferences.isDistressSirenSoundEnabled(context)) {
+            DistressSoundService.start(context)
+        }
     }
 
     suspend fun deactivateDistress(context: Context) {
@@ -194,10 +198,13 @@ object AppModeController {
                 Log.i(TAG, "Restarting DistressService after process recovery")
                 startDistressService(appContext)
             }
-            if (!ServiceUtils.isServiceRunning(appContext, DistressSoundService::class.java)) {
+            if (AppPreferences.isDistressSirenSoundEnabled(appContext) &&
+                !ServiceUtils.isServiceRunning(appContext, DistressSoundService::class.java)
+            ) {
                 Log.i(TAG, "Restarting DistressSoundService after process recovery")
                 DistressSoundService.start(appContext)
             }
         }
+        LiveRecordingController.reconcileService(appContext)
     }
 }

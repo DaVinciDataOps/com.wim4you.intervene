@@ -43,6 +43,17 @@
             android:title="@string/menu_proximity_chat" />
 
         <item
+            android:id="@+id/nav_startstop_live_recording"
+            android:icon="@drawable/ic_menu_camera"
+            android:title="@string/nav_start_live_recording"
+            android:visible="false" />
+
+        <item
+            android:id="@+id/nav_recordings"
+            android:icon="@drawable/ic_menu_slideshow"
+            android:title="@string/nav_recordings" />
+
+        <item
             android:id="@+id/nav_stop_distress"
             android:icon="@drawable/ic_menu_cancel_distress"
             android:title="@string/nav_cancel_distress_call" />

@@ -10,8 +10,11 @@ object Constants {
     const val PATROL_SERVICE_NOTIFICATION_ID = 1002
     const val DISTRESS_SERVICE_NOTIFICATION_ID = 1003
     const val LOCATION_TRACKER_SERVICE_NOTIFICATION_ID = 1004
+    const val LIVE_RECORDING_SERVICE_CHANNEL_ID = "LiveRecordingServiceChannel"
+    const val LIVE_RECORDING_SERVICE_NOTIFICATION_ID = 1005
 
     const val DISTRESS_SOUND_CONTEXT_TAG = "distress_alarm"
+    const val LIVE_RECORDING_SERVICE_CONTEXT_TAG = "live_recording_service"
     const val PATROL_SERVICE_CONTEXT_TAG = "patrol_service"
     const val DISTRESS_SERVICE_CONTEXT_TAG ="distress_service"
     const val TRACKER_SERVICE_CONTEXT_TAG = "tracker_service"

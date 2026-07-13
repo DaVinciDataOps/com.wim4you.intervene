@@ -31,6 +31,26 @@
         }
       }
     },
+    "distress_streams": {
+      ".read": "auth != null",
+      "$distressUid": {
+        "meta": {
+          ".write": "auth != null && auth.uid == $distressUid"
+        },
+        "segments": {
+          ".read": "auth != null",
+          "$segmentId": {
+            ".write": "auth != null && auth.uid == $distressUid"
+          }
+        },
+        "viewers": {
+          "$patrolUid": {
+            ".read": "auth != null",
+            ".write": "auth != null && auth.uid == $patrolUid"
+          }
+        }
+      }
+    },
     "chat_presence": {
       ".read": "auth != null",
       ".indexOn": ["g"],

@@ -16,6 +16,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.MutableLiveData
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.wim4you.intervene.AppPreferences
 import com.wim4you.intervene.Constants
 
 class DistressSoundService: Service(), AudioManager.OnAudioFocusChangeListener {
@@ -58,7 +59,9 @@ class DistressSoundService: Service(), AudioManager.OnAudioFocusChangeListener {
             startForeground(notificationId, notification)
 
             // Start playing sound
-            startDistressSound()
+            if (AppPreferences.isDistressSirenSoundEnabled(this)) {
+                startDistressSound()
+            }
         }
         catch (e: Exception) {
             Log.e("DistressSoundService", "Error starting service onStartCommand", e)

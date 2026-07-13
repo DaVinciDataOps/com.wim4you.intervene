@@ -7,6 +7,7 @@ object AppPreferences {
     private const val KEY_PATROL_ALERT_SOUND = "patrol_alert_sound_enabled"
     private const val KEY_CHAT_RINGING_SOUND = "chat_ringing_sound_enabled"
     private const val KEY_READ_ALOUD = "read_aloud_enabled"
+    private const val KEY_DISTRESS_SIREN_SOUND = "distress_siren_sound_enabled"
 
     fun isPatrolAlertSoundEnabled(context: Context): Boolean {
         return prefs(context).getBoolean(KEY_PATROL_ALERT_SOUND, true)
@@ -30,6 +31,14 @@ object AppPreferences {
 
     fun setReadAloudEnabled(context: Context, enabled: Boolean) {
         prefs(context).edit().putBoolean(KEY_READ_ALOUD, enabled).apply()
+    }
+
+    fun isDistressSirenSoundEnabled(context: Context): Boolean {
+        return prefs(context).getBoolean(KEY_DISTRESS_SIREN_SOUND, true)
+    }
+
+    fun setDistressSirenSoundEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_DISTRESS_SIREN_SOUND, enabled).apply()
     }
 
     private fun prefs(context: Context) =

@@ -61,10 +61,16 @@
       android:textStyle="bold" />
 
     <com.google.android.material.switchmaterial.SwitchMaterial
-      android:id="@+id/switchPatrolAlertSound"
+      android:id="@+id/switchDistressSirenSound"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:layout_marginTop="8dp"
+      android:text="@string/settings_distress_siren_sound" />
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+      android:id="@+id/switchPatrolAlertSound"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
       android:text="@string/settings_patrol_alert_sound" />
 
     <com.google.android.material.switchmaterial.SwitchMaterial

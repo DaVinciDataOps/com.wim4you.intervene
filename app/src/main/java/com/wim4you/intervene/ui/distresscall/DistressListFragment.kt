@@ -18,6 +18,7 @@ import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.R
 import com.wim4you.intervene.data.DistressCallData
 import com.wim4you.intervene.databinding.FragmentDistressListBinding
+import com.wim4you.intervene.distressstream.DistressStreamConstants
 import com.wim4you.intervene.location.LocationUtils
 import com.wim4you.intervene.repository.VigilanteDataRepository
 import com.wim4you.intervene.ui.home.HomeViewModel
@@ -55,6 +56,7 @@ class DistressListFragment : Fragment() {
             isIntervening = { distressId -> mapDataViewModel.isIntervening(distressId) },
             onItemClick = { item -> handleDistressCallSelected(item.call) },
             onRespondClick = { item -> handleDistressCallSelected(item.call) },
+            onWatchStreamClick = { item -> openDistressStream(item.call) },
         )
         binding.recyclerViewDistressCalls.adapter = adapter
         binding.recyclerViewDistressCalls.layoutManager = LinearLayoutManager(context)
@@ -105,6 +107,19 @@ class DistressListFragment : Fragment() {
             listViewModel.updateUserLocation(latLng?.latitude, latLng?.longitude)
             listViewModel.refresh()
         }
+    }
+
+    private fun openDistressStream(distressCall: DistressCallData) {
+        val distressId = distressCall.id ?: return
+        if (!mapDataViewModel.isIntervening(distressId)) {
+            Toast.makeText(requireContext(), R.string.distress_stream_pickup_required, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val bundle = Bundle().apply {
+            putString(DistressStreamConstants.ARG_DISTRESS_ID, distressId)
+            putString(DistressStreamConstants.ARG_DISTRESS_ALIAS, distressCall.alias)
+        }
+        findNavController().navigate(R.id.nav_distress_stream_viewer, bundle)
     }
 
     private fun handleDistressCallSelected(distressCall: DistressCallData) {

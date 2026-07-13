@@ -47,4 +47,34 @@
         android:label="@string/menu_proximity_chat"
         tools:layout="@layout/fragment_proximity_chat_conversation" />
 
+    <fragment
+        android:id="@+id/nav_recordings"
+        android:name="com.wim4you.intervene.recording.RecordingListFragment"
+        android:label="@string/nav_recordings"
+        tools:layout="@layout/fragment_recording_list" />
+
+    <fragment
+        android:id="@+id/nav_live_recording_capture"
+        android:name="com.wim4you.intervene.liverecording.LiveRecordingCaptureFragment"
+        android:label="@string/live_recording_capture_title"
+        tools:layout="@layout/fragment_live_recording_capture" />
+
+    <fragment
+        android:id="@+id/nav_live_recording_player"
+        android:name="com.wim4you.intervene.liverecording.LiveRecordingPlayerFragment"
+        android:label="@string/live_recording_player_title"
+        tools:layout="@layout/fragment_live_recording_player" />
+
+    <fragment
+        android:id="@+id/nav_distress_stream_viewer"
+        android:name="com.wim4you.intervene.distressstream.DistressStreamViewerFragment"
+        android:label="@string/distress_stream_viewer_label"
+        tools:layout="@layout/fragment_distress_stream_viewer" />
+
+    <fragment
+        android:id="@+id/nav_distress_recording_player"
+        android:name="com.wim4you.intervene.distressstream.DistressRecordingPlayerFragment"
+        android:label="@string/distress_recording_player_title"
+        tools:layout="@layout/fragment_distress_recording_player" />
+
 </navigation>

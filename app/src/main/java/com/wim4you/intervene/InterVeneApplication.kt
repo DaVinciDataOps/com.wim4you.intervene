@@ -2,6 +2,7 @@ package com.wim4you.intervene
 
 import android.app.Application
 import com.wim4you.intervene.dao.DatabaseProvider
+import com.wim4you.intervene.liverecording.LiveRecordingController
 import com.wim4you.intervene.repository.PersonDataRepository
 import com.wim4you.intervene.security.FirebaseDataRetention
 import dagger.hilt.android.HiltAndroidApp
@@ -20,6 +21,8 @@ class InterVeneApplication : Application() {
         ThemePreferences.applySavedTheme(this)
         DatabaseProvider.getDatabase(this)
         AppModeController.initialize(this)
+        LiveRecordingController.initialize(this)
+        LiveRecordingController.bindContext(this)
         FirebaseUtils.initialize(this)
         runSecurityStartupTasks()
     }
