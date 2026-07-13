@@ -23,6 +23,7 @@ object DistressStreamFirebase {
             "active" to true,
             "alias" to (alias ?: ""),
             "startedAt" to System.currentTimeMillis(),
+            "transport" to DistressStreamConstants.TRANSPORT_WEBRTC,
         )
         database.child(DistressStreamConstants.RTDB_ROOT)
             .child(distressUid)
@@ -82,14 +83,12 @@ object DistressStreamFirebase {
     }
 
     suspend fun registerViewer(distressUid: String, patrolUid: String) {
-        val viewerMap = mapOf(
-            "registeredAt" to System.currentTimeMillis(),
-        )
         database.child(DistressStreamConstants.RTDB_ROOT)
             .child(distressUid)
             .child("viewers")
             .child(patrolUid)
-            .setValue(viewerMap)
+            .child("registeredAt")
+            .setValue(System.currentTimeMillis())
             .await()
     }
 

@@ -232,6 +232,7 @@
     <string name="distress_stream_unknown_person">Onbekende persoon</string>
     <string name="distress_stream_live_indicator">LIVE</string>
     <string name="distress_stream_waiting">Wachten op video van persoon in nood…</string>
+    <string name="distress_stream_connecting">Verbinden met livestream…</string>
     <string name="distress_stream_last_modified">Laatst bijgewerkt: %1$s</string>
     <string name="distress_stream_expired">Livevideo is niet meer beschikbaar (ouder dan 10 minuten)</string>
     <string name="distress_stream_playback_failed">Kon noodstreamvideo niet afspelen</string>

@@ -24,6 +24,9 @@ android {
     val apiKey = localProperties.getProperty("GOOGLE_MAPS_API_KEY")
         ?: throw IllegalArgumentException("GOOGLE_MAPS_API_KEY not found in local.properties")
     val directionsApiKey = localProperties.getProperty("GOOGLE_DIRECTIONS_API_KEY") ?: apiKey
+    val webrtcTurnUrl = localProperties.getProperty("WEBRTC_TURN_URL", "")
+    val webrtcTurnUsername = localProperties.getProperty("WEBRTC_TURN_USERNAME", "")
+    val webrtcTurnPassword = localProperties.getProperty("WEBRTC_TURN_PASSWORD", "")
     val buildNumber = SimpleDateFormat("yyyyMMddHHmm", Locale.US).format(Date())
 
     namespace = "com.wim4you.intervene"
@@ -38,6 +41,9 @@ android {
         manifestPlaceholders.put("google_maps_api_key", apiKey)
         resValue("string", "app_build_number", buildNumber)
         buildConfigField("String", "GOOGLE_DIRECTIONS_API_KEY", "\"$directionsApiKey\"")
+        buildConfigField("String", "WEBRTC_TURN_URL", "\"$webrtcTurnUrl\"")
+        buildConfigField("String", "WEBRTC_TURN_USERNAME", "\"$webrtcTurnUsername\"")
+        buildConfigField("String", "WEBRTC_TURN_PASSWORD", "\"$webrtcTurnPassword\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
@@ -116,6 +122,7 @@ dependencies {
     implementation(libs.firebase.storage)
     implementation(libs.geofire.android)
     implementation(libs.firebase.messaging)
+    implementation(libs.stream.webrtc.android)
     implementation(libs.firebase.appcheck.playintegrity)
     debugImplementation(libs.firebase.appcheck.debug)
     ksp(libs.androidx.room.compiler)

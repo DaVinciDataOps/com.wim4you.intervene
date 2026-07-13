@@ -46,7 +46,25 @@
         "viewers": {
           "$patrolUid": {
             ".read": "auth != null",
-            ".write": "auth != null && auth.uid == $patrolUid"
+            "registeredAt": {
+              ".write": "auth != null && auth.uid == $patrolUid"
+            },
+            "offer": {
+              ".write": "auth != null && auth.uid == $patrolUid"
+            },
+            "answer": {
+              ".write": "auth != null && auth.uid == $distressUid"
+            },
+            "viewer_ice": {
+              "$candidateId": {
+                ".write": "auth != null && auth.uid == $patrolUid"
+              }
+            },
+            "publisher_ice": {
+              "$candidateId": {
+                ".write": "auth != null && auth.uid == $distressUid"
+              }
+            }
           }
         }
       }

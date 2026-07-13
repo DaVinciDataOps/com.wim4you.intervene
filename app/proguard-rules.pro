@@ -23,6 +23,10 @@
 -dontwarn okhttp3.**
 -dontwarn okio.**
 
+# WebRTC
+-keep class org.webrtc.** { *; }
+-dontwarn org.webrtc.**
+
 # Parcelable models used by map location updates
 -keep class com.wim4you.intervene.fbdata.** { *; }
 

@@ -1,6 +1,8 @@
 package com.wim4you.intervene.liverecording
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,26 +14,32 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.wim4you.intervene.AppModeController
+import com.wim4you.intervene.FirebaseAuthManager
 import com.wim4you.intervene.R
+import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.databinding.FragmentLiveRecordingCaptureBinding
 import com.wim4you.intervene.distressstream.DistressStreamController
-import com.wim4you.intervene.distressstream.DistressStreamFirebase
-import com.wim4you.intervene.FirebaseAuthManager
-import com.wim4you.intervene.SecureLog
+import com.wim4you.intervene.distressstream.webrtc.DistressWebRtcPublisher
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class LiveRecordingCaptureFragment : Fragment(), LiveRecordingCameraManager.Listener {
     private var _binding: FragmentLiveRecordingCaptureBinding? = null
     private val binding get() = _binding!!
     private var cameraManager: LiveRecordingCameraManager? = null
+    private var webRtcPublisher: DistressWebRtcPublisher? = null
     private var closing = false
+    private val maxDurationHandler = Handler(Looper.getMainLooper())
     private val distressStreamingEnabled: Boolean
         get() = AppModeController.isDistressActive
+
+    private val maxDurationRunnable = Runnable {
+        if (!closing) {
+            stopAndClose()
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -58,19 +66,14 @@ class LiveRecordingCaptureFragment : Fragment(), LiveRecordingCameraManager.List
         }
 
         binding.btnStopRecording.setOnClickListener { stopAndClose() }
-        binding.btnSwitchCamera.setOnClickListener { cameraManager?.switchCamera() }
-        binding.recordingIndicator.isVisible = false
-
-        if (distressStreamingEnabled) {
-            viewLifecycleOwner.lifecycleScope.launch {
-                try {
-                    val alias = AppModeController.person?.alias
-                    DistressStreamController.ensurePublisherReady(requireContext(), alias)
-                } catch (_: Exception) {
-                    Toast.makeText(requireContext(), R.string.distress_stream_start_failed, Toast.LENGTH_SHORT).show()
-                }
+        binding.btnSwitchCamera.setOnClickListener {
+            if (distressStreamingEnabled) {
+                webRtcPublisher?.switchCamera()
+            } else {
+                cameraManager?.switchCamera()
             }
         }
+        binding.recordingIndicator.isVisible = false
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -84,12 +87,18 @@ class LiveRecordingCaptureFragment : Fragment(), LiveRecordingCameraManager.List
     override fun onStart() {
         super.onStart()
         if (!AppModeController.isGuidedTrip || closing) return
-        startCameraSession()
+        if (distressStreamingEnabled) {
+            startWebRtcSession()
+        } else {
+            startCameraSession()
+        }
     }
 
     override fun onDestroyView() {
+        maxDurationHandler.removeCallbacks(maxDurationRunnable)
         if (!closing) {
             cameraManager?.stop()
+            webRtcPublisher?.stop()
             LiveRecordingController.stopRecording(requireContext())
             if (distressStreamingEnabled) {
                 viewLifecycleOwner.lifecycleScope.launch {
@@ -98,12 +107,16 @@ class LiveRecordingCaptureFragment : Fragment(), LiveRecordingCameraManager.List
             }
         }
         cameraManager = null
+        webRtcPublisher = null
         super.onDestroyView()
         _binding = null
     }
 
     private fun startCameraSession() {
         if (cameraManager != null) return
+
+        binding.previewView.isVisible = true
+        binding.webrtcPreviewView.isVisible = false
 
         LiveRecordingController.bindContext(requireContext())
         if (!LiveRecordingController.ensureForegroundService(requireContext())) {
@@ -117,46 +130,104 @@ class LiveRecordingCaptureFragment : Fragment(), LiveRecordingCameraManager.List
             lifecycleOwner = viewLifecycleOwner,
             previewView = binding.previewView,
             listener = this,
-            streamSegments = distressStreamingEnabled,
-            onSegmentFinalized = { file -> uploadDistressSegment(file) },
+            streamSegments = false,
         )
         cameraManager?.start()
     }
 
-    private fun uploadDistressSegment(file: java.io.File) {
-        if (closing || !isAdded) return
+    private fun startWebRtcSession() {
+        if (webRtcPublisher != null) return
+
+        binding.previewView.isVisible = false
+        binding.webrtcPreviewView.isVisible = true
+
+        LiveRecordingController.bindContext(requireContext())
+        if (!LiveRecordingController.ensureForegroundService(requireContext())) {
+            Toast.makeText(requireContext(), R.string.live_recording_start_failed, Toast.LENGTH_SHORT).show()
+            findNavController().popBackStack()
+            return
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
-                try {
-                    val distressUid = FirebaseAuthManager.ensureSignedIn()
-                    DistressStreamFirebase.uploadSegment(distressUid, file)
-                } catch (exception: Exception) {
-                    SecureLog.e("LiveRecordingCapture", "Failed to upload distress stream segment", exception)
-                }
+            try {
+                val alias = AppModeController.person?.alias
+                DistressStreamController.ensurePublisherReady(requireContext(), alias)
+                val distressUid = FirebaseAuthManager.ensureSignedIn()
+                val publisher = DistressWebRtcPublisher(
+                    context = requireContext(),
+                    distressUid = distressUid,
+                    previewRenderer = binding.webrtcPreviewView,
+                )
+                publisher.setListener(object : DistressWebRtcPublisher.Listener {
+                    override fun onPublisherStarted() {
+                        if (_binding == null) return
+                        binding.recordingIndicator.isVisible = true
+                        LiveRecordingController.onRecordingStarted()
+                        scheduleMaxDuration()
+                    }
+
+                    override fun onPublisherStopped() {
+                        navigateBack()
+                    }
+
+                    override fun onError(message: String) {
+                        if (!isAdded) return
+                        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                        stopAndClose()
+                    }
+
+                    override fun onViewerConnected(patrolUid: String) {
+                        SecureLog.i("LiveRecordingCapture", "Patroller connected to distress stream: $patrolUid")
+                    }
+
+                    override fun onViewerDisconnected(patrolUid: String) {
+                        SecureLog.i("LiveRecordingCapture", "Patroller disconnected from distress stream: $patrolUid")
+                    }
+                })
+                webRtcPublisher = publisher
+                publisher.start()
+            } catch (exception: Exception) {
+                SecureLog.e("LiveRecordingCapture", "Failed to start distress WebRTC stream", exception)
+                Toast.makeText(requireContext(), R.string.distress_stream_start_failed, Toast.LENGTH_SHORT).show()
+                findNavController().popBackStack()
             }
         }
+    }
+
+    private fun scheduleMaxDuration() {
+        maxDurationHandler.removeCallbacks(maxDurationRunnable)
+        maxDurationHandler.postDelayed(maxDurationRunnable, LiveRecordingConstants.MAX_RECORDING_DURATION_MS)
     }
 
     private fun stopAndClose() {
         if (closing) return
         closing = true
+        maxDurationHandler.removeCallbacks(maxDurationRunnable)
         _binding?.recordingIndicator?.isVisible = false
         LiveRecordingController.stopRecording(requireContext())
         if (distressStreamingEnabled) {
             lifecycleScope.launch {
                 DistressStreamController.stopPublisher(requireContext())
             }
-        }
-        val manager = cameraManager
-        if (manager != null) {
-            manager.stop()
+            val publisher = webRtcPublisher
+            if (publisher != null) {
+                publisher.stop()
+            } else {
+                navigateBack()
+            }
         } else {
-            navigateBack()
+            val manager = cameraManager
+            if (manager != null) {
+                manager.stop()
+            } else {
+                navigateBack()
+            }
         }
     }
 
     private fun navigateBack() {
         cameraManager = null
+        webRtcPublisher = null
         if (!isAdded) return
         if (findNavController().currentDestination?.id == R.id.nav_live_recording_capture) {
             findNavController().popBackStack()
