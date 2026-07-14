@@ -7,6 +7,7 @@ import com.wim4you.intervene.FirebaseAuthManager
 import com.wim4you.intervene.FirebaseDatabaseProvider
 import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.distressstream.webrtc.DistressWebRtcViewer
+import com.wim4you.intervene.recording.RecordingLocalStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +32,9 @@ class DistressStreamViewerViewModel @Inject constructor() : ViewModel() {
     private val _connectionEstablished = MutableStateFlow(false)
     val connectionEstablished: StateFlow<Boolean> = _connectionEstablished.asStateFlow()
 
+    private val _videoReady = MutableStateFlow(false)
+    val videoReady: StateFlow<Boolean> = _videoReady.asStateFlow()
+
     private val _statusMessage = MutableStateFlow<String?>(null)
     val statusMessage: StateFlow<String?> = _statusMessage.asStateFlow()
 
@@ -47,6 +51,7 @@ class DistressStreamViewerViewModel @Inject constructor() : ViewModel() {
         distressRefPath = distressId
         _streamExpired.value = false
         _connectionEstablished.value = false
+        _videoReady.value = false
 
         viewModelScope.launch {
             registerViewerBestEffort(distressId)
@@ -72,7 +77,26 @@ class DistressStreamViewerViewModel @Inject constructor() : ViewModel() {
         distressRef.addValueEventListener(metaListener!!)
     }
 
+    fun startRecording(context: android.content.Context, distressAlias: String?): Boolean {
+        if (webRtcViewer?.isVideoReady() != true) {
+            SecureLog.w("DistressStreamViewer", "Cannot start recording: video track not ready")
+            return false
+        }
+        val username = RecordingLocalStore.sanitizeUsername(distressAlias?.ifBlank { null } ?: "unknown")
+        val outputFile = RecordingLocalStore.createRecordingFile(context, username)
+        val started = webRtcViewer?.startRecording(outputFile) == true
+        if (started) {
+            SecureLog.i("DistressStreamViewer", "Recording live stream to ${outputFile.absolutePath}")
+        }
+        return started
+    }
+
+    fun stopRecording() {
+        webRtcViewer?.stopRecording()
+    }
+
     fun stopWatching() {
+        stopRecording()
         webRtcViewer?.stop()
         webRtcViewer = null
         val distressId = distressRefPath
@@ -86,6 +110,7 @@ class DistressStreamViewerViewModel @Inject constructor() : ViewModel() {
         metaListener = null
         distressRefPath = null
         _connectionEstablished.value = false
+        _videoReady.value = false
     }
 
     suspend fun verifyViewerAccess(distressId: String): Boolean {
@@ -142,6 +167,11 @@ class DistressStreamViewerViewModel @Inject constructor() : ViewModel() {
 
             override fun onDisconnected() {
                 _connectionEstablished.value = false
+                _videoReady.value = false
+            }
+
+            override fun onVideoReady() {
+                _videoReady.value = true
             }
 
             override fun onError(message: String) {

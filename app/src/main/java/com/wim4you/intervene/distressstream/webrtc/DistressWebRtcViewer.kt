@@ -29,6 +29,7 @@ class DistressWebRtcViewer(
     interface Listener {
         fun onConnected()
         fun onDisconnected()
+        fun onVideoReady()
         fun onError(message: String)
     }
 
@@ -40,6 +41,7 @@ class DistressWebRtcViewer(
     private var answerListener: ValueEventListener? = null
     private var publisherIceListener: ChildEventListener? = null
     private var remoteVideoTrack: VideoTrack? = null
+    private var streamRecorder: WebRtcStreamMp4Recorder? = null
     private var answerHandled = false
 
     fun setListener(listener: Listener?) {
@@ -61,8 +63,31 @@ class DistressWebRtcViewer(
         }
     }
 
+    fun isVideoReady(): Boolean = remoteVideoTrack?.enabled() == true
+
+    fun startRecording(outputFile: java.io.File): Boolean {
+        val track = remoteVideoTrack ?: return false
+        if (!track.enabled()) return false
+        if (streamRecorder != null) return false
+        return try {
+            val recorder = WebRtcStreamMp4Recorder(track)
+            recorder.start(outputFile)
+            streamRecorder = recorder
+            true
+        } catch (exception: Exception) {
+            SecureLog.e(TAG, "Failed to start local stream recording", exception)
+            false
+        }
+    }
+
+    fun stopRecording() {
+        streamRecorder?.stop()
+        streamRecorder = null
+    }
+
     fun stop() {
         if (!started.compareAndSet(true, false)) return
+        stopRecording()
         answerListener?.let { listener ->
             WebRtcSignaling.viewerRef(distressUid, patrolUid)
                 .child(WebRtcSignaling.NODE_ANSWER)
@@ -208,6 +233,7 @@ class DistressWebRtcViewer(
                 remoteVideoTrack?.removeSink(remoteRenderer)
                 remoteVideoTrack = track
                 track.addSink(remoteRenderer)
+                listener?.onVideoReady()
             }
         }
     }

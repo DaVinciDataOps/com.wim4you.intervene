@@ -26,6 +26,7 @@ class DistressStreamViewerFragment : Fragment() {
     private val mapDataViewModel: MapDataViewModel by activityViewModels()
     private var _binding: FragmentDistressStreamViewerBinding? = null
     private val binding get() = _binding!!
+    private var isRecording = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -56,6 +57,9 @@ class DistressStreamViewerFragment : Fragment() {
         binding.videoPlayer.isVisible = false
         binding.streamStatus.isVisible = true
         binding.streamStatus.text = getString(R.string.distress_stream_connecting)
+        binding.streamRecordControls.isVisible = false
+        binding.btnStartStreamRecording.isEnabled = false
+        binding.btnStopStreamRecording.isEnabled = false
 
         viewLifecycleOwner.lifecycleScope.launch {
             val allowed = viewModel.verifyViewerAccess(distressId) ||
@@ -68,6 +72,13 @@ class DistressStreamViewerFragment : Fragment() {
             viewModel.startWatching(requireContext(), distressId, distressAlias, binding.remoteVideoView)
         }
 
+        binding.btnStartStreamRecording.setOnClickListener {
+            if (!isRecording) startLocalRecording(distressAlias)
+        }
+        binding.btnStopStreamRecording.setOnClickListener {
+            if (isRecording) stopLocalRecording()
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -77,9 +88,21 @@ class DistressStreamViewerFragment : Fragment() {
                 }
                 launch {
                     viewModel.connectionEstablished.collectLatest { connected ->
-                        binding.streamLiveIndicator.isVisible = connected && viewModel.streamActive.value
+                        binding.streamLiveIndicator.isVisible =
+                            connected && viewModel.streamActive.value && viewModel.videoReady.value
                         if (connected) {
                             binding.streamStatus.isVisible = false
+                            binding.streamRecordControls.isVisible = true
+                        }
+                    }
+                }
+                launch {
+                    viewModel.videoReady.collectLatest { ready ->
+                        binding.streamLiveIndicator.isVisible =
+                            ready && viewModel.connectionEstablished.value && viewModel.streamActive.value
+                        binding.btnStartStreamRecording.isEnabled = ready && !isRecording
+                        if (ready) {
+                            binding.streamRecordControls.isVisible = true
                         }
                     }
                 }
@@ -89,6 +112,8 @@ class DistressStreamViewerFragment : Fragment() {
                             binding.streamLiveIndicator.isVisible = false
                             binding.streamStatus.text = getString(R.string.distress_stream_expired)
                             binding.streamStatus.isVisible = true
+                            binding.streamRecordControls.isVisible = false
+                            stopLocalRecording()
                         }
                     }
                 }
@@ -104,7 +129,29 @@ class DistressStreamViewerFragment : Fragment() {
         }
     }
 
+    private fun startLocalRecording(distressAlias: String?) {
+        val started = viewModel.startRecording(requireContext(), distressAlias)
+        if (!started) {
+            Toast.makeText(requireContext(), R.string.distress_stream_record_failed, Toast.LENGTH_SHORT).show()
+            return
+        }
+        isRecording = true
+        binding.btnStartStreamRecording.isEnabled = false
+        binding.btnStopStreamRecording.isEnabled = true
+    }
+
+    private fun stopLocalRecording() {
+        if (!isRecording) return
+        isRecording = false
+        viewModel.stopRecording()
+        if (_binding != null) {
+            binding.btnStartStreamRecording.isEnabled = viewModel.videoReady.value
+            binding.btnStopStreamRecording.isEnabled = false
+        }
+    }
+
     override fun onDestroyView() {
+        stopLocalRecording()
         viewModel.stopWatching()
         super.onDestroyView()
         _binding = null

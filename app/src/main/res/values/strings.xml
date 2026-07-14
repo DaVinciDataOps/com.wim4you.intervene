@@ -237,6 +237,9 @@
     <string name="distress_stream_live_indicator">LIVE</string>
     <string name="distress_stream_waiting">Waiting for video from distressed person…</string>
     <string name="distress_stream_connecting">Connecting to live stream…</string>
+    <string name="distress_stream_record_start">Start recording</string>
+    <string name="distress_stream_record_stop">Stop recording</string>
+    <string name="distress_stream_record_failed">Could not record live stream</string>
     <string name="distress_stream_last_modified">Last updated: %1$s</string>
     <string name="distress_stream_expired">Live video is no longer available (older than 10 minutes)</string>
     <string name="distress_stream_playback_failed">Could not play distress stream video</string>

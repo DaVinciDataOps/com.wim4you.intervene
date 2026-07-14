@@ -40,6 +40,35 @@
         android:textColor="@android:color/white"
         android:visibility="visible" />
 
+    <LinearLayout
+        android:id="@+id/streamRecordControls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="12dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStartStreamRecording"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/distress_stream_record_start" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStopStreamRecording"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:enabled="false"
+            android:text="@string/distress_stream_record_stop" />
+    </LinearLayout>
+
     <org.webrtc.SurfaceViewRenderer
         android:id="@+id/remoteVideoView"
         android:layout_width="match_parent"
