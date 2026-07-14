@@ -117,11 +117,12 @@ class DistressWebRtcPublisher(
         videoCapturer = capturer
         usingFrontCamera = false
         surfaceTextureHelper = SurfaceTextureHelper.create("DistressCaptureThread", holder.eglBase.eglBaseContext)
-        videoSource = holder.factory.createVideoSource(capturer.isScreencast)
-        capturer.initialize(surfaceTextureHelper, context, videoSource!!.capturerObserver)
+        val source = holder.factory.createVideoSource(capturer.isScreencast)
+        videoSource = source
+        capturer.initialize(surfaceTextureHelper, context, source.capturerObserver)
         capturer.startCapture(WebRtcConfig.VIDEO_WIDTH, WebRtcConfig.VIDEO_HEIGHT, WebRtcConfig.VIDEO_FPS)
 
-        localVideoTrack = holder.factory.createVideoTrack(LOCAL_VIDEO_TRACK_ID, videoSource)
+        localVideoTrack = holder.factory.createVideoTrack(LOCAL_VIDEO_TRACK_ID, source)
         localVideoTrack?.addSink(previewRenderer)
 
         audioSource = holder.factory.createAudioSource(MediaConstraints())
@@ -150,7 +151,8 @@ class DistressWebRtcPublisher(
         val enumerator = Camera2Enumerator(context)
         val deviceName = enumerator.deviceNames.firstOrNull { device ->
             enumerator.isFrontFacing(device) == frontFacing
-        } ?: enumerator.deviceNames.first()
+        } ?: enumerator.deviceNames.firstOrNull()
+            ?: throw IllegalStateException("No camera available on this device")
         return Camera2Capturer(context, deviceName, null)
     }
 

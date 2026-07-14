@@ -47,8 +47,9 @@ object AppModeController {
     private var appContext: Context? = null
 
     fun initialize(context: Context) {
-        appContext = context.applicationContext
-        val prefs = appContext!!.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val applicationContext = context.applicationContext
+        appContext = applicationContext
+        val prefs = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         isPatrolling = prefs.getBoolean(KEY_IS_PATROLLING, false)
         isGuidedTrip = prefs.getBoolean(KEY_IS_GUIDED_TRIP, false)
         isDistressActive = prefs.getBoolean(KEY_IS_DISTRESS_ACTIVE, false)

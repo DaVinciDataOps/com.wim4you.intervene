@@ -6,6 +6,7 @@ import com.google.firebase.storage.FirebaseStorage
 import com.wim4you.intervene.FirebaseAuthManager
 import com.wim4you.intervene.FirebaseDatabaseProvider
 import com.wim4you.intervene.SecureLog
+import com.wim4you.intervene.security.SecureUrlValidator
 import kotlinx.coroutines.tasks.await
 import java.io.File
 import java.io.FileOutputStream
@@ -99,6 +100,9 @@ object DistressStreamFirebase {
     ) {
         destination.parentFile?.mkdirs()
         if (!storagePath.isNullOrBlank()) {
+            if (!SecureUrlValidator.isSafeStorageChildPath(storagePath, DistressStreamConstants.STORAGE_ROOT)) {
+                throw IllegalStateException("Unsafe distress segment storage path")
+            }
             try {
                 storage.reference.child(storagePath).getFile(destination).await()
                 return
@@ -108,6 +112,9 @@ object DistressStreamFirebase {
         }
         if (downloadUrl.isNullOrBlank()) {
             throw IllegalStateException("No download path available for distress segment")
+        }
+        if (!SecureUrlValidator.isAllowedHttpsDownloadUrl(downloadUrl)) {
+            throw IllegalStateException("Distress segment download URL is not allowed")
         }
         URL(downloadUrl).openStream().use { input ->
             FileOutputStream(destination).use { output ->

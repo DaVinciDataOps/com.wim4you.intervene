@@ -90,14 +90,8 @@ class ChatPresenceManager @Inject constructor(
     }
 
     private suspend fun resolveAlias(): String {
-        val person = personDataRepository.fetch()
-        if (!person?.alias.isNullOrBlank()) {
-            return person!!.alias
-        }
-        val vigilante = vigilanteDataRepository.fetch()
-        if (!vigilante?.name.isNullOrBlank()) {
-            return vigilante!!.name
-        }
+        personDataRepository.fetch()?.alias?.takeIf { it.isNotBlank() }?.let { return it }
+        vigilanteDataRepository.fetch()?.name?.takeIf { it.isNotBlank() }?.let { return it }
         return "User"
     }
 

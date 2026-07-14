@@ -25,25 +25,33 @@ object SensitiveFieldProtector {
 
     fun encrypt(plaintext: String): String {
         if (plaintext.isEmpty() || isEncrypted(plaintext)) return plaintext
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, getOrCreateSecretKey())
-        val iv = cipher.iv
-        val encrypted = cipher.doFinal(plaintext.toByteArray(Charsets.UTF_8))
-        val combined = ByteArray(iv.size + encrypted.size)
-        System.arraycopy(iv, 0, combined, 0, iv.size)
-        System.arraycopy(encrypted, 0, combined, iv.size, encrypted.size)
-        return PREFIX + Base64.encodeToString(combined, Base64.NO_WRAP)
+        return try {
+            val cipher = Cipher.getInstance(TRANSFORMATION)
+            cipher.init(Cipher.ENCRYPT_MODE, getOrCreateSecretKey())
+            val iv = cipher.iv
+            val encrypted = cipher.doFinal(plaintext.toByteArray(Charsets.UTF_8))
+            val combined = ByteArray(iv.size + encrypted.size)
+            System.arraycopy(iv, 0, combined, 0, iv.size)
+            System.arraycopy(encrypted, 0, combined, iv.size, encrypted.size)
+            PREFIX + Base64.encodeToString(combined, Base64.NO_WRAP)
+        } catch (_: Exception) {
+            plaintext
+        }
     }
 
     fun decrypt(stored: String): String {
         if (!isEncrypted(stored)) return stored
-        val combined = Base64.decode(stored.removePrefix(PREFIX), Base64.NO_WRAP)
-        if (combined.size <= GCM_IV_LENGTH) return stored
-        val iv = combined.copyOfRange(0, GCM_IV_LENGTH)
-        val ciphertext = combined.copyOfRange(GCM_IV_LENGTH, combined.size)
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.DECRYPT_MODE, getOrCreateSecretKey(), GCMParameterSpec(GCM_TAG_LENGTH, iv))
-        return String(cipher.doFinal(ciphertext), Charsets.UTF_8)
+        return try {
+            val combined = Base64.decode(stored.removePrefix(PREFIX), Base64.NO_WRAP)
+            if (combined.size <= GCM_IV_LENGTH) return stored
+            val iv = combined.copyOfRange(0, GCM_IV_LENGTH)
+            val ciphertext = combined.copyOfRange(GCM_IV_LENGTH, combined.size)
+            val cipher = Cipher.getInstance(TRANSFORMATION)
+            cipher.init(Cipher.DECRYPT_MODE, getOrCreateSecretKey(), GCMParameterSpec(GCM_TAG_LENGTH, iv))
+            String(cipher.doFinal(ciphertext), Charsets.UTF_8)
+        } catch (_: Exception) {
+            stored
+        }
     }
 
     private fun getOrCreateSecretKey(): SecretKey {

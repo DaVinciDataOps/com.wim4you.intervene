@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
@@ -67,8 +68,12 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val mapFragment =
-            childFragmentManager.findFragmentById(binding.googleMap.id) as SupportMapFragment
+        val mapFragment = childFragmentManager
+            .findFragmentById(binding.googleMap.id) as? SupportMapFragment
+        if (mapFragment == null) {
+            Log.e("HomeFragment", "Map fragment not found in layout")
+            return
+        }
         mapFragment.getMapAsync(this)
 
         GoogleMapMarkers.initialize(requireContext())
@@ -77,7 +82,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, OnLocationPermissionGranted
         observeViewModel()
         observeMapData()
 
-        (requireActivity() as MainActivity).addLocationPermissionListener(this)
+        (activity as? MainActivity)?.addLocationPermissionListener(this)
     }
 
     override fun onResume() {

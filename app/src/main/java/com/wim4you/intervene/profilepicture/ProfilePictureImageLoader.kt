@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.widget.ImageView
 import com.wim4you.intervene.R
+import com.wim4you.intervene.security.SecureUrlValidator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -58,6 +59,7 @@ object ProfilePictureImageLoader {
     }
 
     private suspend fun loadRemoteBitmap(url: String): Bitmap? = withContext(Dispatchers.IO) {
+        if (!SecureUrlValidator.isAllowedRemoteImageUrl(url)) return@withContext null
         runCatching {
             val request = Request.Builder().url(url).build()
             client.newCall(request).execute().use { response ->

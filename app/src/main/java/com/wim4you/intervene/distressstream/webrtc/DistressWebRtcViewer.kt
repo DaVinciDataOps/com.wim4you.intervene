@@ -130,7 +130,10 @@ class DistressWebRtcViewer(
             continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
         }
         peerConnection = holder.factory.createPeerConnection(rtcConfig, peerConnectionObserver)
-        val connection = peerConnection ?: throw IllegalStateException("PeerConnection not created")
+        val connection = peerConnection
+        if (connection == null) {
+            throw IllegalStateException("PeerConnection not created")
+        }
 
         connection.addTransceiver(
             MediaStreamTrack.MediaType.MEDIA_TYPE_AUDIO,

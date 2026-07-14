@@ -75,7 +75,10 @@ class DistressStreamViewerViewModel @Inject constructor() : ViewModel() {
                 _statusMessage.value = error.message
             }
         }
-        distressRef.addValueEventListener(metaListener!!)
+        val listener = metaListener
+        if (listener != null) {
+            distressRef.addValueEventListener(listener)
+        }
     }
 
     fun startRecording(context: android.content.Context, distressAlias: String?): Boolean {
