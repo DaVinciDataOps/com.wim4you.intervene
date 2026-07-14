@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.wim4you.intervene.R
 import com.wim4you.intervene.databinding.FragmentDistressRecordingPlayerBinding
+import com.wim4you.intervene.ui.video.VideoDisplaySize
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 
@@ -64,6 +65,12 @@ class DistressRecordingPlayerFragment : Fragment() {
         )
         binding.videoPlayer.setVideoURI(Uri.fromFile(file))
         binding.videoPlayer.setOnPreparedListener { player ->
+            val (width, height) = VideoDisplaySize.resolve(
+                file = file,
+                fallbackWidth = player.videoWidth,
+                fallbackHeight = player.videoHeight,
+            )
+            binding.videoPlayer.setDisplaySizeAfterPrepare(width, height)
             player.isLooping = false
             binding.videoPlayer.start()
         }

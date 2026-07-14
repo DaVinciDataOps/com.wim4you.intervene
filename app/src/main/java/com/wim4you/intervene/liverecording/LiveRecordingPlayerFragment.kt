@@ -13,6 +13,7 @@ import com.wim4you.intervene.R
 import com.wim4you.intervene.databinding.FragmentLiveRecordingPlayerBinding
 import com.wim4you.intervene.recording.PublicVideoStore
 import com.wim4you.intervene.recording.RecordingFileResolver
+import com.wim4you.intervene.ui.video.VideoDisplaySize
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -56,6 +57,14 @@ class LiveRecordingPlayerFragment : Fragment() {
         binding.videoPlayer.setMediaController(mediaController)
         binding.videoPlayer.setVideoURI(uri)
         binding.videoPlayer.setOnPreparedListener { player ->
+            val (width, height) = VideoDisplaySize.resolve(
+                context = requireContext(),
+                uri = uri,
+                fallbackWidth = player.videoWidth,
+                fallbackHeight = player.videoHeight,
+                preferPortraitDisplay = true,
+            )
+            binding.videoPlayer.setDisplaySizeAfterPrepare(width, height)
             player.isLooping = false
             binding.videoPlayer.start()
         }
