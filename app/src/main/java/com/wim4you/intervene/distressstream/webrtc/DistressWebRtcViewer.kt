@@ -68,9 +68,14 @@ class DistressWebRtcViewer(
     fun startRecording(outputFile: java.io.File): Boolean {
         val track = remoteVideoTrack ?: return false
         if (!track.enabled()) return false
+        val eglContext = factoryHolder?.eglBase?.eglBaseContext ?: return false
         if (streamRecorder != null) return false
         return try {
-            val recorder = WebRtcStreamMp4Recorder(track)
+            val recorder = WebRtcStreamMp4Recorder(
+                context = context,
+                sharedEglContext = eglContext,
+                videoTrack = track,
+            )
             recorder.start(outputFile)
             streamRecorder = recorder
             true
