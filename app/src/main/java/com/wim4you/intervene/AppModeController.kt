@@ -53,6 +53,13 @@ object AppModeController {
     var isDistressActive: Boolean = false
         private set
 
+    /**
+     * Bumped when distress starts and again when distress stops so in-flight distress
+     * Firebase writes from [DistressService] can be rejected after stop.
+     */
+    var distressEpoch: Int = 0
+        private set
+
     var vigilante: VigilanteData? = null
     var person: PersonData? = null
     var snackBarMessage: String = ""
@@ -138,6 +145,7 @@ object AppModeController {
 
     fun activateDistress(context: Context) {
         isDistressActive = true
+        distressEpoch++
         persistState()
         startDistressService(context)
         if (AppPreferences.isDistressSirenSoundEnabled(context)) {
@@ -151,8 +159,11 @@ object AppModeController {
         persistState()
         DistressSoundService.stop(context)
         stopDistressService(context)
+        awaitServiceStopped(context, DistressService::class.java)
+        // Invalidate any distress writes still completing after the service stopped.
+        distressEpoch++
         // Clear after stopping the service so in-flight distress writes cannot
-        // overwrite the inactive state and leave patrol maps showing stale markers.
+        // overwrite the inactive state and leave maps showing stale markers.
         clearDistressInFirebase(context)
         LocationTrackerService.refreshLocationConfig(context.applicationContext)
     }

@@ -2,6 +2,7 @@ package com.wim4you.intervene.distress
 
 import com.firebase.geofire.GeoFire
 import com.firebase.geofire.GeoLocation
+import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.FirebaseAuthManager
 import com.wim4you.intervene.FirebaseDatabaseProvider
 import com.wim4you.intervene.SecureLog
@@ -85,6 +86,7 @@ object DistressFirebaseWriter {
         address: AddressData = unknownAddress(),
         init: Boolean = false,
     ) {
+        val epochAtSend = AppModeController.distressEpoch
         val firebaseUid = FirebaseAuthManager.ensureSignedIn()
         val geoLocation = GeoLocation(latitude, longitude)
         val distressDataMap = DataMappings.toDistressDataMap(
@@ -102,6 +104,10 @@ object DistressFirebaseWriter {
             .child(firebaseUid)
             .updateChildren(distressDataMap)
             .awaitTask()
+        if (!AppModeController.isDistressActive || AppModeController.distressEpoch != epochAtSend) {
+            markDistressInactive(firebaseUid)
+            return
+        }
         SecureLog.i(TAG, "Distress pushed to Firebase for $firebaseUid")
     }
 

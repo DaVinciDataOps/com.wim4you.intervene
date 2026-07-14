@@ -33,6 +33,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -163,6 +164,7 @@ class DistressService : Service() {
         geoLocation: GeoLocation,
     ) {
         if (!AppModeController.isDistressActive) return
+        val epochAtSend = AppModeController.distressEpoch
 
         val address = getAddress(geoLocation)
         val distressDataMap = DataMappings.toDistressDataMap(
@@ -180,7 +182,9 @@ class DistressService : Service() {
         database.child("distress").child(firebaseUid)
             .updateChildren(distressDataMap)
             .addOnSuccessListener {
-                if (!AppModeController.isDistressActive) {
+                if (!AppModeController.isDistressActive ||
+                    AppModeController.distressEpoch != epochAtSend
+                ) {
                     sendStopDistressToFirebase(firebaseUid)
                     return@addOnSuccessListener
                 }
@@ -267,7 +271,8 @@ class DistressService : Service() {
     override fun onDestroy() {
         distressJob?.cancel()
         distressJob = null
-
+        coroutineScope.cancel()
+        super.onDestroy()
         if (!AppModeController.isDistressActive) {
             serviceScope.launch {
                 val firebaseUid = try {
@@ -280,8 +285,6 @@ class DistressService : Service() {
                 sendStopDistressToFirebase(firebaseUid)
             }
         }
-
-        super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? {
