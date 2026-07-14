@@ -11,6 +11,8 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.wim4you.intervene.R
 import com.wim4you.intervene.databinding.FragmentLiveRecordingPlayerBinding
+import com.wim4you.intervene.recording.PublicVideoStore
+import com.wim4you.intervene.recording.RecordingFileResolver
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -36,8 +38,8 @@ class LiveRecordingPlayerFragment : Fragment() {
             return
         }
 
-        val file = LiveRecordingLocalStore.fileFor(requireContext(), filename)
-        if (!file.exists()) {
+        val file = RecordingFileResolver.resolve(requireContext(), filename)
+        if (file == null) {
             Toast.makeText(requireContext(), R.string.live_recording_not_found, Toast.LENGTH_SHORT).show()
             return
         }
@@ -60,7 +62,11 @@ class LiveRecordingPlayerFragment : Fragment() {
                 durationMillis = null,
             )
             LiveRecordingDeletePrompt.show(requireContext()) {
-                LiveRecordingLocalStore.deleteRecording(requireContext(), entry)
+                if (PublicVideoStore.isPublicPath(filename)) {
+                    PublicVideoStore.delete(filename)
+                } else {
+                    LiveRecordingLocalStore.deleteRecording(requireContext(), entry)
+                }
                 findNavController().popBackStack()
             }
         }

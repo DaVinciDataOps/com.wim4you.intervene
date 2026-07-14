@@ -5,6 +5,7 @@ import android.media.MediaRecorder
 import android.os.Handler
 import android.os.HandlerThread
 import com.wim4you.intervene.SecureLog
+import com.wim4you.intervene.recording.PublicVideoStore
 import org.webrtc.EglBase
 import org.webrtc.GlRectDrawer
 import org.webrtc.VideoFrame
@@ -19,17 +20,24 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Records a WebRTC [VideoTrack] into a playable MP4 by feeding frames into [MediaRecorder].
+ * Patrol recordings are written to a cache file first, then persisted to public storage on stop.
  */
 class WebRtcStreamMp4Recorder(
     private val context: Context,
     private val sharedEglContext: EglBase.Context,
     private val videoTrack: VideoTrack,
 ) : VideoSink {
+    data class PublicPersistTarget(
+        val sessionPath: String,
+        val fileName: String,
+    )
+
     private val encoderThread = HandlerThread("WebRtcStreamRecorder")
     private val encoderHandler: Handler
     private val recordLock = Any()
 
-    private var outputFile: File? = null
+    private var tempOutputFile: File? = null
+    private var publicPersistTarget: PublicPersistTarget? = null
     private val videoWidth = WebRtcConfig.VIDEO_WIDTH
     private val videoHeight = WebRtcConfig.VIDEO_HEIGHT
 
@@ -46,10 +54,11 @@ class WebRtcStreamMp4Recorder(
         encoderHandler = Handler(encoderThread.looper)
     }
 
-    fun start(outputFile: File) {
+    fun start(tempOutputFile: File, publicPersistTarget: PublicPersistTarget? = null) {
         if (!started.compareAndSet(false, true)) return
-        this.outputFile = outputFile
-        outputFile.parentFile?.mkdirs()
+        this.tempOutputFile = tempOutputFile
+        this.publicPersistTarget = publicPersistTarget
+        tempOutputFile.parentFile?.mkdirs()
 
         synchronized(recordLock) {
             try {
@@ -60,7 +69,7 @@ class WebRtcStreamMp4Recorder(
                     setVideoSize(videoWidth, videoHeight)
                     setVideoFrameRate(WebRtcConfig.VIDEO_FPS)
                     setVideoEncodingBitRate(BITRATE_BPS)
-                    setOutputFile(outputFile.absolutePath)
+                    setOutputFile(tempOutputFile.absolutePath)
                     prepare()
                 }
                 mediaRecorder = recorder
@@ -72,7 +81,7 @@ class WebRtcStreamMp4Recorder(
 
                 recorder.start()
                 videoTrack.addSink(this)
-                SecureLog.i(TAG, "Stream recorder started for ${outputFile.absolutePath}")
+                SecureLog.i(TAG, "Stream recorder started for ${tempOutputFile.absolutePath}")
             } catch (exception: Exception) {
                 SecureLog.e(TAG, "Failed to start MediaRecorder", exception)
                 cleanupLocked(deleteOutput = true)
@@ -82,23 +91,28 @@ class WebRtcStreamMp4Recorder(
         }
     }
 
-    fun stop() {
-        if (!started.compareAndSet(true, false)) return
+    fun stop(): File? {
+        if (!started.compareAndSet(true, false)) return null
         videoTrack.removeSink(this)
 
+        var savedFile: File? = null
         val latch = CountDownLatch(1)
         encoderHandler.post {
             try {
                 synchronized(recordLock) {
                     val hadFrames = framesRendered.get() > 0
-                    cleanupLocked(deleteOutput = !hadFrames)
-                    SecureLog.i(TAG, "Stream recorder stopped. frames=$framesRendered hadFrames=$hadFrames")
+                    savedFile = finalizeOutputLocked(hadFrames)
+                    SecureLog.i(
+                        TAG,
+                        "Stream recorder stopped. frames=$framesRendered hadFrames=$hadFrames saved=${savedFile?.absolutePath}",
+                    )
                 }
             } finally {
                 latch.countDown()
             }
         }
         latch.await(STOP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        return savedFile
     }
 
     override fun onFrame(frame: VideoFrame) {
@@ -128,19 +142,54 @@ class WebRtcStreamMp4Recorder(
         }
     }
 
-    private fun cleanupLocked(deleteOutput: Boolean) {
-        var shouldDelete = deleteOutput
+    private fun finalizeOutputLocked(hadFrames: Boolean): File? {
         val recorder = mediaRecorder
-        if (recorder != null && framesRendered.get() > 0) {
+        if (recorder != null && hadFrames) {
             try {
                 recorder.stop()
             } catch (exception: Exception) {
                 SecureLog.e(TAG, "MediaRecorder stop failed", exception)
-                shouldDelete = true
+                cleanupLocked(deleteOutput = true)
+                return null
             }
         }
+        releaseRecorderResourcesLocked()
+
+        val tempFile = tempOutputFile
+        val target = publicPersistTarget
+        tempOutputFile = null
+        publicPersistTarget = null
+
+        if (!hadFrames || tempFile == null) {
+            tempFile?.delete()
+            return null
+        }
+
+        if (target != null) {
+            return PublicVideoStore.persistRecording(
+                context = context.applicationContext,
+                sessionPath = target.sessionPath,
+                fileName = target.fileName,
+                sourceFile = tempFile,
+            )
+        }
+
+        return tempFile.takeIf { it.exists() && it.length() > 0L }
+    }
+
+    private fun cleanupLocked(deleteOutput: Boolean) {
+        releaseRecorderResourcesLocked()
+        if (deleteOutput) {
+            tempOutputFile?.delete()
+        }
+        tempOutputFile = null
+        publicPersistTarget = null
+        encoderThread.quitSafely()
+    }
+
+    private fun releaseRecorderResourcesLocked() {
         try {
-            recorder?.release()
+            mediaRecorder?.release()
         } catch (_: Exception) {
         }
         mediaRecorder = null
@@ -159,17 +208,11 @@ class WebRtcStreamMp4Recorder(
             drawer.release()
         } catch (_: Exception) {
         }
-
-        if (shouldDelete) {
-            outputFile?.delete()
-        }
-        outputFile = null
-        encoderThread.quitSafely()
     }
 
     private companion object {
         const val TAG = "WebRtcStreamRecorder"
         const val BITRATE_BPS = 2_000_000
-        const val STOP_TIMEOUT_SECONDS = 5L
+        const val STOP_TIMEOUT_SECONDS = 10L
     }
 }

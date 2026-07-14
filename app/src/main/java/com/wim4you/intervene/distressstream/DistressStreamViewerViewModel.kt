@@ -7,7 +7,9 @@ import com.wim4you.intervene.FirebaseAuthManager
 import com.wim4you.intervene.FirebaseDatabaseProvider
 import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.distressstream.webrtc.DistressWebRtcViewer
-import com.wim4you.intervene.recording.RecordingLocalStore
+import com.wim4you.intervene.distressstream.webrtc.WebRtcStreamMp4Recorder
+import com.wim4you.intervene.recording.PublicVideoStore
+import java.io.File
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -82,17 +84,27 @@ class DistressStreamViewerViewModel @Inject constructor() : ViewModel() {
             SecureLog.w("DistressStreamViewer", "Cannot start recording: video track not ready")
             return false
         }
-        val username = RecordingLocalStore.sanitizeUsername(distressAlias?.ifBlank { null } ?: "unknown")
-        val outputFile = RecordingLocalStore.createRecordingFile(context, username)
-        val started = webRtcViewer?.startRecording(outputFile) == true
+        val username = distressAlias?.ifBlank { null } ?: "unknown"
+        val timestamp = System.currentTimeMillis()
+        val sessionPath = PublicVideoStore.createSessionPath(username, timestamp)
+        val fileName = PublicVideoStore.createRecordingFileName(timestamp)
+        val tempOutputFile = File(context.cacheDir, "patrol_record_$timestamp.mp4")
+        val persistTarget = WebRtcStreamMp4Recorder.PublicPersistTarget(
+            sessionPath = sessionPath,
+            fileName = fileName,
+        )
+        val started = webRtcViewer?.startRecording(tempOutputFile, persistTarget) == true
         if (started) {
-            SecureLog.i("DistressStreamViewer", "Recording live stream to ${outputFile.absolutePath}")
+            SecureLog.i(
+                "DistressStreamViewer",
+                "Recording live stream to public ${PublicVideoStore.toPublicRelativePath(sessionPath, fileName)}",
+            )
         }
         return started
     }
 
-    fun stopRecording() {
-        webRtcViewer?.stopRecording()
+    fun stopRecording(): File? {
+        return webRtcViewer?.stopRecording()
     }
 
     fun stopWatching() {

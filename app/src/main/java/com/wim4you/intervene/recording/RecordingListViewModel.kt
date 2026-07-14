@@ -13,11 +13,16 @@ class RecordingListViewModel @Inject constructor() : ViewModel() {
     val recordings: StateFlow<List<RecordingListItem>> = _recordings.asStateFlow()
 
     fun refresh(context: android.content.Context) {
-        _recordings.value = RecordingLocalStore.listAll(context)
+        val internal = RecordingLocalStore.listAll(context)
+        val public = PublicVideoStore.listAll()
+        _recordings.value = (internal + public).sortedByDescending { it.sortKey }
     }
 
     fun deleteItem(context: android.content.Context, item: RecordingListItem) {
-        RecordingLocalStore.deleteItem(context, item)
+        when (item) {
+            is RecordingListItem.SingleRecording -> RecordingFileResolver.delete(context, item)
+            is RecordingListItem.DistressSession -> RecordingLocalStore.deleteItem(context, item)
+        }
         refresh(context)
     }
 }

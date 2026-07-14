@@ -143,10 +143,17 @@ class DistressStreamViewerFragment : Fragment() {
     private fun stopLocalRecording() {
         if (!isRecording) return
         isRecording = false
-        viewModel.stopRecording()
+        val savedFile = viewModel.stopRecording()
         if (_binding != null) {
             binding.btnStartStreamRecording.isEnabled = viewModel.videoReady.value
             binding.btnStopStreamRecording.isEnabled = false
+        }
+        if (savedFile != null) {
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.distress_stream_record_saved),
+                Toast.LENGTH_SHORT,
+            ).show()
         }
     }
 

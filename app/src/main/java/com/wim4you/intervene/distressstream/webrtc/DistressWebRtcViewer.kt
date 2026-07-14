@@ -65,7 +65,10 @@ class DistressWebRtcViewer(
 
     fun isVideoReady(): Boolean = remoteVideoTrack?.enabled() == true
 
-    fun startRecording(outputFile: java.io.File): Boolean {
+    fun startRecording(
+        tempOutputFile: java.io.File,
+        persistTarget: WebRtcStreamMp4Recorder.PublicPersistTarget,
+    ): Boolean {
         val track = remoteVideoTrack ?: return false
         if (!track.enabled()) return false
         val eglContext = factoryHolder?.eglBase?.eglBaseContext ?: return false
@@ -76,7 +79,7 @@ class DistressWebRtcViewer(
                 sharedEglContext = eglContext,
                 videoTrack = track,
             )
-            recorder.start(outputFile)
+            recorder.start(tempOutputFile, persistTarget)
             streamRecorder = recorder
             true
         } catch (exception: Exception) {
@@ -85,9 +88,10 @@ class DistressWebRtcViewer(
         }
     }
 
-    fun stopRecording() {
-        streamRecorder?.stop()
+    fun stopRecording(): java.io.File? {
+        val saved = streamRecorder?.stop()
         streamRecorder = null
+        return saved
     }
 
     fun stop() {
