@@ -12,9 +12,14 @@ object RecordingFileResolver {
         }
     }
 
+    fun resolveUri(context: Context, relativePath: String): android.net.Uri? {
+        resolve(context, relativePath)?.let { return android.net.Uri.fromFile(it) }
+        return PublicVideoStore.findContentUri(context, relativePath)
+    }
+
     fun delete(context: Context, item: RecordingListItem.SingleRecording): Boolean {
         return if (PublicVideoStore.isPublicPath(item.relativePath)) {
-            PublicVideoStore.delete(item.relativePath)
+            PublicVideoStore.delete(context, item.relativePath)
         } else {
             RecordingLocalStore.deleteItem(context, item)
         }

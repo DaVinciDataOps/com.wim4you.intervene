@@ -34,6 +34,31 @@ object RecordingLocalStore {
         return File(directory, "recording_$timestamp.mp4")
     }
 
+    fun persistRecordingFile(
+        context: Context,
+        username: String,
+        fileName: String,
+        sourceFile: File,
+    ): File? {
+        if (!sourceFile.exists() || sourceFile.length() == 0L) {
+            sourceFile.delete()
+            return null
+        }
+        migrateIfNeeded(context)
+        val timestamp = fileName.removePrefix("recording_").removeSuffix(".mp4").toLongOrNull()
+            ?: System.currentTimeMillis()
+        val sessionPath = createSessionPath(username, timestamp)
+        val destination = File(sessionDirectory(context, sessionPath), fileName)
+        destination.parentFile?.mkdirs()
+        return try {
+            sourceFile.copyTo(destination, overwrite = true)
+            sourceFile.delete()
+            destination
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     fun fileFor(context: Context, relativePath: String): File {
         return File(recordingsRoot(context), relativePath)
     }

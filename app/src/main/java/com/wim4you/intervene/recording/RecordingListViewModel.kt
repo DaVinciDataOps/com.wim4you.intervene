@@ -14,7 +14,7 @@ class RecordingListViewModel @Inject constructor() : ViewModel() {
 
     fun refresh(context: android.content.Context) {
         val internal = RecordingLocalStore.listAll(context)
-        val public = PublicVideoStore.listAll()
+        val public = PublicVideoStore.listAll(context)
         _recordings.value = (internal + public).sortedByDescending { it.sortKey }
     }
 

@@ -9,7 +9,6 @@ import com.wim4you.intervene.SecureLog
 import com.wim4you.intervene.distressstream.webrtc.DistressWebRtcViewer
 import com.wim4you.intervene.distressstream.webrtc.WebRtcStreamMp4Recorder
 import com.wim4you.intervene.recording.PublicVideoStore
-import java.io.File
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -88,12 +87,11 @@ class DistressStreamViewerViewModel @Inject constructor() : ViewModel() {
         val timestamp = System.currentTimeMillis()
         val sessionPath = PublicVideoStore.createSessionPath(username, timestamp)
         val fileName = PublicVideoStore.createRecordingFileName(timestamp)
-        val tempOutputFile = File(context.cacheDir, "patrol_record_$timestamp.mp4")
         val persistTarget = WebRtcStreamMp4Recorder.PublicPersistTarget(
             sessionPath = sessionPath,
             fileName = fileName,
         )
-        val started = webRtcViewer?.startRecording(tempOutputFile, persistTarget) == true
+        val started = webRtcViewer?.startRecording(persistTarget) == true
         if (started) {
             SecureLog.i(
                 "DistressStreamViewer",
@@ -103,7 +101,7 @@ class DistressStreamViewerViewModel @Inject constructor() : ViewModel() {
         return started
     }
 
-    fun stopRecording(): File? {
+    fun stopRecording(): java.io.File? {
         return webRtcViewer?.stopRecording()
     }
 

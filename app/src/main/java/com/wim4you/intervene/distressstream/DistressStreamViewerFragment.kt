@@ -140,7 +140,7 @@ class DistressStreamViewerFragment : Fragment() {
         binding.btnStopStreamRecording.isEnabled = true
     }
 
-    private fun stopLocalRecording() {
+    private fun stopLocalRecording(showResult: Boolean = true) {
         if (!isRecording) return
         isRecording = false
         val savedFile = viewModel.stopRecording()
@@ -148,17 +148,24 @@ class DistressStreamViewerFragment : Fragment() {
             binding.btnStartStreamRecording.isEnabled = viewModel.videoReady.value
             binding.btnStopStreamRecording.isEnabled = false
         }
+        if (!showResult) return
         if (savedFile != null) {
             Toast.makeText(
                 requireContext(),
                 getString(R.string.distress_stream_record_saved),
                 Toast.LENGTH_SHORT,
             ).show()
+        } else {
+            Toast.makeText(
+                requireContext(),
+                R.string.distress_stream_record_failed,
+                Toast.LENGTH_SHORT,
+            ).show()
         }
     }
 
     override fun onDestroyView() {
-        stopLocalRecording()
+        stopLocalRecording(showResult = false)
         viewModel.stopWatching()
         super.onDestroyView()
         _binding = null

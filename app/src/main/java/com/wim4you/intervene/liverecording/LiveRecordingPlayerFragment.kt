@@ -38,34 +38,43 @@ class LiveRecordingPlayerFragment : Fragment() {
             return
         }
 
-        val file = RecordingFileResolver.resolve(requireContext(), filename)
-        if (file == null) {
+        val uri = RecordingFileResolver.resolveUri(requireContext(), filename)
+        if (uri == null) {
             Toast.makeText(requireContext(), R.string.live_recording_not_found, Toast.LENGTH_SHORT).show()
             return
         }
 
-        binding.recordingTitle.text = LiveRecordingLocalStore.formatTimestamp(file.lastModified())
+        binding.recordingTitle.text = LiveRecordingLocalStore.formatTimestamp(
+            if (PublicVideoStore.isPublicPath(filename)) {
+                PublicVideoStore.fileFor(filename).takeIf { it.exists() }?.lastModified()
+            } else {
+                RecordingFileResolver.resolve(requireContext(), filename)?.lastModified()
+            } ?: System.currentTimeMillis(),
+        )
         val mediaController = MediaController(requireContext())
         mediaController.setAnchorView(binding.videoPlayer)
         binding.videoPlayer.setMediaController(mediaController)
-        binding.videoPlayer.setVideoURI(Uri.fromFile(file))
+        binding.videoPlayer.setVideoURI(uri)
         binding.videoPlayer.setOnPreparedListener { player ->
             player.isLooping = false
             binding.videoPlayer.start()
         }
 
         binding.btnDeleteRecording.setOnClickListener {
-            val entry = LiveRecordingEntry(
-                id = file.nameWithoutExtension,
-                filename = filename,
-                createdAtMillis = file.lastModified(),
-                durationMillis = null,
-            )
             LiveRecordingDeletePrompt.show(requireContext()) {
                 if (PublicVideoStore.isPublicPath(filename)) {
-                    PublicVideoStore.delete(filename)
+                    PublicVideoStore.delete(requireContext(), filename)
                 } else {
-                    LiveRecordingLocalStore.deleteRecording(requireContext(), entry)
+                    val file = RecordingFileResolver.resolve(requireContext(), filename)
+                    if (file != null) {
+                        val entry = LiveRecordingEntry(
+                            id = file.nameWithoutExtension,
+                            filename = filename,
+                            createdAtMillis = file.lastModified(),
+                            durationMillis = null,
+                        )
+                        LiveRecordingLocalStore.deleteRecording(requireContext(), entry)
+                    }
                 }
                 findNavController().popBackStack()
             }
