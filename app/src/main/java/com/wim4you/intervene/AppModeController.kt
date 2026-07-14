@@ -15,6 +15,7 @@ import com.wim4you.intervene.location.PatrolFirebaseWriter
 import com.wim4you.intervene.location.PatrolService
 import com.wim4you.intervene.liverecording.LiveRecordingController
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 /**
@@ -33,6 +34,13 @@ object AppModeController {
     private const val KEY_IS_DISTRESS_ACTIVE = "is_distress_active"
 
     var isPatrolling: Boolean = false
+        private set
+
+    /**
+     * Bumped when patrol starts and again when patrol stops so in-flight patrol
+     * Firebase writes from [PatrolService] can be rejected after stop.
+     */
+    var patrolEpoch: Int = 0
         private set
 
     var isGuidedTrip: Boolean = false
@@ -86,6 +94,7 @@ object AppModeController {
     fun startPatrol(context: Context): Boolean {
         if (isGuidedTrip) return false
         isPatrolling = true
+        patrolEpoch++
         persistState()
         startPatrolService(context)
         DistressMessagingManager.subscribeToTopic(context.applicationContext)
@@ -96,6 +105,9 @@ object AppModeController {
         isPatrolling = false
         persistState()
         stopPatrolService(context)
+        awaitServiceStopped(context, PatrolService::class.java)
+        // Invalidate any patrol writes still completing after the service stopped.
+        patrolEpoch++
         DistressMessagingManager.unsubscribeFromTopic(context.applicationContext)
         // Clear after stopping the service so in-flight patrol writes cannot
         // overwrite the inactive state and leave maps showing stale markers.
@@ -171,6 +183,23 @@ object AppModeController {
 
     private fun stopDistressService(context: Context) {
         context.stopService(Intent(context, DistressService::class.java))
+    }
+
+    private suspend fun awaitServiceStopped(
+        context: Context,
+        serviceClass: Class<*>,
+        timeoutMs: Long = 5_000L,
+    ) {
+        withContext(Dispatchers.IO) {
+            val deadline = System.currentTimeMillis() + timeoutMs
+            while (System.currentTimeMillis() < deadline) {
+                if (!ServiceUtils.isServiceRunning(context.applicationContext, serviceClass)) {
+                    return@withContext
+                }
+                delay(100)
+            }
+            Log.w(TAG, "Timed out waiting for ${serviceClass.simpleName} to stop")
+        }
     }
 
     private fun startForegroundServiceCompat(context: Context, intent: Intent) {

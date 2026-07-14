@@ -150,6 +150,7 @@ class PatrolService : Service() {
         geoLocation: GeoLocation,
     ) {
         if (!AppModeController.isPatrolling) return
+        val epochAtSend = AppModeController.patrolEpoch
 
         patrolLocationData.id = patrolLocationData.vigilanteId
         patrolLocationData.l = listOf(geoLocation.latitude, geoLocation.longitude)
@@ -170,7 +171,9 @@ class PatrolService : Service() {
         database.child("patrols").child(firebaseUid)
             .updateChildren(patrolDataMap)
             .addOnSuccessListener {
-                if (!AppModeController.isPatrolling) {
+                if (!AppModeController.isPatrolling ||
+                    AppModeController.patrolEpoch != epochAtSend
+                ) {
                     sendStopPatrolToFirebase(firebaseUid)
                     return@addOnSuccessListener
                 }
@@ -199,6 +202,9 @@ class PatrolService : Service() {
     }
 
     override fun onDestroy() {
+        patrolJob?.cancel()
+        patrolJob = null
+        coroutineScope.cancel()
         super.onDestroy()
         if (!AppModeController.isPatrolling) {
             serviceScope.launch {
@@ -212,8 +218,6 @@ class PatrolService : Service() {
                 sendStopPatrolToFirebase(firebaseUid)
             }
         }
-        patrolJob?.cancel()
-        coroutineScope.cancel()
     }
 
     override fun onBind(intent: Intent?): IBinder? {

@@ -27,7 +27,7 @@ class MapLocationRepository @Inject constructor() {
     val distressCalls: StateFlow<List<DistressCallData>> = _distressCalls.asStateFlow()
 
     fun updatePatrolLocations(locations: List<PatrolLocationData>) {
-        remotePatrols = locations
+        remotePatrols = locations.filter { it.isActive == true }
         publishMergedPatrols()
     }
 
@@ -66,11 +66,12 @@ class MapLocationRepository @Inject constructor() {
     }
 
     private fun publishMergedPatrols() {
-        val own = ownPatrol
+        val own = ownPatrol?.takeIf { it.isActive == true }
+        val activeRemote = remotePatrols.filter { it.isActive == true }
         _patrolLocations.value = if (own == null) {
-            remotePatrols
+            activeRemote
         } else {
-            remotePatrols.filter { it.vigilanteId != own.vigilanteId } + own
+            activeRemote.filter { it.vigilanteId != own.vigilanteId } + own
         }
     }
 
