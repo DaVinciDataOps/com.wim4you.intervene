@@ -11,6 +11,7 @@ import com.wim4you.intervene.distress.DistressMessagingManager
 import com.wim4you.intervene.distress.DistressService
 import com.wim4you.intervene.distress.DistressSoundService
 import com.wim4you.intervene.helpers.ServiceUtils
+import com.wim4you.intervene.location.LocationTrackerService
 import com.wim4you.intervene.location.PatrolFirebaseWriter
 import com.wim4you.intervene.location.PatrolService
 import com.wim4you.intervene.liverecording.LiveRecordingController
@@ -27,6 +28,9 @@ object AppModeController {
     const val GEO_QUERY_RADIUS_KM = 2.0
     const val LOCATION_DATA_EXPIRY_MS = 30 * 60 * 1000L
     const val LOCATION_UPDATE_INTERVAL_MS = 15_000L
+    const val IDLE_LOCATION_UPDATE_INTERVAL_MS = 60_000L
+
+    fun needsHighAccuracyLocation(): Boolean = isPatrolling || isDistressActive
     private const val TAG = "AppModeController"
     private const val PREFS_NAME = "app_mode_state"
     private const val KEY_IS_PATROLLING = "is_patrolling"
@@ -98,6 +102,7 @@ object AppModeController {
         persistState()
         startPatrolService(context)
         DistressMessagingManager.subscribeToTopic(context.applicationContext)
+        LocationTrackerService.refreshLocationConfig(context.applicationContext)
         return true
     }
 
@@ -112,6 +117,7 @@ object AppModeController {
         // Clear after stopping the service so in-flight patrol writes cannot
         // overwrite the inactive state and leave maps showing stale markers.
         clearPatrolInFirebase(context)
+        LocationTrackerService.refreshLocationConfig(context.applicationContext)
     }
 
     private suspend fun clearPatrolInFirebase(context: Context) {
@@ -137,6 +143,7 @@ object AppModeController {
         if (AppPreferences.isDistressSirenSoundEnabled(context)) {
             DistressSoundService.start(context)
         }
+        LocationTrackerService.refreshLocationConfig(context.applicationContext)
     }
 
     suspend fun deactivateDistress(context: Context) {
@@ -147,6 +154,7 @@ object AppModeController {
         // Clear after stopping the service so in-flight distress writes cannot
         // overwrite the inactive state and leave patrol maps showing stale markers.
         clearDistressInFirebase(context)
+        LocationTrackerService.refreshLocationConfig(context.applicationContext)
     }
 
     private suspend fun clearDistressInFirebase(context: Context) {

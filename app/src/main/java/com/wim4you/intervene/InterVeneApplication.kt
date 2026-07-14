@@ -18,6 +18,7 @@ class InterVeneApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        AppForegroundTracker.initialize(this)
         ThemePreferences.applySavedTheme(this)
         DatabaseProvider.getDatabase(this)
         AppModeController.initialize(this)

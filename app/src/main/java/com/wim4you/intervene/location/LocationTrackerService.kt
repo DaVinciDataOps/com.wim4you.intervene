@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
@@ -29,6 +30,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
+import com.wim4you.intervene.AppForegroundTracker
 import com.wim4you.intervene.AppModeController
 import com.wim4you.intervene.Constants
 import com.wim4you.intervene.FirebaseAuthManager
@@ -69,15 +71,33 @@ class LocationTrackerService : Service() {
     private var distressListenersAttached = false
     private var isFirebaseReady = false
     private var pendingQueryLocation: GeoLocation? = null
+    private var geoQueriesActive = false
+    private var activeLocationRequestProfile: Boolean? = null
+    private var locationUpdatesActive = false
+    private var removeForegroundListener: (() -> Unit)? = null
 
     companion object {
         const val ACTION_PATROL_UPDATE = "com.wim4you.intervene.LOCATION_UPDATE"
         const val ACTION_DISTRESS_UPDATE = "com.wim4you.intervene.DISTRESS_UPDATE"
+        const val ACTION_REFRESH_LOCATION_CONFIG = "com.wim4you.intervene.action.REFRESH_LOCATION_CONFIG"
         const val EXTRA_PATROL_DATA = "extra_patrol_data"
         const val EXTRA_DISTRESS_DATA = "extra_distress_data"
         private const val NOTIFICATION_ID = Constants.LOCATION_TRACKER_SERVICE_NOTIFICATION_ID
         private const val CHANNEL_ID = Constants.LOCATION_TRACKER_SERVICE_CHANNEL_ID
         private const val QUERY_RECENTER_THRESHOLD_KM = 0.5
+        private const val IDLE_MIN_UPDATE_INTERVAL_MS = 30_000L
+        private const val ACTIVE_MIN_UPDATE_INTERVAL_MS = 10_000L
+
+        fun refreshLocationConfig(context: Context) {
+            val intent = Intent(context, LocationTrackerService::class.java).apply {
+                action = ACTION_REFRESH_LOCATION_CONFIG
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
+        }
     }
 
     private val patrolQueryListener = object : GeoQueryDataEventListener {
@@ -141,18 +161,30 @@ class LocationTrackerService : Service() {
                 FirebaseAuthManager.ensureSignedIn()
                 setupFirebase()
                 isFirebaseReady = true
-                bootstrapGeoQueries()
+                if (geoQueriesActive) {
+                    bootstrapGeoQueries()
+                }
             } catch (exception: Exception) {
                 Log.e("LocationTrackerService", "Failed to authenticate before geo queries", exception)
             }
         }
         createNotificationChannel()
+        removeForegroundListener = AppForegroundTracker.addListener { inForeground ->
+            if (inForeground) {
+                resumeGeoQueries()
+            } else {
+                pauseGeoQueries()
+            }
+        }
     }
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_BACKGROUND_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(NOTIFICATION_ID, createNotification())
-        startLocationUpdates()
+        when (intent?.action) {
+            ACTION_REFRESH_LOCATION_CONFIG -> refreshLocationConfigIfNeeded()
+            else -> ensureLocationUpdates()
+        }
         return START_STICKY
     }
 
@@ -181,12 +213,38 @@ class LocationTrackerService : Service() {
     }
 
     @RequiresPermission(allOf = [Manifest.permission.ACCESS_BACKGROUND_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
-    private fun startLocationUpdates() {
-        val locationRequest = LocationRequest.Builder(
-            Priority.PRIORITY_HIGH_ACCURACY,
-            AppModeController.LOCATION_UPDATE_INTERVAL_MS
-        ).setMinUpdateIntervalMillis(10_000L).build()
+    private fun ensureLocationUpdates() {
+        if (!locationUpdatesActive) {
+            startLocationUpdates()
+            return
+        }
+        refreshLocationConfigIfNeeded()
+    }
 
+    private fun buildLocationRequest(): LocationRequest {
+        val highAccuracy = AppModeController.needsHighAccuracyLocation()
+        val priority = if (highAccuracy) {
+            Priority.PRIORITY_HIGH_ACCURACY
+        } else {
+            Priority.PRIORITY_BALANCED_POWER_ACCURACY
+        }
+        val interval = if (highAccuracy) {
+            AppModeController.LOCATION_UPDATE_INTERVAL_MS
+        } else {
+            AppModeController.IDLE_LOCATION_UPDATE_INTERVAL_MS
+        }
+        val minInterval = if (highAccuracy) {
+            ACTIVE_MIN_UPDATE_INTERVAL_MS
+        } else {
+            IDLE_MIN_UPDATE_INTERVAL_MS
+        }
+        return LocationRequest.Builder(priority, interval)
+            .setMinUpdateIntervalMillis(minInterval)
+            .build()
+    }
+
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_BACKGROUND_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+    private fun startLocationUpdates() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 locationResult.lastLocation?.let { location ->
@@ -196,13 +254,77 @@ class LocationTrackerService : Service() {
         }
 
         if (ActivityCompat.checkSelfPermission(attributedContext, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+            activeLocationRequestProfile = AppModeController.needsHighAccuracyLocation()
+            fusedLocationClient.requestLocationUpdates(
+                buildLocationRequest(),
+                locationCallback,
+                Looper.getMainLooper(),
+            )
+            locationUpdatesActive = true
             fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                 location?.let {
                     onTrackerLocation(GeoLocation(it.latitude, it.longitude))
                 }
             }
         }
+    }
+
+    @RequiresPermission(allOf = [Manifest.permission.ACCESS_BACKGROUND_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION])
+    private fun refreshLocationConfigIfNeeded() {
+        if (!locationUpdatesActive) {
+            startLocationUpdates()
+            return
+        }
+        val profile = AppModeController.needsHighAccuracyLocation()
+        if (activeLocationRequestProfile == profile) return
+        activeLocationRequestProfile = profile
+        if (::locationCallback.isInitialized) {
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+        }
+        fusedLocationClient.requestLocationUpdates(
+            buildLocationRequest(),
+            locationCallback,
+            Looper.getMainLooper(),
+        )
+        SecureLog.d(
+            "LocationTrackerService",
+            if (profile) {
+                "Switched to high-accuracy location updates"
+            } else {
+                "Switched to balanced-power location updates"
+            },
+        )
+    }
+
+    private fun pauseGeoQueries() {
+        if (!geoQueriesActive) return
+        geoQueriesActive = false
+        if (::geoQueryPatrols.isInitialized) {
+            geoQueryPatrols.removeAllListeners()
+        }
+        if (::geoQueryDistress.isInitialized) {
+            geoQueryDistress.removeAllListeners()
+        }
+        detachAllPatrolDetailListeners()
+        detachAllDistressDetailListeners()
+        patrolListenersAttached = false
+        distressListenersAttached = false
+        patrolLocationDataList.clear()
+        distressLocationDataList.clear()
+        broadcastPatrolUpdate(patrolLocationDataList)
+        broadcastDistressUpdate(distressLocationDataList)
+        SecureLog.d("LocationTrackerService", "Paused map-discovery Firebase listeners")
+    }
+
+    private fun resumeGeoQueries() {
+        if (geoQueriesActive) return
+        geoQueriesActive = true
+        SecureLog.d("LocationTrackerService", "Resumed map-discovery Firebase listeners")
+        if (!isFirebaseReady) return
+        pendingQueryLocation?.let { location ->
+            ensurePatrolQuery(location)
+            ensureDistressQuery(location)
+        } ?: bootstrapGeoQueries()
     }
 
     private fun onTrackerLocation(userLocation: GeoLocation) {
@@ -230,8 +352,10 @@ class LocationTrackerService : Service() {
                 )
             }
         }
-        ensurePatrolQuery(userLocation)
-        ensureDistressQuery(userLocation)
+        if (geoQueriesActive) {
+            ensurePatrolQuery(userLocation)
+            ensureDistressQuery(userLocation)
+        }
     }
 
     private fun bootstrapGeoQueries() {
@@ -269,7 +393,7 @@ class LocationTrackerService : Service() {
     }
 
     private fun ensurePatrolQuery(location: GeoLocation) {
-        if (!isFirebaseReady) return
+        if (!isFirebaseReady || !geoQueriesActive) return
         if (patrolListenersAttached && !shouldRecenterQuery(lastPatrolQueryCenter, location)) {
             return
         }
@@ -286,7 +410,7 @@ class LocationTrackerService : Service() {
     }
 
     private fun ensureDistressQuery(location: GeoLocation) {
-        if (!isFirebaseReady) return
+        if (!isFirebaseReady || !geoQueriesActive) return
         if (distressListenersAttached && !shouldRecenterQuery(lastDistressQueryCenter, location)) {
             return
         }
@@ -455,6 +579,8 @@ class LocationTrackerService : Service() {
     }
 
     override fun onDestroy() {
+        removeForegroundListener?.invoke()
+        removeForegroundListener = null
         super.onDestroy()
         if (::geoQueryPatrols.isInitialized) {
             geoQueryPatrols.removeAllListeners()
@@ -469,6 +595,8 @@ class LocationTrackerService : Service() {
         } else {
             Log.w("LocationTrackerService", "locationCallback was not initialized")
         }
+        locationUpdatesActive = false
+        geoQueriesActive = false
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
